@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allaria Agro — Soja Sustentable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f0f4f8; min-height: 100vh; }
+
+.hdr { background: #0a2240; color: #fff; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; }
+.hdr-left { display: flex; align-items: center; gap: 10px; }
+.hdr-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; }
+.hdr-title { font-size: 15px; font-weight: 700; }
+.hdr-sub { font-size: 12px; color: #94a3b8; margin-left: 6px; }
+.hdr-right { display: flex; align-items: center; gap: 12px; }
+.btn-refresh { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; }
+.btn-refresh:hover { background: rgba(255,255,255,0.18); }
+.last-update { font-size: 11px; color: #64748b; }
+
+.tabs { display: flex; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 28px; }
+.tab { padding: 14px 20px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+.tab.active { color: #0a2240; border-bottom-color: #0a2240; font-weight: 700; }
+.tab:hover:not(.active) { color: #1e293b; }
+
+.content { max-width: 1400px; margin: 0 auto; padding: 24px 28px; }
+
+.stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; min-width: 110px; flex: 1; }
+.stat-val { font-size: 22px; font-weight: 700; }
+.stat-lbl { font-size: 11px; color: #64748b; margin-top: 3px; }
+
+.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+input[type=text], select {
+  padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;
+  font-size: 13px; color: #1e293b; background: #fff; outline: none;
+  font-family: 'Inter', sans-serif;
+}
+input[type=text] { width: 220px; }
+select { min-width: 150px; cursor: pointer; }
+input[type=text]:focus, select:focus { border-color: #0a2240; }
+.btn-clear { padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; align-self: flex-end; }
+.btn-clear:hover { background: #f8fafc; }
+
+.table-wrap { border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; overflow-x: auto; background: #fff; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #0a2240; color: #fff; padding: 11px 14px; text-align: left; font-weight: 600; font-size: 11px; white-space: nowrap; letter-spacing: 0.03em; }
+td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: #f8fafc; }
+tr:hover td { background: #f0f7ff; }
+
+.badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge-epa { background: #d1fae5; color: #065f46; }
+.badge-bs  { background: #fee2e2; color: #991b1b; }
+.badge-web { background: #dbeafe; color: #1e40af; }
+.badge-mail { background: #fef3c7; color: #92400e; }
+
+.footer-row { font-size: 12px; color: #94a3b8; margin-top: 10px; }
+.loading { text-align: center; padding: 50px; color: #64748b; font-size: 14px; }
+.error { text-align: center; padding: 40px; color: #dc2626; font-size: 13px; line-height: 1.6; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.bold { font-weight: 600; }
+.mono { font-family: monospace; font-size: 12px; color: #64748b; }
+.muted { color: #64748b; }
+.green { color: #1a4a2e; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-dot"></div>
+    <span class="hdr-title">Allaria Agro</span>
+    <span class="hdr-sub">Soja sustentable</span>
+  </div>
+  <div class="hdr-right">
+    <span class="last-update" id="last-update">Cargando...</span>
+    <button class="btn-refresh" onclick="loadData()">↻ Actualizar</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab-g" onclick="switchTab('g')">Gestiones</button>
+  <button class="tab" id="tab-e" onclick="switchTab('e')">Habilitaciones</button>
+</div>
+
+<!-- GESTIONES -->
+<div id="panel-g" class="content">
+  <div class="stats" id="stats-g"></div>
+  <div class="filters">
+    <div class="filter-group"><label>Campaña</label><select id="g-camp" onchange="renderG()"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>Buscar</label><input type="text" id="g-search" placeholder="Productor, campo, estado..." oninput="renderG()"></div>
+    <div class="filter-group"><label>Exportador</label><select id="g-exp" onchange="renderG()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Vía</label><select id="g-via" onchange="renderG()"><option value="">Todas</option></select></div>
+    <button class="btn-clear" onclick="clearG()">✕ Limpiar filtros</button>
+  </div>
+  <div id="g-table"><div class="loading">Cargando datos...</div></div>
+  <div class="footer-row" id="g-footer"></div>
+</div>
+
+<!-- EXPORTADORES -->
+<div id="panel-e" class="content" style="display:none">
+  <div class="stats" id="stats-e"></div>
+  <div class="filters">
+    <div class="filter-group"><label>Campaña</label><select id="e-camp" onchange="renderE()"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>Buscar</label><input type="text" id="e-search" placeholder="Vendedor, campo, localidad..." oninput="renderE()"></div>
+    <div class="filter-group"><label>Vendedor</label><select id="e-vend" onchange="renderE()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Exportador</label><select id="e-exp" onchange="renderE()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Tipo</label><select id="e-tipo" onchange="renderE()"><option value="">Todos</option></select></div>
+    <button class="btn-clear" onclick="clearE()">✕ Limpiar filtros</button>
+  </div>
+  <div id="e-table"><div class="loading">Cargando datos...</div></div>
+  <div class="footer-row" id="e-footer"></div>
+</div>
+
+<script>
+const SHEET_ID = '1-yVmx3D5q-liA0twVVcaRWYJicmZpVBAOXrdPX8jAto';
+const API_KEY  = 'AIzaSyA_PNd_cf9LQVUFKSKXVi7CRINBKbCuUEM';
+let allG = [], allE = [];
+
+function toObjs(rows) {
+  if (!rows || rows.length < 2) return [];
+  const h = rows[0];
+  return rows.slice(1).map(r => Object.fromEntries(h.map((k, i) => [k, (r[i] || '').trim()])));
+}
+
+async function fetchSheet(name) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name + '!A:Z')}?key=${API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const d = await res.json();
+  return toObjs(d.values || []);
+}
+
+function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b, 'es')); }
+function fmt(v) { const n = parseFloat(v); return isNaN(n) ? (v || '—') : n.toLocaleString('es-AR', {maximumFractionDigits: 2}); }
+
+function badge(t) {
+  if (!t) return '—';
+  return t.toUpperCase().includes('EPA')
+    ? `<span class="badge badge-epa">${t}</span>`
+    : `<span class="badge badge-bs">${t}</span>`;
+}
+function viaBadge(v) {
+  if (!v) return '—';
+  return `<span class="badge ${v.toLowerCase()==='web'?'badge-web':'badge-mail'}">${v}</span>`;
+}
+
+const CAMP_DEFAULT = '2526';
+
+function fillSelect(id, vals, defaultVal) {
+  const sel = document.getElementById(id);
+  const cur = sel.value || defaultVal || '';
+  sel.innerHTML = '<option value="">Todos</option>' + vals.map(v => `<option>${v}</option>`).join('');
+  if (vals.includes(cur)) sel.value = cur;
+}
+
+function statCard(val, lbl, color) {
+  return `<div class="stat"><div class="stat-val" style="color:${color}">${val}</div><div class="stat-lbl">${lbl}</div></div>`;
+}
+
+/* ── GESTIONES ── */
+function filterG() {
+  const q    = document.getElementById('g-search').value.toLowerCase();
+  const camp = document.getElementById('g-camp').value;
+  const exp  = document.getElementById('g-exp').value;
+  const via  = document.getElementById('g-via').value;
+  return allG.filter(r =>
+    (!q    || Object.values(r).some(v => v.toLowerCase().includes(q))) &&
+    (!camp || r['Campaña'] === camp) &&
+    (!exp  || r['Exportador'] === exp) &&
+    (!via  || r['Vía web o mail'] === via)
+  );
+}
+
+function renderG() {
+  const f = filterG();
+  const web  = f.filter(r => r['Vía web o mail']?.toLowerCase() === 'web').length;
+  const exps = uniq(f.map(r => r['Exportador'])).length;
+  document.getElementById('stats-g').innerHTML =
+    statCard(f.length, 'Registros', '#1a4a2e') +
+    statCard(web, 'Vía web', '#1a5a9a') +
+    statCard(f.length - web, 'Vía mail', '#92400e') +
+    statCard(exps, 'Exportadores', '#64748b');
+
+  if (!f.length) {
+    document.getElementById('g-table').innerHTML = '<div class="loading">Sin resultados para los filtros seleccionados.</div>';
+    document.getElementById('g-footer').textContent = '';
+    return;
+  }
+
+  const thead = `<thead><tr>
+    <th>Productor</th><th>Campo</th><th>Estado</th>
+    <th>Vía</th><th>Exportador</th><th>Campaña</th>
+  </tr></thead>`;
+  const rows = f.map(r => `<tr>
+    <td class="bold">${r['Productor']||'—'}</td>
+    <td>${r['Campo']||'—'}</td>
+    <td class="muted" style="max-width:260px">${r['Estado']||'—'}</td>
+    <td>${viaBadge(r['Vía web o mail'])}</td>
+    <td>${r['Exportador']||'—'}</td>
+    <td class="muted">${r['Campaña']||'—'}</td>
+  </tr>`).join('');
+
+  document.getElementById('g-table').innerHTML = `<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
+  document.getElementById('g-footer').textContent = `Mostrando ${f.length} de ${allG.length} registros`;
+}
+
+function clearG() {
+  ['g-search','g-exp','g-via'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('g-camp').value = CAMP_DEFAULT;
+  renderG();
+}
+
+/* ── EXPORTADORES ── */
+function filterE() {
+  const q    = document.getElementById('e-search').value.toLowerCase();
+  const camp = document.getElementById('e-camp').value;
+  const vend = document.getElementById('e-vend').value;
+  const exp  = document.getElementById('e-exp').value;
+  const tipo = document.getElementById('e-tipo').value;
+  return allE.filter(r =>
+    (!q    || Object.values(r).some(v => v.toString().toLowerCase().includes(q))) &&
+    (!camp || r['Campaña'] === camp) &&
+    (!vend || r['Vendedor'] === vend) &&
+    (!exp  || r['Exportador'] === exp) &&
+    (!tipo || r['Tipo'] === tipo)
+  );
+}
+
+function renderE() {
+  const f = filterE();
+  const has = f.reduce((s,r) => s + (parseFloat(r['Has sustentables'])||0), 0);
+  const ton = f.reduce((s,r) => s + (parseFloat(r['Rendimiento en ton'])||0), 0);
+  const exps = uniq(f.map(r => r['Exportador'])).length;
+  document.getElementById('stats-e').innerHTML =
+    statCard(f.length, 'Registros', '#1a4a2e') +
+    statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}), 'Has. sustentables', '#1a5a9a') +
+    statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}), 'Toneladas', '#1a4a2e') +
+    statCard(exps, 'Exportadores', '#64748b');
+
+  if (!f.length) {
+    document.getElementById('e-table').innerHTML = '<div class="loading">Sin resultados para los filtros seleccionados.</div>';
+    document.getElementById('e-footer').textContent = '';
+    return;
+  }
+
+  const thead = `<thead><tr>
+    <th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th>
+    <th>Exportador</th><th>Tipo</th><th>Campaña</th>
+    <th style="text-align:right">Has.</th>
+    <th style="text-align:right">Coef.</th>
+    <th style="text-align:right">Toneladas</th>
+  </tr></thead>`;
+  const rows = f.map(r => `<tr>
+    <td class="bold" style="white-space:nowrap">${r['Vendedor']||'—'}</td>
+    <td class="mono">${r['CUIT']||'—'}</td>
+    <td>${r['Campo']||'—'}</td>
+    <td class="muted">${r['Localidad en exportador']||'—'}</td>
+    <td>${r['Exportador']||'—'}</td>
+    <td>${badge(r['Tipo'])}</td>
+    <td class="muted">${r['Campaña']||'—'}</td>
+    <td class="num">${fmt(r['Has sustentables'])}</td>
+    <td class="num muted">${fmt(r['Coef. rendimiento'])}</td>
+    <td class="num bold green">${fmt(r['Rendimiento en ton'])}</td>
+  </tr>`).join('');
+
+  document.getElementById('e-table').innerHTML = `<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
+  document.getElementById('e-footer').textContent = `Mostrando ${f.length} de ${allE.length} registros`;
+}
+
+function clearE() {
+  ['e-search','e-vend','e-exp','e-tipo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('e-camp').value = CAMP_DEFAULT;
+  renderE();
+}
+
+/* ── TABS ── */
+function switchTab(t) {
+  document.getElementById('panel-g').style.display = t==='g' ? '' : 'none';
+  document.getElementById('panel-e').style.display = t==='e' ? '' : 'none';
+  document.getElementById('tab-g').className = 'tab' + (t==='g' ? ' active' : '');
+  document.getElementById('tab-e').className = 'tab' + (t==='e' ? ' active' : '');
+}
+
+/* ── CARGA ── */
+async function loadData() {
+  document.getElementById('last-update').textContent = 'Actualizando...';
+  document.getElementById('g-table').innerHTML = '<div class="loading">Cargando...</div>';
+  document.getElementById('e-table').innerHTML = '<div class="loading">Cargando...</div>';
+  try {
+    [allG, allE] = await Promise.all([fetchSheet('Gestiones'), fetchSheet('Exportadores')]);
+
+    fillSelect('g-camp', uniq(allG.map(r => r['Campaña'])), CAMP_DEFAULT);
+    fillSelect('g-exp',  uniq(allG.map(r => r['Exportador'])));
+    fillSelect('g-via',  uniq(allG.map(r => r['Vía web o mail'])));
+    fillSelect('e-camp', uniq(allE.map(r => r['Campaña'])), CAMP_DEFAULT);
+    fillSelect('e-vend', uniq(allE.map(r => r['Vendedor'])));
+    fillSelect('e-exp',  uniq(allE.map(r => r['Exportador'])));
+    fillSelect('e-tipo', uniq(allE.map(r => r['Tipo'])));
+
+    renderG();
+    renderE();
+
+    const now = new Date();
+    document.getElementById('last-update').textContent =
+      'Actualizado ' + now.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+  } catch(e) {
+    const msg = `<div class="error">No se pudieron cargar los datos.<br>Verificá que el Sheet sea público (compartido como Lector).<br><small>${e.message}</small></div>`;
+    document.getElementById('g-table').innerHTML = msg;
+    document.getElementById('e-table').innerHTML = msg;
+    document.getElementById('last-update').textContent = 'Error al cargar';
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
