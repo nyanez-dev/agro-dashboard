@@ -194,6 +194,9 @@ const EDIT_PASSWORD = 'compliance2026';
 
 let allG=[], allE=[], allC=[], allNotas=[];
 let currentTab='g', editMode=false;
+
+// Helper para buscar columnas por nombre parcial (maneja nombres con espacios/acentos)
+function g(r,partial){const keys=Object.keys(r);const k=keys.find(x=>x.toUpperCase().includes(partial.toUpperCase()));return k?r[k]:'';}
 const sel = {'g-camp':new Set(),'g-exp':new Set(),'g-via':new Set(),'e-camp':new Set(),'e-vend':new Set(),'e-exp':new Set(),'e-tipo':new Set(),'c-prov':new Set(),'c-estado':new Set()};
 
 // ── COLORES ──
@@ -208,7 +211,6 @@ function statusBadge(s){const m={'Completo':'badge-ok','Falta RENSPA':'badge-err
 // ── UTILS ──
 function toObjs(rows){if(!rows||rows.length<2)return[];const h=rows[0].map(k=>k.replace(/[\n\r]+/g,' ').replace(/\s+/g,' ').trim());return rows.slice(1).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').toString().trim()])));}
 async function fetchSheet(name){const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name+'!A:Z')}?key=${API_KEY}`;const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);return toObjs((await res.json()).values||[]);}
-function g(r,partial){const keys=Object.keys(r);const k=keys.find(x=>x.toUpperCase().includes(partial.toUpperCase()));return k?r[k]:'';}
 function uniq(arr){return[...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
 function parseNum(v){if(!v)return 0;const c=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(c);return isNaN(n)?0:n;}
 function fmt(v){if(!v)return'\u2014';const clean=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(clean);return isNaN(n)?(v||'\u2014'):n.toLocaleString('es-AR',{maximumFractionDigits:2});}
