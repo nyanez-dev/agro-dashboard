@@ -73,6 +73,13 @@ input[type=text]:focus { border-color: #0a2240; }
 .multi-select-option:hover { background: #f0f7ff; }
 .multi-select-option input[type=checkbox] { accent-color: #0a2240; width: 14px; height: 14px; cursor: pointer; }
 .multi-select-option .opt-badge { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.drop-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px 4px; border-bottom: 1px solid #f1f5f9; gap: 8px; }
+.drop-search { flex: 1; padding: 5px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px; font-family: 'Inter', sans-serif; outline: none; color: #1e293b; }
+.drop-search:focus { border-color: #0a2240; }
+.drop-clear-btn { font-size: 11px; color: #94a3b8; background: none; border: none; cursor: pointer; white-space: nowrap; padding: 2px 4px; }
+.drop-clear-btn:hover { color: #dc2626; }
+.drop-options { max-height: 200px; overflow-y: auto; }
+.multi-select-dropdown { overflow: visible; max-height: none; }
 
 .btn-clear { padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; align-self: flex-end; }
 .btn-clear:hover { background: #f8fafc; }
@@ -287,7 +294,11 @@ document.addEventListener('click', e => {
 
 function buildDropdown(id, vals, renderOption) {
   const drop = document.getElementById('drop-' + id);
-  drop.innerHTML = vals.map(v => {
+  const count = sel[id].size;
+  const clearBtn = count > 0
+    ? `<button class="drop-clear-btn" onclick="clearFilter('${id}')" title="Limpiar selección">✕ Limpiar (${count})</button>`
+    : `<span class="drop-clear-btn" style="cursor:default;color:#e2e8f0">✕ Limpiar</span>`;
+  const optionsHtml = vals.map(v => {
     const checked = sel[id].has(v) ? 'checked' : '';
     const optHtml = renderOption ? renderOption(v) : v;
     return `<label class="multi-select-option">
@@ -295,7 +306,38 @@ function buildDropdown(id, vals, renderOption) {
       <span>${optHtml}</span>
     </label>`;
   }).join('');
+  drop.innerHTML = `
+    <div class="drop-header">
+      <input class="drop-search" type="text" placeholder="Buscar..." oninput="filterDropdown('${id}', this.value)" onclick="event.stopPropagation()">
+      ${clearBtn}
+    </div>
+    <div class="drop-options" id="opts-${id}">${optionsHtml}</div>`;
   updateLabel(id);
+}
+
+function filterDropdown(id, q) {
+  const opts = document.getElementById('opts-' + id);
+  if (!opts) return;
+  opts.querySelectorAll('.multi-select-option').forEach(el => {
+    const text = el.querySelector('span').textContent.toLowerCase();
+    el.style.display = text.includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function clearFilter(id) {
+  sel[id].clear();
+  // Reconstruir dropdown manteniendo los valores disponibles
+  const opts = document.getElementById('opts-' + id);
+  if (opts) opts.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
+  updateLabel(id);
+  // Actualizar el botón limpiar
+  const drop = document.getElementById('drop-' + id);
+  if (drop) {
+    const btn = drop.querySelector('.drop-clear-btn');
+    if (btn) { btn.style.color = '#e2e8f0'; btn.style.cursor = 'default'; btn.textContent = '✕ Limpiar'; btn.onclick = null; }
+  }
+  if (id.startsWith('g-')) { cascadeG(); renderG(); }
+  else { cascadeE(); renderE(); }
 }
 
 function onCheck(id, cb) {
@@ -331,7 +373,12 @@ async function fetchSheet(name) {
   return toObjs((await res.json()).values || []);
 }
 function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b,'es')); }
-function fmt(v) { const n = parseFloat(v); return isNaN(n) ? (v||'—') : n.toLocaleString('es-AR',{maximumFractionDigits:2}); }
+function fmt(v) {
+  if (!v) return '—';
+  const clean = typeof v === 'string' ? v.replace(/,/g, '') : v;
+  const n = parseFloat(clean);
+  return isNaN(n) ? (v||'—') : n.toLocaleString('es-AR',{maximumFractionDigits:2});
+}
 function statCard(val, lbl, color) {
   return `<div class="stat"><div class="stat-val" style="color:${color}">${val}</div><div class="stat-lbl">${lbl}</div></div>`;
 }
