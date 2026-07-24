@@ -206,8 +206,9 @@ function viaBadge(v){if(!v)return'\u2014';return `<span class="badge ${v.toLower
 function statusBadge(s){const m={'Completo':'badge-ok','Falta RENSPA':'badge-err','RENSPA vencida':'badge-warn','Falta evidencia':'badge-err','Falta poligono':'badge-err','Incompleto':'badge-err'};return `<span class="badge ${m[s]||'badge-na'}">${s}</span>`;}
 
 // ── UTILS ──
-function toObjs(rows){if(!rows||rows.length<2)return[];const h=rows[0];return rows.slice(1).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').toString().trim()])));}
+function toObjs(rows){if(!rows||rows.length<2)return[];const h=rows[0].map(k=>k.replace(/[\n\r]+/g,' ').replace(/\s+/g,' ').trim());return rows.slice(1).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').toString().trim()])));}
 async function fetchSheet(name){const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name+'!A:Z')}?key=${API_KEY}`;const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);return toObjs((await res.json()).values||[]);}
+function g(r,partial){const keys=Object.keys(r);const k=keys.find(x=>x.toUpperCase().includes(partial.toUpperCase()));return k?r[k]:'';}
 function uniq(arr){return[...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
 function parseNum(v){if(!v)return 0;const c=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(c);return isNaN(n)?0:n;}
 function fmt(v){if(!v)return'\u2014';const clean=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(clean);return isNaN(n)?(v||'\u2014'):n.toLocaleString('es-AR',{maximumFractionDigits:2});}
@@ -313,12 +314,12 @@ function clearE(){document.getElementById('e-search').value='';Object.keys(sel).
 
 // ── INFORMACION DE CAMPOS ──
 function getFieldStatus(r){
-  const cuit=r['CUIT']||'';
-  const campo=r['NOMBRE DEL CAMPO']||r['NOMBRE DEL CAMPO ']||'';
+  const cuit=g(r,'CUIT');
+  const campo=g(r,'NOMBRE DEL CAMPO');
   const renspa=r['N\u00b0 RENSPA']||r['N° RENSPA']||'';
-  const cred=r['CREDENCIAL RENSPA']||'';
+  const cred=g(r,'CREDENCIAL RENSPA');
   const poly=r['POLIGONO del Per\u00edmetro total del Campo (subir archivo .KMZ)']||r['POLIGONO del Perímetro total del Campo (subir archivo .KMZ)']||'';
-  const evid=r['EVIDENCIA']||r['EVIDENCIA ']||'';
+  const evid=g(r,'EVIDENCIA');
   const vto=getVtoRenspa(cuit,campo);
   if(vto){const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))return 'RENSPA vencida';}
   if(!renspa&&!cred)return'Falta RENSPA';
@@ -340,21 +341,21 @@ function filterC(){
 function renderC(){
   const f=filterC();
   const completos=f.filter(r=>getFieldStatus(r)==='Completo').length;
-  const provs=uniq(f.map(r=>r['PROVINCIA'])).length;
-  const hasTot=f.reduce((s,r)=>s+parseNum(r['HECTAREAS TOTALES DEL CAMPO']||r['HECTÁREAS TOTALES DEL CAMPO\n']||r['HECTÁREAS TOTALES DEL CAMPO']),0);
+  const provs=uniq(f.map(r=>g(r,'PROVINCIA'))).length;
+  const hasTot=f.reduce((s,r)=>s+parseNum(g(r,'TOTALES DEL CAMPO')),0);
   document.getElementById('stats-c').innerHTML=statCard(f.length,'Campos','#1a4a2e')+statCard(completos,'Completos','#065f46')+statCard(f.length-completos,'Pendientes','#991b1b')+statCard(provs,'Provincias','#64748b');
 
   // Poblar filtros
   const allStatuses=uniq(allC.map(r=>getFieldStatus(r)));
-  const allProvs=uniq(allC.map(r=>r['PROVINCIA']));
+  const allProvs=uniq(allC.map(r=>g(r,'PROVINCIA')));
   if(!document.getElementById('opts-c-prov'))buildDropdown('c-prov',allProvs);
   if(!document.getElementById('opts-c-estado'))buildDropdown('c-estado',allStatuses,s=>statusBadge(s));
 
   if(!f.length){document.getElementById('c-table').innerHTML='<div class="loading">Sin resultados.</div>';document.getElementById('c-footer').innerHTML='';return;}
   const thead=`<thead><tr><th>Razon social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. productivas</th><th>RENSPA</th><th>Estado</th></tr></thead>`;
   const rows=f.map((r,i)=>{
-    const cuit=r['CUIT']||'';
-    const campo=r['NOMBRE DEL CAMPO']||r['NOMBRE DEL CAMPO ']||'';
+    const cuit=g(r,'CUIT');
+    const campo=g(r,'NOMBRE DEL CAMPO');
     const status=getFieldStatus(r);
     const rs=renspaStatus(cuit,campo);
     const renspa=r['N\u00b0 RENSPA']||r['N° RENSPA']||'';
@@ -364,8 +365,8 @@ function renderC(){
       <td>${campo}</td>
       <td class="muted">${r['LOCALIDAD']||'\u2014'}</td>
       <td class="muted">${r['PROVINCIA']||'\u2014'}</td>
-      <td class="num">${fmt(r['HECTAREAS TOTALES DEL CAMPO']||r['HECTÁREAS TOTALES DEL CAMPO\n']||r['HECTÁREAS TOTALES DEL CAMPO'])}</td>
-      <td class="num">${fmt(r['HECTAREAS PRODUCTIVAS']||r['HECTÁREAS PRODUCTIVAS'])}</td>
+      <td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td>
+      <td class="num">${fmt(g(r,'PRODUCTIVAS'))}</td>
       <td><span class="badge ${rs.cls}">${rs.status}</span></td>
       <td>${statusBadge(status)}</td>
     </tr><tr><td colspan="9" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;
@@ -375,26 +376,26 @@ function renderC(){
 }
 
 function buildFicha(r,idx){
-  const cuit=r['CUIT']||'';
-  const campo=r['NOMBRE DEL CAMPO']||r['NOMBRE DEL CAMPO ']||'';
-  const cred=r['CREDENCIAL RENSPA']||'';
+  const cuit=g(r,'CUIT');
+  const campo=g(r,'NOMBRE DEL CAMPO');
+  const cred=g(r,'CREDENCIAL RENSPA');
   const poly=r['POLIGONO del Per\u00edmetro total del Campo (subir archivo .KMZ)']||r['POLIGONO del Perímetro total del Campo (subir archivo .KMZ)']||'';
-  const evid=r['EVIDENCIA']||r['EVIDENCIA ']||'';
-  const tipoEvid=r['TIPO DE EVIDENCIA A PRESENTAR']||r['TIPO DE EVIDENCIA A PRESENTAR ']||'';
+  const evid=g(r,'EVIDENCIA');
+  const tipoEvid=g(r,'TIPO DE EVIDENCIA');
   const mail=r['MAIL DE CONTACTO PRODUCTOR']||r['MAIL DE CONTACTO PRODUCTOR\n']||'';
   const rs=renspaStatus(cuit,campo);
   const vto=getVtoRenspa(cuit,campo);
   const comentarios=getNotas(cuit,campo,'comentario');
 
   let html=`<div class="ficha-grid">
-    <div class="ficha-field"><label>Razon social</label><div class="val bold">${r['RAZON SOCIAL']||''}</div></div>
-    <div class="ficha-field"><label>Tipo sociedad</label><div class="val">${r['TIPO SOCIEDAD']||''}</div></div>
+    <div class="ficha-field"><label>Razon social</label><div class="val bold">${g(r,'RAZON SOCIAL')}</div></div>
+    <div class="ficha-field"><label>Tipo sociedad</label><div class="val">${g(r,'TIPO SOCIEDAD')}</div></div>
     <div class="ficha-field"><label>CUIT</label><div class="val mono">${cuit}</div></div>
     <div class="ficha-field"><label>Mail contacto</label><div class="val">${mail?`<a href="mailto:${mail}">${mail}</a>`:'\u2014'}</div></div>
-    <div class="ficha-field"><label>Departamento</label><div class="val">${r['DEPARTAMENTO']||''}</div></div>
-    <div class="ficha-field"><label>Provincia</label><div class="val">${r['PROVINCIA']||''}</div></div>
-    <div class="ficha-field"><label>Localidad</label><div class="val">${r['LOCALIDAD']||''}</div></div>
-    <div class="ficha-field"><label>Cod. localidad ARCA</label><div class="val">${r['CODIGO LOCALIDAD ARCA']||r['CÓDIGO LOCALIDAD ARCA']||''}</div></div>
+    <div class="ficha-field"><label>Departamento</label><div class="val">${g(r,'DEPARTAMENTO')}</div></div>
+    <div class="ficha-field"><label>Provincia</label><div class="val">${g(r,'PROVINCIA')}</div></div>
+    <div class="ficha-field"><label>Localidad</label><div class="val">${g(r,'LOCALIDAD')}</div></div>
+    <div class="ficha-field"><label>Cod. localidad ARCA</label><div class="val">${g(r,'LOCALIDAD ARCA')}</div></div>
   </div>`;
 
   html+=`<div class="ficha-section"><h3>Documentacion</h3><div class="ficha-grid">
@@ -419,7 +420,7 @@ function toggleFicha(i){const el=document.getElementById('ficha-'+i);if(el)el.cl
 
 async function saveVto(idx){
   const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=r['CUIT']||'';const campo=r['NOMBRE DEL CAMPO']||r['NOMBRE DEL CAMPO ']||'';
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
   const val=document.getElementById('vto-'+idx).value;
   if(!val){alert('Selecciona una fecha.');return;}
   await saveNota(cuit,campo,'vto_renspa',val,'Compliance');
@@ -428,7 +429,7 @@ async function saveVto(idx){
 
 async function saveComment(idx){
   const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=r['CUIT']||'';const campo=r['NOMBRE DEL CAMPO']||r['NOMBRE DEL CAMPO ']||'';
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
   const input=document.getElementById('cmt-'+idx);
   const val=input.value.trim();
   if(!val){alert('Escribi un comentario.');return;}
@@ -439,7 +440,7 @@ async function saveComment(idx){
   renderC();
 }
 
-function clearC(){document.getElementById('c-search').value='';Object.keys(sel).filter(k=>k.startsWith('c-')).forEach(k=>sel[k].clear());buildDropdown('c-prov',uniq(allC.map(r=>r['PROVINCIA'])));buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));renderC();}
+function clearC(){document.getElementById('c-search').value='';Object.keys(sel).filter(k=>k.startsWith('c-')).forEach(k=>sel[k].clear());buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));renderC();}
 
 // ── TABS ──
 function switchTab(t){currentTab=t;['g','e','c'].forEach(x=>{document.getElementById('panel-'+x).style.display=x===t?'':'none';document.getElementById('tab-'+x).className='tab'+(x===t?' active':'');});}
@@ -472,7 +473,7 @@ async function loadData(){
     buildDropdown('e-camp',uniq(allE.map(r=>r['Campana']||r['Campaña'])));
     updateLabel('g-camp');updateLabel('e-camp');
     cascadeG();cascadeE();
-    buildDropdown('c-prov',uniq(allC.map(r=>r['PROVINCIA'])));
+    buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));
     buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));
     renderG();renderE();renderC();
     const now=new Date();
