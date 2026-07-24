@@ -256,21 +256,31 @@ async function saveNota(cuit,campo,tipo,valor,autor){
     document.body.appendChild(s);
   });
 }
-function getNotas(cuit,campo,tipo){return allNotas.filter(n=>n.CUIT==cuit&&n.CAMPO==campo&&(!tipo||n.TIPO==tipo));}
+function getNotas(cuit,campo,tipo){return allNotas.filter(n=>String(n.CUIT)==String(cuit)&&String(n.CAMPO)==String(campo)&&(!tipo||n.TIPO==tipo));}
 function getVtoRenspa(cuit,campo){const n=getNotas(cuit,campo,'vto_renspa');return n.length?n[n.length-1].VALOR:'';}
+function getNotaValor(cuit,campo,tipo){const n=getNotas(cuit,campo,tipo);return n.length?n[n.length-1].VALOR:'';}
+
+function fmtDate(v){
+  if(!v)return'';
+  const s=String(v);
+  if(s.includes('T')){const d=new Date(s);return d.toLocaleDateString('es-AR');}
+  if(s.includes('-')&&s.indexOf('-')===4){const p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+  return s;
+}
 
 function renspaStatus(cuit,campo){
   const vto=getVtoRenspa(cuit,campo);
   if(!vto)return{status:'Sin fecha',cls:'badge-na'};
-  const parts=vto.split(/[-/]/);
+  const vtoStr=String(vto);
   let d;
-  if(parts[0].length===4)d=new Date(parts[0],parts[1]-1,parts[2]);
-  else d=new Date(parts[2],parts[1]-1,parts[0]);
+  if(vtoStr.includes('T'))d=new Date(vtoStr);
+  else{const parts=vtoStr.split(/[-/]/);if(parts[0].length===4)d=new Date(parts[0],parts[1]-1,parts[2]);else d=new Date(parts[2],parts[1]-1,parts[0]);}
   const today=new Date();today.setHours(0,0,0,0);
   const diff=Math.floor((d-today)/(1000*60*60*24));
-  if(diff<0)return{status:'Vencida ('+vto+')',cls:'badge-err'};
-  if(diff<=30)return{status:'Vence pronto ('+vto+')',cls:'badge-warn'};
-  return{status:'Vigente ('+vto+')',cls:'badge-ok'};
+  const fechaLinda=fmtDate(vto);
+  if(diff<0)return{status:'Vencida ('+fechaLinda+')',cls:'badge-err'};
+  if(diff<=30)return{status:'Vence pronto ('+fechaLinda+')',cls:'badge-warn'};
+  return{status:'Vigente ('+fechaLinda+')',cls:'badge-ok'};
 }
 
 // ── MULTI-SELECT ──
@@ -396,13 +406,18 @@ function buildFicha(r,idx){
   const cuit=g(r,'CUIT');
   const campo=g(r,'NOMBRE DEL CAMPO');
   const cred=g(r,'CREDENCIAL RENSPA');
-  const poly=r['POLIGONO del Per\u00edmetro total del Campo (subir archivo .KMZ)']||r['POLIGONO del Perímetro total del Campo (subir archivo .KMZ)']||'';
+  const poly=g(r,'POLIGONO');
   const evid=g(r,'EVIDENCIA');
   const tipoEvid=g(r,'TIPO DE EVIDENCIA');
-  const mail=r['MAIL DE CONTACTO PRODUCTOR']||r['MAIL DE CONTACTO PRODUCTOR\n']||'';
+  const mail=g(r,'MAIL DE CONTACTO');
   const rs=renspaStatus(cuit,campo);
   const vto=getVtoRenspa(cuit,campo);
+  const vtoFmt=vto&&String(vto).includes('T')?String(vto).split('T')[0]:vto;
   const comentarios=getNotas(cuit,campo,'comentario');
+  const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
+  const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
+  const hasSust=getNotaValor(cuit,campo,'has_sustentables');
+  function estadoBadge(val){if(!val)return'<span class="badge badge-na">Sin revisar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
 
   let html=`<div class="ficha-grid">
     <div class="ficha-field"><label>Razon social</label><div class="val bold">${g(r,'RAZON SOCIAL')}</div></div>
@@ -415,23 +430,40 @@ function buildFicha(r,idx){
     <div class="ficha-field"><label>Cod. localidad ARCA</label><div class="val">${g(r,'LOCALIDAD ARCA')}</div></div>
   </div>`;
 
+  html+=`<div class="ficha-section"><h3>Hectareas sustentables</h3><div class="ficha-grid">
+    <div class="ficha-field"><label>Has. totales (Sheet)</label><div class="val">${fmt(g(r,'TOTALES DEL CAMPO'))}</div></div>
+    <div class="ficha-field"><label>Has. productivas (Sheet)</label><div class="val">${fmt(g(r,'PRODUCTIVAS'))}</div></div>
+    <div class="ficha-field"><label>Has. sustentables (verificadas)</label><div class="val">${hasSust?fmt(hasSust):'<span class="badge badge-na">Sin cargar</span>'}</div>
+      <div class="vto-input edit-only" style="margin-top:6px"><input type="text" id="has-${idx}" placeholder="Ej: 1200" value="${hasSust||''}"><button onclick="saveHas(${idx})">Guardar</button></div>
+    </div>
+  </div></div>`;
+
   html+=`<div class="ficha-section"><h3>Documentacion</h3><div class="ficha-grid">
-    <div class="ficha-field"><label>N° RENSPA</label><div class="val">${r['N\u00b0 RENSPA']||r['N° RENSPA']||'\u2014'}</div></div>
+    <div class="ficha-field"><label>N\u00b0 RENSPA</label><div class="val">${g(r,'RENSPA')||'\u2014'}</div></div>
     <div class="ficha-field"><label>Credencial RENSPA</label><div class="val">${cred?`<a href="${cred}" target="_blank">Ver documento</a>`:'No adjunto'}</div></div>
     <div class="ficha-field"><label>Estado RENSPA</label><div class="val"><span class="badge ${rs.cls}">${rs.status}</span></div>
-      <div class="vto-input edit-only" style="margin-top:6px"><input type="date" id="vto-${idx}" value="${vto||''}"><button onclick="saveVto(${idx})">Guardar fecha</button></div>
+      <div class="vto-input edit-only" style="margin-top:6px"><input type="date" id="vto-${idx}" value="${vtoFmt||''}"><button onclick="saveVto(${idx})">Guardar fecha</button></div>
     </div>
-    <div class="ficha-field"><label>Poligono KMZ</label><div class="val">${poly?`<a href="${poly}" target="_blank">Descargar KMZ</a>`:'No adjunto'}</div></div>
+    <div class="ficha-field"><label>Poligono KMZ</label>
+      <div class="val">${poly?`<a href="${poly}" target="_blank">Descargar KMZ</a>`:'No adjunto'}</div>
+      <div class="val" style="margin-top:4px">${estadoBadge(estadoKmz)}</div>
+      <div class="vto-input edit-only" style="margin-top:6px"><select id="kmz-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoKmz==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoKmz==='Con observaciones'?'selected':''}>Con observaciones</option><option value="Falta" ${estadoKmz==='Falta'?'selected':''}>Falta</option></select><button onclick="saveEstadoKmz(${idx})">Guardar</button></div>
+    </div>
     <div class="ficha-field"><label>Tipo evidencia</label><div class="val">${tipoEvid||'\u2014'}</div></div>
-    <div class="ficha-field"><label>Evidencia</label><div class="val">${evid?`<a href="${evid}" target="_blank">Ver evidencia</a>`:'No adjunto'}</div></div>
-    <div class="ficha-field"><label>PCUS 1</label><div class="val">${r['PCUS 1']||r['PCUS 1 ']||'\u2014'}</div></div>
+    <div class="ficha-field"><label>Evidencia</label>
+      <div class="val">${evid?`<a href="${evid}" target="_blank">Ver evidencia</a>`:'No adjunto'}</div>
+      <div class="val" style="margin-top:4px">${estadoBadge(estadoEvid)}</div>
+      <div class="vto-input edit-only" style="margin-top:6px"><select id="evid-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoEvid==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoEvid==='Con observaciones'?'selected':''}>Con observaciones</option><option value="Falta" ${estadoEvid==='Falta'?'selected':''}>Falta</option></select><button onclick="saveEstadoEvid(${idx})">Guardar</button></div>
+    </div>
+    <div class="ficha-field"><label>PCUS 1</label><div class="val">${g(r,'PCUS 1')||'\u2014'}</div></div>
   </div></div>`;
 
   html+=`<div class="ficha-section"><h3>Comentarios del equipo</h3>`;
-  comentarios.forEach(c=>{html+=`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${c.FECHA}</span></div><div class="comment-text">${c.VALOR}</div></div>`;});
+  comentarios.forEach(c=>{html+=`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${fmtDate(c.FECHA)||c.FECHA}</span></div><div class="comment-text">${c.VALOR}</div></div>`;});
   html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
   return html;
 }
+
 
 function toggleFicha(i){const el=document.getElementById('ficha-'+i);if(el)el.classList.toggle('open');}
 
@@ -441,8 +473,34 @@ async function saveVto(idx){
   const val=document.getElementById('vto-'+idx).value;
   if(!val){alert('Selecciona una fecha.');return;}
   await saveNota(cuit,campo,'vto_renspa',val,'Compliance');
-  await loadNotas();
-  renderC();
+  await loadNotas();renderC();
+}
+
+async function saveEstadoKmz(idx){
+  const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const val=document.getElementById('kmz-'+idx).value;
+  if(!val){alert('Selecciona un estado.');return;}
+  await saveNota(cuit,campo,'estado_kmz',val,'Compliance');
+  await loadNotas();renderC();
+}
+
+async function saveEstadoEvid(idx){
+  const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const val=document.getElementById('evid-'+idx).value;
+  if(!val){alert('Selecciona un estado.');return;}
+  await saveNota(cuit,campo,'estado_evidencia',val,'Compliance');
+  await loadNotas();renderC();
+}
+
+async function saveHas(idx){
+  const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const val=document.getElementById('has-'+idx).value.trim();
+  if(!val){alert('Ingresa un valor.');return;}
+  await saveNota(cuit,campo,'has_sustentables',val,'Compliance');
+  await loadNotas();renderC();
 }
 
 async function saveComment(idx){
@@ -455,8 +513,7 @@ async function saveComment(idx){
   if(!autor)return;
   await saveNota(cuit,campo,'comentario',val,autor);
   input.value='';
-  await loadNotas();
-  renderC();
+  await loadNotas();renderC();
 }
 
 function clearC(){document.getElementById('c-search').value='';Object.keys(sel).filter(k=>k.startsWith('c-')).forEach(k=>sel[k].clear());buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));renderC();}
