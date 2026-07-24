@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allaria Agro — Soja Sustentable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- SheetJS para exportar a Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f0f4f8; min-height: 100vh; }
+
+.hdr { background: #0a2240; color: #fff; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; }
+.hdr-left { display: flex; align-items: center; gap: 10px; }
+.hdr-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; }
+.hdr-title { font-size: 15px; font-weight: 700; }
+.hdr-sub { font-size: 12px; color: #94a3b8; margin-left: 6px; }
+.hdr-right { display: flex; align-items: center; gap: 12px; }
+.btn-refresh { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; }
+.btn-refresh:hover { background: rgba(255,255,255,0.18); }
+.btn-export { background: #1a7a3e; border: none; color: #fff; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; font-weight: 600; }
+.btn-export:hover { background: #156333; }
+.last-update { font-size: 11px; color: #64748b; }
+
+.tabs { display: flex; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 28px; }
+.tab { padding: 14px 20px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+.tab.active { color: #0a2240; border-bottom-color: #0a2240; font-weight: 700; }
+.tab:hover:not(.active) { color: #1e293b; }
+
+.content { max-width: 1400px; margin: 0 auto; padding: 24px 28px; }
+
+.stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; min-width: 110px; flex: 1; }
+.stat-val { font-size: 22px; font-weight: 700; }
+.stat-lbl { font-size: 11px; color: #64748b; margin-top: 3px; }
+
+.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+
+/* Input texto */
+input[type=text] {
+  padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;
+  font-size: 13px; color: #1e293b; background: #fff; outline: none;
+  font-family: 'Inter', sans-serif; width: 220px;
+}
+input[type=text]:focus { border-color: #0a2240; }
+
+/* Multi-select custom */
+.multi-select-wrap { position: relative; min-width: 160px; }
+.multi-select-btn {
+  width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;
+  font-size: 13px; color: #1e293b; background: #fff; outline: none;
+  font-family: 'Inter', sans-serif; cursor: pointer; text-align: left;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  white-space: nowrap; overflow: hidden;
+}
+.multi-select-btn:focus, .multi-select-btn.open { border-color: #0a2240; }
+.multi-select-btn .arrow { font-size: 10px; color: #94a3b8; flex-shrink: 0; }
+.multi-select-dropdown {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 100;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10); min-width: 100%; max-height: 240px;
+  overflow-y: auto; padding: 4px 0;
+}
+.multi-select-dropdown.open { display: block; }
+.multi-select-option {
+  display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+  cursor: pointer; font-size: 13px; color: #1e293b; user-select: none;
+}
+.multi-select-option:hover { background: #f0f7ff; }
+.multi-select-option input[type=checkbox] { accent-color: #0a2240; width: 14px; height: 14px; cursor: pointer; }
+.multi-select-option .opt-badge { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.drop-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px 4px; border-bottom: 1px solid #f1f5f9; gap: 8px; }
+.drop-search { flex: 1; padding: 5px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px; font-family: 'Inter', sans-serif; outline: none; color: #1e293b; }
+.drop-search:focus { border-color: #0a2240; }
+.drop-clear-btn { font-size: 11px; color: #94a3b8; background: none; border: none; cursor: pointer; white-space: nowrap; padding: 2px 4px; }
+.drop-clear-btn:hover { color: #dc2626; }
+.drop-options { max-height: 200px; overflow-y: auto; }
+.multi-select-dropdown { overflow: visible; max-height: none; }
+
+.btn-clear { padding: 8px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; align-self: flex-end; }
+.btn-clear:hover { background: #f8fafc; }
+
+.table-wrap { border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; overflow-x: auto; background: #fff; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #0a2240; color: #fff; padding: 11px 14px; text-align: left; font-weight: 600; font-size: 11px; white-space: nowrap; letter-spacing: 0.03em; }
+td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: #f8fafc; }
+tr:hover td { background: #f0f7ff; }
+
+.badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+/* Tipos de esquema */
+.badge-EPA   { background: #d1fae5; color: #065f46; }
+.badge-2BSvs { background: #fee2e2; color: #991b1b; }
+.badge-RTRS  { background: #ede9fe; color: #5b21b6; }
+.badge-ISCC  { background: #fef3c7; color: #92400e; }
+.badge-otros { background: #f1f5f9; color: #475569; }
+/* Vía */
+.badge-web  { background: #dbeafe; color: #1e40af; }
+.badge-mail { background: #fef3c7; color: #92400e; }
+/* Exportadores */
+.badge-exp-LDC  { background: #dbeafe; color: #1e3a8a; }
+.badge-exp-MOA  { background: #fce7f3; color: #9d174d; }
+.badge-exp-COFCO { background: #fef3c7; color: #78350f; }
+.badge-exp-Bunge { background: #d1fae5; color: #064e3b; }
+.badge-exp-AGD  { background: #ede9fe; color: #4c1d95; }
+.badge-exp-Dreyfus { background: #ffedd5; color: #7c2d12; }
+.badge-exp-other { background: #f1f5f9; color: #334155; }
+
+.footer-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-top: 10px; flex-wrap: wrap; gap: 8px; }
+.loading { text-align: center; padding: 50px; color: #64748b; font-size: 14px; }
+.error { text-align: center; padding: 40px; color: #dc2626; font-size: 13px; line-height: 1.6; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.bold { font-weight: 600; }
+.mono { font-family: monospace; font-size: 12px; color: #64748b; }
+.muted { color: #64748b; }
+.green { color: #1a4a2e; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-dot"></div>
+    <span class="hdr-title">Allaria Agro</span>
+    <span class="hdr-sub">Soja sustentable</span>
+  </div>
+  <div class="hdr-right">
+    <span class="last-update" id="last-update">Cargando...</span>
+    <button class="btn-export" onclick="exportExcel()">⬇ Exportar Excel</button>
+    <button class="btn-refresh" onclick="loadData()">↻ Actualizar</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab-g" onclick="switchTab('g')">Gestiones</button>
+  <button class="tab" id="tab-e" onclick="switchTab('e')">Habilitaciones</button>
+</div>
+
+<!-- GESTIONES -->
+<div id="panel-g" class="content">
+  <div class="stats" id="stats-g"></div>
+  <div class="filters">
+    <div class="filter-group">
+      <label>Campaña</label>
+      <div class="multi-select-wrap" id="wrap-g-camp">
+        <button type="button" class="multi-select-btn" onclick="toggleDropdown('g-camp')">
+          <span id="label-g-camp">Todas</span><span class="arrow">▼</span>
+        </button>
+        <div class="multi-select-dropdown" id="drop-g-camp"></div>
+      </div>
+    </div>
+    <div class="filter-group"><label>Buscar</label><input type="text" id="g-search" placeholder="Productor, campo, estado..." oninput="onFilterG()"></div>
+    <div class="filter-group">
+      <label>Exportador</label>
+      <div class="multi-select-wrap" id="wrap-g-exp">
+        <button type="button" class="multi-select-btn" onclick="toggleDropdown('g-exp')">
+          <span id="label-g-exp">Todos</span><span class="arrow">▼</span>
+        </button>
+        <div class="multi-select-dropdown" id="drop-g-exp"></div>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>Vía</label>
+      <div class="multi-select-wrap" id="wrap-g-via">
+        <button type="button" class="multi-select-btn" onclick="toggleDropdown('g-via')">
+          <span id="label-g-via">Todas</span><span class="arrow">▼</span>
+        </button>
+        <div class="multi-select-dropdown" id="drop-g-via"></div>
+      </div>
+    </div>
+    <button class="btn-clear" onclick="clearG()">✕ Limpiar filtros</button>
+  </div>
+  <div id="g-table"><div class="loading">Cargando datos...</div></div>
+  <div class="footer-row" id="g-footer"></div>
+</div>
+
+<!-- HABILITACIONES -->
+<div id="panel-e" class="content" style="display:none">
+  <div class="stats" id="stats-e"></div>
+  <div class="filters">
+    <div class="filter-group">
+      <label>Campaña</label>
+      <div class="multi-select-wrap" id="wrap-e-camp">
+        <button type="button" class="multi-select-btn" onclick="toggleDropdown('e-camp')">
+          <span id="label-e-camp">Todas</span><span class="arrow">▼</span>
+        </button>
+        <div class="multi-select-dropdown" id="drop-e-camp"></div>
+      </div>
+    </div>
+    <div class="filter-group"><label>Buscar</label><input type="text" id="e-search" placeholder="Vendedor, campo, localidad..." oninput="onFilterE()"></div>
+    <div class="filter-group">
+      <label>Vendedor</label>
+      <div class="multi-select-wrap" id="wrap-e-vend">
+        <button type="button" class="multi-select-btn" onclick="toggleDropdown('e-vend')">
+          <span id="label-e-vend">Todos</span><span class="arrow">▼</span>
+        </button>
+        <div class="multi-select-dropdown" id="drop-e-vend"></div>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>Exportador</label>
+      <div class="multi-select-wrap" id="wrap-e-exp">
+        <button type="button" class="multi-select-btn" onclick="toggleDropdown('e-exp')">
+          <span id="label-e-exp">Todos</span><span class="arrow">▼</span>
+        </button>
+        <div class="multi-select-dropdown" id="drop-e-exp"></div>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>Tipo</label>
+      <div class="multi-select-wrap" id="wrap-e-tipo">
+        <button type="button" class="multi-select-btn" onclick="toggleDropdown('e-tipo')">
+          <span id="label-e-tipo">Todos</span><span class="arrow">▼</span>
+        </button>
+        <div class="multi-select-dropdown" id="drop-e-tipo"></div>
+      </div>
+    </div>
+    <button class="btn-clear" onclick="clearE()">✕ Limpiar filtros</button>
+  </div>
+  <div id="e-table"><div class="loading">Cargando datos...</div></div>
+  <div class="footer-row" id="e-footer"></div>
+</div>
+
+<script>
+const SHEET_ID    = '1-yVmx3D5q-liA0twVVcaRWYJicmZpVBAOXrdPX8jAto';
+const API_KEY     = 'AIzaSyA_PNd_cf9LQVUFKSKXVi7CRINBKbCuUEM';
+const CAMP_DEFAULT = '2526';
+
+let allG = [], allE = [];
+let currentTab = 'g';
+
+// Estado de selección múltiple por filtro
+const sel = {
+  'g-camp': new Set(), 'g-exp': new Set(), 'g-via': new Set(),
+  'e-camp': new Set(), 'e-vend': new Set(), 'e-exp': new Set(), 'e-tipo': new Set(),
+};
+
+// ── COLORES ──
+const TIPO_COLORS = {
+  'EPA':   {bg:'#d1fae5', color:'#065f46'},
+  '2BSvs': {bg:'#fee2e2', color:'#991b1b'},
+  'RTRS':  {bg:'#ede9fe', color:'#5b21b6'},
+  'ISCC':  {bg:'#fef3c7', color:'#92400e'},
+};
+const EXP_COLORS = {
+  'LDC':     {bg:'#dbeafe', color:'#1e3a8a'},
+  'MOA':     {bg:'#fce7f3', color:'#9d174d'},
+  'COFCO':   {bg:'#fef3c7', color:'#78350f'},
+  'Bunge':   {bg:'#d1fae5', color:'#064e3b'},
+  'AGD':     {bg:'#ede9fe', color:'#4c1d95'},
+  'Dreyfus': {bg:'#ffedd5', color:'#7c2d12'},
+};
+
+function tipoBadge(t) {
+  if (!t) return '—';
+  const c = TIPO_COLORS[t] || {bg:'#f1f5f9', color:'#475569'};
+  return `<span class="badge" style="background:${c.bg};color:${c.color}">${t}</span>`;
+}
+function expBadge(e) {
+  if (!e) return '—';
+  const c = EXP_COLORS[e] || {bg:'#f1f5f9', color:'#334155'};
+  return `<span class="badge" style="background:${c.bg};color:${c.color}">${e}</span>`;
+}
+function viaBadge(v) {
+  if (!v) return '—';
+  return `<span class="badge ${v.toLowerCase()==='web'?'badge-web':'badge-mail'}">${v}</span>`;
+}
+
+// ── MULTI-SELECT ──
+function toggleDropdown(id) {
+  const drop = document.getElementById('drop-' + id);
+  const btn  = drop.previousElementSibling;
+  const isOpen = drop.classList.contains('open');
+  // Cerrar todos
+  document.querySelectorAll('.multi-select-dropdown.open').forEach(d => {
+    d.classList.remove('open');
+    d.previousElementSibling.classList.remove('open');
+  });
+  if (!isOpen) { drop.classList.add('open'); btn.classList.add('open'); }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.multi-select-wrap')) {
+    document.querySelectorAll('.multi-select-dropdown.open').forEach(d => {
+      d.classList.remove('open');
+      d.previousElementSibling.classList.remove('open');
+    });
+  }
+});
+
+function buildDropdown(id, vals, renderOption) {
+  const drop = document.getElementById('drop-' + id);
+  const count = sel[id].size;
+  const clearBtn = count > 0
+    ? `<button class="drop-clear-btn" onclick="clearFilter('${id}')" title="Limpiar selección">✕ Limpiar (${count})</button>`
+    : `<span class="drop-clear-btn" style="cursor:default;color:#e2e8f0">✕ Limpiar</span>`;
+  const optionsHtml = vals.map(v => {
+    const checked = sel[id].has(v) ? 'checked' : '';
+    const optHtml = renderOption ? renderOption(v) : v;
+    return `<label class="multi-select-option">
+      <input type="checkbox" value="${v}" ${checked} onchange="onCheck('${id}', this)">
+      <span>${optHtml}</span>
+    </label>`;
+  }).join('');
+  drop.innerHTML = `
+    <div class="drop-header">
+      <input class="drop-search" type="text" placeholder="Buscar..." oninput="filterDropdown('${id}', this.value)" onclick="event.stopPropagation()">
+      ${clearBtn}
+    </div>
+    <div class="drop-options" id="opts-${id}">${optionsHtml}</div>`;
+  updateLabel(id);
+}
+
+function filterDropdown(id, q) {
+  const opts = document.getElementById('opts-' + id);
+  if (!opts) return;
+  opts.querySelectorAll('.multi-select-option').forEach(el => {
+    const text = el.querySelector('span').textContent.toLowerCase();
+    el.style.display = text.includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function clearFilter(id) {
+  sel[id].clear();
+  // Reconstruir dropdown manteniendo los valores disponibles
+  const opts = document.getElementById('opts-' + id);
+  if (opts) opts.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; });
+  updateLabel(id);
+  // Actualizar el botón limpiar
+  const drop = document.getElementById('drop-' + id);
+  if (drop) {
+    const btn = drop.querySelector('.drop-clear-btn');
+    if (btn) { btn.style.color = '#e2e8f0'; btn.style.cursor = 'default'; btn.textContent = '✕ Limpiar'; btn.onclick = null; }
+  }
+  if (id.startsWith('g-')) { cascadeG(); renderG(); }
+  else { cascadeE(); renderE(); }
+}
+
+function onCheck(id, cb) {
+  if (cb.checked) sel[id].add(cb.value);
+  else sel[id].delete(cb.value);
+  updateLabel(id);
+  // Cascada + render
+  if (id.startsWith('g-')) { cascadeG(); renderG(); }
+  else { cascadeE(); renderE(); }
+}
+
+function updateLabel(id) {
+  const s = sel[id];
+  const lbl = document.getElementById('label-' + id);
+  if (!lbl) return;
+  if (s.size === 0) lbl.textContent = 'Todos';
+  else if (s.size === 1) lbl.textContent = [...s][0];
+  else lbl.textContent = `${s.size} seleccionados`;
+}
+
+function getSelected(id) { return sel[id]; }
+
+// ── UTILS ──
+function toObjs(rows) {
+  if (!rows || rows.length < 2) return [];
+  const h = rows[0];
+  return rows.slice(1).map(r => Object.fromEntries(h.map((k, i) => [k, (r[i] || '').trim()])));
+}
+async function fetchSheet(name) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name+'!A:Z')}?key=${API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return toObjs((await res.json()).values || []);
+}
+function uniq(arr) { return [...new Set(arr.filter(Boolean))].sort((a,b) => a.localeCompare(b,'es')); }
+function fmt(v) {
+  if (!v) return '—';
+  const clean = typeof v === 'string' ? v.replace(/,/g, '') : v;
+  const n = parseFloat(clean);
+  return isNaN(n) ? (v||'—') : n.toLocaleString('es-AR',{maximumFractionDigits:2});
+}
+function statCard(val, lbl, color) {
+  return `<div class="stat"><div class="stat-val" style="color:${color}">${val}</div><div class="stat-lbl">${lbl}</div></div>`;
+}
+
+// ── CASCADA GESTIONES ──
+function cascadeG() {
+  const camps = getSelected('g-camp');
+  const base = camps.size ? allG.filter(r => camps.has(r['Campaña'])) : allG;
+  const exps = uniq(base.map(r => r['Exportador']));
+  const vias = uniq(base.map(r => r['Vía web o mail']));
+  // Limpiar selecciones que ya no están disponibles
+  [...sel['g-exp']].forEach(v => { if (!exps.includes(v)) sel['g-exp'].delete(v); });
+  [...sel['g-via']].forEach(v => { if (!vias.includes(v)) sel['g-via'].delete(v); });
+  buildDropdown('g-exp', exps, e => expBadge(e));
+  buildDropdown('g-via', vias);
+}
+
+// ── CASCADA HABILITACIONES ──
+function cascadeE() {
+  const camps = getSelected('e-camp');
+  const base = camps.size ? allE.filter(r => camps.has(r['Campaña'])) : allE;
+  const vends = uniq(base.map(r => r['Vendedor']));
+  const exps  = uniq(base.map(r => r['Exportador']));
+  const tipos = uniq(base.map(r => r['Tipo']));
+  [...sel['e-vend']].forEach(v => { if (!vends.includes(v)) sel['e-vend'].delete(v); });
+  [...sel['e-exp']].forEach(v  => { if (!exps.includes(v))  sel['e-exp'].delete(v); });
+  [...sel['e-tipo']].forEach(v => { if (!tipos.includes(v)) sel['e-tipo'].delete(v); });
+  buildDropdown('e-vend', vends);
+  buildDropdown('e-exp',  exps, e => expBadge(e));
+  buildDropdown('e-tipo', tipos, t => tipoBadge(t));
+}
+
+// ── FILTER GESTIONES ──
+function filterG() {
+  const q    = document.getElementById('g-search').value.toLowerCase();
+  const camps = getSelected('g-camp');
+  const exps  = getSelected('g-exp');
+  const vias  = getSelected('g-via');
+  return allG.filter(r =>
+    (!q      || Object.values(r).some(v => v.toLowerCase().includes(q))) &&
+    (!camps.size || camps.has(r['Campaña'])) &&
+    (!exps.size  || exps.has(r['Exportador'])) &&
+    (!vias.size  || vias.has(r['Vía web o mail']))
+  );
+}
+function onFilterG() { renderG(); }
+
+function renderG() {
+  const f = filterG();
+  const web  = f.filter(r => r['Vía web o mail']?.toLowerCase() === 'web').length;
+  const exps = uniq(f.map(r => r['Exportador'])).length;
+  document.getElementById('stats-g').innerHTML =
+    statCard(f.length,'Registros','#1a4a2e') +
+    statCard(web,'Vía web','#1a5a9a') +
+    statCard(f.length-web,'Vía mail','#92400e') +
+    statCard(exps,'Exportadores','#64748b');
+
+  if (!f.length) {
+    document.getElementById('g-table').innerHTML = '<div class="loading">Sin resultados para los filtros seleccionados.</div>';
+    document.getElementById('g-footer').innerHTML = '';
+    return;
+  }
+  const thead = `<thead><tr><th>Productor</th><th>Campo</th><th>Estado</th><th>Vía</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
+  const rows = f.map(r => `<tr>
+    <td class="bold">${r['Productor']||'—'}</td>
+    <td>${r['Campo']||'—'}</td>
+    <td class="muted" style="max-width:260px">${r['Estado']||'—'}</td>
+    <td>${viaBadge(r['Vía web o mail'])}</td>
+    <td>${expBadge(r['Exportador'])}</td>
+    <td class="muted">${r['Campaña']||'—'}</td>
+  </tr>`).join('');
+  document.getElementById('g-table').innerHTML = `<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
+  document.getElementById('g-footer').innerHTML =
+    `<span>Mostrando ${f.length} de ${allG.length} registros</span>`;
+}
+
+function clearG() {
+  document.getElementById('g-search').value = '';
+  Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k => sel[k].clear());
+  sel['g-camp'].add(CAMP_DEFAULT);
+  cascadeG();
+  buildDropdown('g-camp', uniq(allG.map(r => r['Campaña'])));
+  updateLabel('g-camp');
+  renderG();
+}
+
+// ── FILTER HABILITACIONES ──
+function filterE() {
+  const q     = document.getElementById('e-search').value.toLowerCase();
+  const camps = getSelected('e-camp');
+  const vends = getSelected('e-vend');
+  const exps  = getSelected('e-exp');
+  const tipos = getSelected('e-tipo');
+  return allE.filter(r =>
+    (!q      || Object.values(r).some(v => v.toString().toLowerCase().includes(q))) &&
+    (!camps.size || camps.has(r['Campaña'])) &&
+    (!vends.size || vends.has(r['Vendedor'])) &&
+    (!exps.size  || exps.has(r['Exportador'])) &&
+    (!tipos.size || tipos.has(r['Tipo']))
+  );
+}
+function onFilterE() { renderE(); }
+
+function renderE() {
+  const f = filterE();
+  const has  = f.reduce((s,r)=>s+(parseFloat(r['Has sustentables'])||0),0);
+  const ton  = f.reduce((s,r)=>s+(parseFloat(r['Rendimiento en ton'])||0),0);
+  const exps = uniq(f.map(r=>r['Exportador'])).length;
+  document.getElementById('stats-e').innerHTML =
+    statCard(f.length,'Registros','#1a4a2e') +
+    statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}),'Has. sustentables','#1a5a9a') +
+    statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}),'Toneladas','#1a4a2e') +
+    statCard(exps,'Exportadores','#64748b');
+
+  if (!f.length) {
+    document.getElementById('e-table').innerHTML = '<div class="loading">Sin resultados para los filtros seleccionados.</div>';
+    document.getElementById('e-footer').innerHTML = '';
+    return;
+  }
+  const thead = `<thead><tr>
+    <th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th>
+    <th>Exportador</th><th>Tipo</th><th>Campaña</th>
+    <th style="text-align:right">Has.</th>
+    <th style="text-align:right">Coef.</th>
+    <th style="text-align:right">Toneladas</th>
+  </tr></thead>`;
+  const rows = f.map(r => `<tr>
+    <td class="bold" style="white-space:nowrap">${r['Vendedor']||'—'}</td>
+    <td class="mono">${r['CUIT']||'—'}</td>
+    <td>${r['Campo']||'—'}</td>
+    <td class="muted">${r['Localidad en exportador']||'—'}</td>
+    <td>${expBadge(r['Exportador'])}</td>
+    <td>${tipoBadge(r['Tipo'])}</td>
+    <td class="muted">${r['Campaña']||'—'}</td>
+    <td class="num">${fmt(r['Has sustentables'])}</td>
+    <td class="num muted">${fmt(r['Coef. rendimiento'])}</td>
+    <td class="num bold green">${fmt(r['Rendimiento en ton'])}</td>
+  </tr>`).join('');
+  document.getElementById('e-table').innerHTML = `<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
+  document.getElementById('e-footer').innerHTML =
+    `<span>Mostrando ${f.length} de ${allE.length} registros</span>`;
+}
+
+function clearE() {
+  document.getElementById('e-search').value = '';
+  Object.keys(sel).filter(k=>k.startsWith('e-')).forEach(k => sel[k].clear());
+  sel['e-camp'].add(CAMP_DEFAULT);
+  cascadeE();
+  buildDropdown('e-camp', uniq(allE.map(r => r['Campaña'])));
+  updateLabel('e-camp');
+  renderE();
+}
+
+// ── TABS ──
+function switchTab(t) {
+  currentTab = t;
+  document.getElementById('panel-g').style.display = t==='g' ? '' : 'none';
+  document.getElementById('panel-e').style.display = t==='e' ? '' : 'none';
+  document.getElementById('tab-g').className = 'tab'+(t==='g'?' active':'');
+  document.getElementById('tab-e').className = 'tab'+(t==='e'?' active':'');
+}
+
+// ── EXPORT EXCEL ──
+function exportExcel() {
+  const isG = currentTab === 'g';
+  const data = isG ? filterG() : filterE();
+  const name = isG ? 'Gestiones' : 'Habilitaciones';
+  if (!data.length) { alert('No hay datos para exportar con los filtros actuales.'); return; }
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, name);
+  const date = new Date().toLocaleDateString('es-AR').replace(/\//g,'-');
+  XLSX.writeFile(wb, `${name}-${date}.xlsx`);
+}
+
+// ── CARGA ──
+async function loadData() {
+  document.getElementById('last-update').textContent = 'Actualizando...';
+  document.getElementById('g-table').innerHTML = '<div class="loading">Cargando...</div>';
+  document.getElementById('e-table').innerHTML = '<div class="loading">Cargando...</div>';
+  try {
+    [allG, allE] = await Promise.all([fetchSheet('Gestiones'), fetchSheet('Exportadores')]);
+
+    // Campaña default
+    sel['g-camp'].add(CAMP_DEFAULT);
+    sel['e-camp'].add(CAMP_DEFAULT);
+
+    // Poblar campañas
+    buildDropdown('g-camp', uniq(allG.map(r=>r['Campaña'])));
+    buildDropdown('e-camp', uniq(allE.map(r=>r['Campaña'])));
+    updateLabel('g-camp');
+    updateLabel('e-camp');
+
+    // Cascada inicial (filtra por campaña default)
+    cascadeG();
+    cascadeE();
+
+    renderG();
+    renderE();
+
+    const now = new Date();
+    document.getElementById('last-update').textContent =
+      'Actualizado ' + now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    const msg = `<div class="error">No se pudieron cargar los datos.<br>Verificá que el Sheet sea público.<br><small>${e.message}</small></div>`;
+    document.getElementById('g-table').innerHTML = msg;
+    document.getElementById('e-table').innerHTML = msg;
+    document.getElementById('last-update').textContent = 'Error al cargar';
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
