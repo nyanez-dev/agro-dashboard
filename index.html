@@ -246,8 +246,15 @@ async function loadNotas(){
   });
 }
 async function saveNota(cuit,campo,tipo,valor,autor){
-  try{await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({cuit,campo,tipo,valor,autor})});
-  await loadNotas();}catch(e){alert('Error guardando nota: '+e.message);}
+  return new Promise((resolve)=>{
+    const cb='_saveCb'+Date.now();
+    window[cb]=function(d){delete window[cb];resolve(d);};
+    const params=`action=save&cuit=${encodeURIComponent(cuit)}&campo=${encodeURIComponent(campo)}&tipo=${encodeURIComponent(tipo)}&valor=${encodeURIComponent(valor)}&autor=${encodeURIComponent(autor)}&callback=${cb}`;
+    const s=document.createElement('script');
+    s.src=APPS_SCRIPT_URL+'?'+params;
+    s.onerror=function(){delete window[cb];alert('Error guardando. Reintenta.');resolve();};
+    document.body.appendChild(s);
+  });
 }
 function getNotas(cuit,campo,tipo){return allNotas.filter(n=>n.CUIT==cuit&&n.CAMPO==campo&&(!tipo||n.TIPO==tipo));}
 function getVtoRenspa(cuit,campo){const n=getNotas(cuit,campo,'vto_renspa');return n.length?n[n.length-1].VALOR:'';}
@@ -434,6 +441,7 @@ async function saveVto(idx){
   const val=document.getElementById('vto-'+idx).value;
   if(!val){alert('Selecciona una fecha.');return;}
   await saveNota(cuit,campo,'vto_renspa',val,'Compliance');
+  await loadNotas();
   renderC();
 }
 
@@ -447,6 +455,7 @@ async function saveComment(idx){
   if(!autor)return;
   await saveNota(cuit,campo,'comentario',val,autor);
   input.value='';
+  await loadNotas();
   renderC();
 }
 
