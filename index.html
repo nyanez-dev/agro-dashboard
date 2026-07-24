@@ -484,8 +484,9 @@ function onFilterE() { renderE(); }
 
 function renderE() {
   const f = filterE();
-  const has  = f.reduce((s,r)=>s+(parseFloat(r['Has sustentables'])||0),0);
-  const ton  = f.reduce((s,r)=>s+(parseFloat(r['Rendimiento en ton'])||0),0);
+  const parseNum = v => { if (!v) return 0; const c = typeof v==='string' ? v.replace(/,/g,'') : v; const n = parseFloat(c); return isNaN(n) ? 0 : n; };
+  const has  = f.reduce((s,r)=>s+parseNum(r['Has sustentables']),0);
+  const ton  = f.reduce((s,r)=>s+parseNum(r['Rendimiento en ton']),0);
   const exps = uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-e').innerHTML =
     statCard(f.length,'Registros','#1a4a2e') +
