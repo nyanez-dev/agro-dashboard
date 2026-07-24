@@ -210,7 +210,7 @@ function statusBadge(s){const m={'Completo':'badge-ok','Falta RENSPA':'badge-err
 
 // ── UTILS ──
 function toObjs(rows){if(!rows||rows.length<2)return[];const h=rows[0].map(k=>k.replace(/[\n\r]+/g,' ').replace(/\s+/g,' ').trim());return rows.slice(1).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').toString().trim()])));}
-async function fetchSheet(name){const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(name+'!A:Z')}?key=${API_KEY}`;const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);return toObjs((await res.json()).values||[]);}
+async function fetchSheet(name,startRow){const range=startRow?`${name}!A${startRow}:Z`:`${name}!A:Z`;const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`;const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);return toObjs((await res.json()).values||[]);}
 function uniq(arr){return[...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
 function parseNum(v){if(!v)return 0;const c=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(c);return isNaN(n)?0:n;}
 function fmt(v){if(!v)return'\u2014';const clean=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(clean);return isNaN(n)?(v||'\u2014'):n.toLocaleString('es-AR',{maximumFractionDigits:2});}
@@ -235,7 +235,15 @@ function toggleEditMode(){
 
 // ── NOTAS ──
 async function loadNotas(){
-  try{const r=await fetch(APPS_SCRIPT_URL);const d=await r.json();allNotas=d.notas||[];}catch(e){console.error('Error cargando notas:',e);allNotas=[];}
+  return new Promise((resolve)=>{
+    const cb='_notasCb'+Date.now();
+    window[cb]=function(d){allNotas=d.notas||[];delete window[cb];resolve();};
+    const s=document.createElement('script');
+    s.src=APPS_SCRIPT_URL+'?callback='+cb;
+    s.onerror=function(){console.warn('No se pudieron cargar notas');allNotas=[];resolve();};
+    document.body.appendChild(s);
+    setTimeout(()=>{if(window[cb]){allNotas=[];delete window[cb];resolve();}},5000);
+  });
 }
 async function saveNota(cuit,campo,tipo,valor,autor){
   try{await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({cuit,campo,tipo,valor,autor})});
@@ -466,9 +474,9 @@ async function loadData(){
   document.getElementById('e-table').innerHTML='<div class="loading">Cargando...</div>';
   document.getElementById('c-table').innerHTML='<div class="loading">Cargando...</div>';
   try{
-    const [g,e,c]=await Promise.all([fetchSheet('Gestiones'),fetchSheet('Exportadores'),fetchSheet('BASE DATOS FINAL')]);
-    allG=g;allE=e;allC=c;
-    await loadNotas();
+    const [gData,eData,c]=await Promise.all([fetchSheet('Gestiones'),fetchSheet('Exportadores'),fetchSheet('BASE DATOS FINAL',2)]);
+    allG=gData;allE=eData;allC=c;
+    try{await loadNotas();}catch(e){console.warn('Notas no disponibles:',e);}
 
     sel['g-camp'].add(CAMP_DEFAULT);sel['e-camp'].add(CAMP_DEFAULT);
     buildDropdown('g-camp',uniq(allG.map(r=>r['Campana']||r['Campaña'])));
