@@ -27,12 +27,24 @@ body { font-family: 'Inter', sans-serif; background: #f0f4f8; min-height: 100vh;
 
 .tabs { display: flex; background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 28px; overflow-x: auto; }
 .tab { padding: 14px 20px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 500; color: #64748b; border-bottom: 3px solid transparent; font-family: 'Inter', sans-serif; transition: all 0.15s; white-space: nowrap; }
-.tab.active { color: #0a2240; border-bottom-color: #0a2240; font-weight: 700; }
+.tab.active { font-weight: 700; border-bottom: 3px solid; border-radius: 6px 6px 0 0; }
+.tab.active[data-color="green"] { color: #065f46; border-bottom-color: #065f46; background: #ecfdf5; }
+.tab.active[data-color="blue"] { color: #1e3a8a; border-bottom-color: #1e3a8a; background: #eff6ff; }
+.tab.active[data-color="purple"] { color: #5b21b6; border-bottom-color: #5b21b6; background: #f5f3ff; }
+.tab[data-color="green"]:hover:not(.active) { background: #f0fdf4; }
+.tab[data-color="blue"]:hover:not(.active) { background: #f0f6ff; }
+.tab[data-color="purple"]:hover:not(.active) { background: #faf5ff; }
 .tab:hover:not(.active) { color: #1e293b; }
 
 .content { max-width: 1400px; margin: 0 auto; padding: 24px 28px; }
+#panel-g { background: linear-gradient(180deg, #ecfdf5 0%, #f0f4f8 120px); }
+#panel-e { background: linear-gradient(180deg, #eff6ff 0%, #f0f4f8 120px); }
+#panel-c { background: linear-gradient(180deg, #f5f3ff 0%, #f0f4f8 120px); }
 .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
 .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; min-width: 110px; flex: 1; }
+#panel-g .stat { border-top: 3px solid #065f46; }
+#panel-e .stat { border-top: 3px solid #1e3a8a; }
+#panel-c .stat { border-top: 3px solid #5b21b6; }
 .stat-val { font-size: 22px; font-weight: 700; }
 .stat-lbl { font-size: 11px; color: #64748b; margin-top: 3px; }
 
@@ -68,6 +80,9 @@ td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #1e293b; verti
 tr:last-child td { border-bottom: none; }
 tr:nth-child(even) td { background: #f8fafc; }
 tr:hover td { background: #f0f7ff; }
+#panel-g th { background: #065f46; }
+#panel-e th { background: #1e3a8a; }
+#panel-c th { background: #5b21b6; }
 tr.clickable { cursor: pointer; }
 
 .badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; }
@@ -109,8 +124,9 @@ tr.clickable { cursor: pointer; }
 .vto-input { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .vto-input input[type=date] { padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif; }
 .vto-input button { background: #0a2240; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; }
-.edit-only { display: none; }
-.edit-mode .edit-only { display: flex; }
+.edit-only { display: none !important; }
+.edit-mode .edit-only { display: flex !important; }
+.edit-mode span.edit-only { display: inline !important; }
 
 /* Exportador colors */
 .badge-exp-LDC { background: #dbeafe; color: #1e3a8a; }
@@ -131,6 +147,7 @@ tr.clickable { cursor: pointer; }
   </div>
   <div class="hdr-right">
     <span class="last-update" id="last-update">Cargando...</span>
+    <a href="https://docs.google.com/forms/d/15Nkiknoh19bo4Ma7dODL5sNyMdgijzGGzE90x71Ybhs/viewform" target="_blank" style="padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:Inter,sans-serif;background:#1a5a9a;color:#fff;font-weight:600;text-decoration:none;display:inline-block;">Formulario cliente</a>
     <button class="btn-export" onclick="exportExcel()">Exportar Excel</button>
     <button class="btn-edit" id="btn-edit" onclick="toggleEditMode()">Modo edicion</button>
     <button class="btn-refresh" onclick="loadData()">Actualizar</button>
@@ -138,16 +155,16 @@ tr.clickable { cursor: pointer; }
 </div>
 
 <div class="tabs">
-  <button class="tab active" id="tab-g" onclick="switchTab('g')">Gestiones</button>
-  <button class="tab" id="tab-e" onclick="switchTab('e')">Habilitaciones</button>
-  <button class="tab" id="tab-c" onclick="switchTab('c')">Informacion de campos</button>
+  <button class="tab active" id="tab-g" data-color="green" onclick="switchTab('g')">Gestiones</button>
+  <button class="tab" id="tab-e" data-color="blue" onclick="switchTab('e')">Habilitaciones</button>
+  <button class="tab" id="tab-c" data-color="purple" onclick="switchTab('c')">Información de campos</button>
 </div>
 
 <!-- GESTIONES -->
 <div id="panel-g" class="content">
   <div class="stats" id="stats-g"></div>
   <div class="filters">
-    <div class="filter-group"><label>Campana</label><div class="multi-select-wrap" id="wrap-g-camp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-camp')"><span id="label-g-camp">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-camp"></div></div></div>
+    <div class="filter-group"><label>Campaña</label><div class="multi-select-wrap" id="wrap-g-camp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-camp')"><span id="label-g-camp">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-camp"></div></div></div>
     <div class="filter-group"><label>Buscar</label><input type="text" id="g-search" placeholder="Productor, campo, estado..." oninput="onFilterG()"></div>
     <div class="filter-group"><label>Exportador</label><div class="multi-select-wrap" id="wrap-g-exp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-exp')"><span id="label-g-exp">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-exp"></div></div></div>
     <div class="filter-group"><label>Via</label><div class="multi-select-wrap" id="wrap-g-via"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-via')"><span id="label-g-via">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-via"></div></div></div>
@@ -161,7 +178,7 @@ tr.clickable { cursor: pointer; }
 <div id="panel-e" class="content" style="display:none">
   <div class="stats" id="stats-e"></div>
   <div class="filters">
-    <div class="filter-group"><label>Campana</label><div class="multi-select-wrap" id="wrap-e-camp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('e-camp')"><span id="label-e-camp">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-e-camp"></div></div></div>
+    <div class="filter-group"><label>Campaña</label><div class="multi-select-wrap" id="wrap-e-camp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('e-camp')"><span id="label-e-camp">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-e-camp"></div></div></div>
     <div class="filter-group"><label>Buscar</label><input type="text" id="e-search" placeholder="Vendedor, campo, localidad..." oninput="onFilterE()"></div>
     <div class="filter-group"><label>Vendedor</label><div class="multi-select-wrap" id="wrap-e-vend"><button type="button" class="multi-select-btn" onclick="toggleDropdown('e-vend')"><span id="label-e-vend">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-e-vend"></div></div></div>
     <div class="filter-group"><label>Exportador</label><div class="multi-select-wrap" id="wrap-e-exp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('e-exp')"><span id="label-e-exp">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-e-exp"></div></div></div>
@@ -214,6 +231,7 @@ async function fetchSheet(name,startRow){const range=startRow?`${name}!A${startR
 function uniq(arr){return[...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
 function parseNum(v){if(!v)return 0;const c=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(c);return isNaN(n)?0:n;}
 function fmt(v){if(!v)return'\u2014';const clean=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(clean);return isNaN(n)?(v||'\u2014'):n.toLocaleString('es-AR',{maximumFractionDigits:2});}
+function fmtCamp(v){if(!v)return'\u2014';const s=String(v);if(s.length===4&&/^\d{4}$/.test(s))return s.slice(0,2)+'/'+s.slice(2);return s;}
 function statCard(val,lbl,color){return `<div class="stat"><div class="stat-val" style="color:${color}">${val}</div><div class="stat-lbl">${lbl}</div></div>`;}
 
 // ── EDIT MODE ──
@@ -256,7 +274,16 @@ async function saveNota(cuit,campo,tipo,valor,autor){
     document.body.appendChild(s);
   });
 }
-function getNotas(cuit,campo,tipo){return allNotas.filter(n=>String(n.CUIT)==String(cuit)&&String(n.CAMPO)==String(campo)&&(!tipo||n.TIPO==tipo));}
+function getNotas(cuit,campo,tipo){
+  const deleted=allNotas.filter(n=>String(n.CUIT)==String(cuit)&&String(n.CAMPO)==String(campo)&&n.TIPO==='borrar_comentario').map(n=>n.VALOR);
+  return allNotas.filter(n=>{
+    if(String(n.CUIT)!=String(cuit)||String(n.CAMPO)!=String(campo))return false;
+    if(tipo&&n.TIPO!=tipo)return false;
+    if(n.TIPO==='comentario'&&deleted.includes(n.VALOR+'|||'+n.FECHA))return false;
+    if(n.TIPO==='borrar_comentario')return false;
+    return true;
+  });
+}
 function getVtoRenspa(cuit,campo){const n=getNotas(cuit,campo,'vto_renspa');return n.length?n[n.length-1].VALOR:'';}
 function getNotaValor(cuit,campo,tipo){const n=getNotas(cuit,campo,tipo);return n.length?n[n.length-1].VALOR:'';}
 
@@ -298,7 +325,7 @@ function buildDropdown(id,vals,renderOption){
 function filterDropdown(id,q){const opts=document.getElementById('opts-'+id);if(!opts)return;opts.querySelectorAll('.multi-select-option').forEach(el=>{el.style.display=el.querySelector('span').textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});}
 function clearFilter(id){sel[id].clear();const opts=document.getElementById('opts-'+id);if(opts)opts.querySelectorAll('input[type=checkbox]').forEach(cb=>{cb.checked=false;});updateLabel(id);if(id.startsWith('g-')){cascadeG();renderG();}else if(id.startsWith('e-')){cascadeE();renderE();}else{renderC();}}
 function onCheck(id,cb){if(cb.checked)sel[id].add(cb.value);else sel[id].delete(cb.value);updateLabel(id);if(id.startsWith('g-')){cascadeG();renderG();}else if(id.startsWith('e-')){cascadeE();renderE();}else{renderC();}}
-function updateLabel(id){const s=sel[id];const lbl=document.getElementById('label-'+id);if(!lbl)return;if(s.size===0)lbl.textContent='Todos';else if(s.size===1)lbl.textContent=[...s][0];else lbl.textContent=s.size+' seleccionados';}
+function updateLabel(id){const s=sel[id];const lbl=document.getElementById('label-'+id);if(!lbl)return;if(s.size===0)lbl.textContent='Todos';else if(s.size===1){const v=[...s][0];lbl.textContent=(id.includes('camp'))?fmtCamp(v):v;}else lbl.textContent=s.size+' seleccionados';}
 
 // ── CASCADA GESTIONES ──
 function cascadeG(){const camps=sel['g-camp'];const base=camps.size?allG.filter(r=>camps.has(r['Campana']||r['Campaña'])):allG;const exps=uniq(base.map(r=>r['Exportador']));const vias=uniq(base.map(r=>r['Via web o mail']||r['Vía web o mail']));[...sel['g-exp']].forEach(v=>{if(!exps.includes(v))sel['g-exp'].delete(v);});[...sel['g-via']].forEach(v=>{if(!vias.includes(v))sel['g-via'].delete(v);});buildDropdown('g-exp',exps,e=>expBadge(e));buildDropdown('g-via',vias);}
@@ -315,8 +342,8 @@ function renderG(){
   const exps=uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');
   if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Estado</th><th>Via</th><th>Exportador</th><th>Campana</th></tr></thead>`;
-  const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted" style="max-width:260px">${r['Estado']||'\u2014'}</td><td>${viaBadge(r['Via web o mail']||r['Vía web o mail'])}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${r['Campana']||r['Campaña']||'\u2014'}</td></tr>`).join('');
+  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Estado</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
+  const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted" style="max-width:260px">${r['Estado']||'\u2014'}</td><td>${viaBadge(r['Via web o mail']||r['Vía web o mail'])}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(r['Campana']||r['Campaña'])}</td></tr>`).join('');
   document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} de ${allG.length} registros</span>`;
 }
@@ -332,8 +359,8 @@ function renderE(){
   const exps=uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-e').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}),'Has. sustentables','#1a5a9a')+statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}),'Toneladas','#1a4a2e')+statCard(exps,'Exportadores','#64748b');
   if(!f.length){document.getElementById('e-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('e-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exportador</th><th>Tipo</th><th>Campana</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Toneladas</th></tr></thead>`;
-  const rows=f.map(r=>`<tr><td class="bold" style="white-space:nowrap">${r['Vendedor']||'\u2014'}</td><td class="mono">${r['CUIT']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Localidad en exportador']||'\u2014'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${r['Campana']||r['Campaña']||'\u2014'}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');
+  const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exportador</th><th>Tipo</th><th>Campaña</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Ton. aprobadas al inicio</th></tr></thead>`;
+  const rows=f.map(r=>`<tr><td class="bold" style="white-space:nowrap">${r['Vendedor']||'\u2014'}</td><td class="mono">${r['CUIT']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Localidad en exportador']||'\u2014'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${fmtCamp(r['Campana']||r['Campaña'])}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');
   document.getElementById('e-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('e-footer').innerHTML=`<span>Mostrando ${f.length} de ${allE.length} registros</span>`;
 }
@@ -379,7 +406,7 @@ function renderC(){
   if(!document.getElementById('opts-c-estado'))buildDropdown('c-estado',allStatuses,s=>statusBadge(s));
 
   if(!f.length){document.getElementById('c-table').innerHTML='<div class="loading">Sin resultados.</div>';document.getElementById('c-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Razon social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. productivas</th><th>RENSPA</th><th>Estado</th></tr></thead>`;
+  const thead=`<thead><tr><th>Razón social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. productivas</th><th>Has. verificadas</th><th>RENSPA</th><th>Estado</th></tr></thead>`;
   const rows=f.map((r,i)=>{
     const cuit=g(r,'CUIT');
     const campo=g(r,'NOMBRE DEL CAMPO');
@@ -394,9 +421,10 @@ function renderC(){
       <td class="muted">${r['PROVINCIA']||'\u2014'}</td>
       <td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td>
       <td class="num">${fmt(g(r,'PRODUCTIVAS'))}</td>
+      <td class="num">\${(function(){const hv=getNotaValor(cuit,campo,'has_sustentables');const hp=g(r,'PRODUCTIVAS');if(!hv)return'<span class="badge badge-na">-</span>';const diff=parseNum(hv)!==parseNum(hp);return diff?'<span style="color:#dc2626;font-weight:600">'+fmt(hv)+'</span>':'<span style="color:#065f46">'+fmt(hv)+'</span>';})()}</td>
       <td><span class="badge ${rs.cls}">${rs.status}</span></td>
       <td>${statusBadge(status)}</td>
-    </tr><tr><td colspan="9" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;
+    </tr><tr><td colspan="10" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;
   }).join('');
   document.getElementById('c-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('c-footer').innerHTML=`<span>Mostrando ${f.length} de ${allC.length} campos</span>`;
@@ -417,7 +445,7 @@ function buildFicha(r,idx){
   const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
   const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
   const hasSust=getNotaValor(cuit,campo,'has_sustentables');
-  function estadoBadge(val){if(!val)return'<span class="badge badge-na">Sin revisar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
+  function estadoBadge(val){if(!val)return'<span class="badge badge-na">A verificar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
 
   let html=`<div class="ficha-grid">
     <div class="ficha-field"><label>Razon social</label><div class="val bold">${g(r,'RAZON SOCIAL')}</div></div>
@@ -447,19 +475,19 @@ function buildFicha(r,idx){
     <div class="ficha-field"><label>Poligono KMZ</label>
       <div class="val">${poly?`<a href="${poly}" target="_blank">Descargar KMZ</a>`:'No adjunto'}</div>
       <div class="val" style="margin-top:4px">${estadoBadge(estadoKmz)}</div>
-      <div class="vto-input edit-only" style="margin-top:6px"><select id="kmz-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoKmz==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoKmz==='Con observaciones'?'selected':''}>Con observaciones</option><option value="Falta" ${estadoKmz==='Falta'?'selected':''}>Falta</option></select><button onclick="saveEstadoKmz(${idx})">Guardar</button></div>
+      <div class="vto-input edit-only" style="margin-top:6px"><select id="kmz-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoKmz==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoKmz==='Con observaciones'?'selected':''}>Con observaciones</option></select><button onclick="saveEstadoKmz(${idx})">Guardar</button></div>
     </div>
     <div class="ficha-field"><label>Tipo evidencia</label><div class="val">${tipoEvid||'\u2014'}</div></div>
     <div class="ficha-field"><label>Evidencia</label>
       <div class="val">${evid?`<a href="${evid}" target="_blank">Ver evidencia</a>`:'No adjunto'}</div>
       <div class="val" style="margin-top:4px">${estadoBadge(estadoEvid)}</div>
-      <div class="vto-input edit-only" style="margin-top:6px"><select id="evid-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoEvid==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoEvid==='Con observaciones'?'selected':''}>Con observaciones</option><option value="Falta" ${estadoEvid==='Falta'?'selected':''}>Falta</option></select><button onclick="saveEstadoEvid(${idx})">Guardar</button></div>
+      <div class="vto-input edit-only" style="margin-top:6px"><select id="evid-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoEvid==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoEvid==='Con observaciones'?'selected':''}>Con observaciones</option></select><button onclick="saveEstadoEvid(${idx})">Guardar</button></div>
     </div>
     <div class="ficha-field"><label>PCUS 1</label><div class="val">${g(r,'PCUS 1')||'\u2014'}</div></div>
   </div></div>`;
 
   html+=`<div class="ficha-section"><h3>Comentarios del equipo</h3>`;
-  comentarios.forEach(c=>{html+=`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${fmtDate(c.FECHA)||c.FECHA}</span></div><div class="comment-text">${c.VALOR}</div></div>`;});
+  comentarios.forEach((c,ci)=>{html+=`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${fmtDate(c.FECHA)||c.FECHA}</span><span class="edit-only" style="display:inline;margin-left:8px"><button onclick="editComment(${idx},${ci})" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button><button onclick="deleteComment(${idx},${ci})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button></span></div><div class="comment-text" id="cmtxt-${idx}-${ci}">${c.VALOR}</div></div>`;});
   html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
   return html;
 }
@@ -516,10 +544,34 @@ async function saveComment(idx){
   await loadNotas();renderC();
 }
 
+async function editComment(idx,ci){
+  const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const comentarios=getNotas(cuit,campo,'comentario');
+  const cmt=comentarios[ci];if(!cmt)return;
+  const newVal=prompt('Editar comentario:',cmt.VALOR);
+  if(newVal===null||!newVal.trim())return;
+  // Save as new comment with same author, delete logic handled by updating
+  await saveNota(cuit,campo,'comentario',newVal.trim(),cmt.AUTOR);
+  // Mark old one for deletion
+  await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');
+  await loadNotas();renderC();
+}
+
+async function deleteComment(idx,ci){
+  if(!confirm('Seguro que queres borrar este comentario?'))return;
+  const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const comentarios=getNotas(cuit,campo,'comentario');
+  const cmt=comentarios[ci];if(!cmt)return;
+  await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');
+  await loadNotas();renderC();
+}
+
 function clearC(){document.getElementById('c-search').value='';Object.keys(sel).filter(k=>k.startsWith('c-')).forEach(k=>sel[k].clear());buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));renderC();}
 
 // ── TABS ──
-function switchTab(t){currentTab=t;['g','e','c'].forEach(x=>{document.getElementById('panel-'+x).style.display=x===t?'':'none';document.getElementById('tab-'+x).className='tab'+(x===t?' active':'');});}
+function switchTab(t){currentTab=t;['g','e','c'].forEach(x=>{const tab=document.getElementById('tab-'+x);const cl=x===t?'tab active':'tab';tab.className=cl;document.getElementById('panel-'+x).style.display=x===t?'':'none';});}
 
 // ── EXPORT ──
 function exportExcel(){
