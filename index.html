@@ -74,7 +74,8 @@ input[type=text]:focus { border-color: #0a2240; }
 .btn-clear:hover { background: #f8fafc; }
 
 .table-wrap { border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; overflow-x: auto; background: #fff; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+#panel-e table, #panel-c table { font-size: 12px; }
 th { background: #0a2240; color: #fff; padding: 11px 14px; text-align: left; font-weight: 600; font-size: 11px; white-space: nowrap; letter-spacing: 0.03em; }
 td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: middle; }
 tr:last-child td { border-bottom: none; }
@@ -290,9 +291,15 @@ function getNotaValor(cuit,campo,tipo){const n=getNotas(cuit,campo,tipo);return 
 function fmtDate(v){
   if(!v)return'';
   const s=String(v);
-  if(s.includes('T')){const d=new Date(s);return d.toLocaleDateString('es-AR');}
-  if(s.includes('-')&&s.indexOf('-')===4){const p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
-  return s;
+  let d;
+  if(s.includes('T'))d=new Date(s);
+  else if(s.includes('-')&&s.indexOf('-')===4){const p=s.split('-');d=new Date(p[0],p[1]-1,p[2]);}
+  else return s;
+  if(!d||isNaN(d))return s;
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yyyy=d.getFullYear();
+  return dd+'/'+mm+'/'+yyyy;
 }
 
 function renspaStatus(cuit,campo){
@@ -328,29 +335,29 @@ function onCheck(id,cb){if(cb.checked)sel[id].add(cb.value);else sel[id].delete(
 function updateLabel(id){const s=sel[id];const lbl=document.getElementById('label-'+id);if(!lbl)return;if(s.size===0)lbl.textContent='Todos';else if(s.size===1){const v=[...s][0];lbl.textContent=(id.includes('camp'))?fmtCamp(v):v;}else lbl.textContent=s.size+' seleccionados';}
 
 // ── CASCADA GESTIONES ──
-function cascadeG(){const camps=sel['g-camp'];const base=camps.size?allG.filter(r=>camps.has(r['Campana']||r['Campaña'])):allG;const exps=uniq(base.map(r=>r['Exportador']));const vias=uniq(base.map(r=>r['Via web o mail']||r['Vía web o mail']));[...sel['g-exp']].forEach(v=>{if(!exps.includes(v))sel['g-exp'].delete(v);});[...sel['g-via']].forEach(v=>{if(!vias.includes(v))sel['g-via'].delete(v);});buildDropdown('g-exp',exps,e=>expBadge(e));buildDropdown('g-via',vias);}
+function cascadeG(){const camps=sel['g-camp'];const base=camps.size?allG.filter(r=>camps.has(g(r,'Campa'))):allG;const exps=uniq(base.map(r=>r['Exportador']));const vias=uniq(base.map(r=>g(r,'web o mail')));[...sel['g-exp']].forEach(v=>{if(!exps.includes(v))sel['g-exp'].delete(v);});[...sel['g-via']].forEach(v=>{if(!vias.includes(v))sel['g-via'].delete(v);});buildDropdown('g-exp',exps,e=>expBadge(e));buildDropdown('g-via',vias);}
 
 // ── CASCADA HABILITACIONES ──
-function cascadeE(){const camps=sel['e-camp'];const base=camps.size?allE.filter(r=>camps.has(r['Campana']||r['Campaña'])):allE;const vends=uniq(base.map(r=>r['Vendedor']));const exps=uniq(base.map(r=>r['Exportador']));const tipos=uniq(base.map(r=>r['Tipo']));[...sel['e-vend']].forEach(v=>{if(!vends.includes(v))sel['e-vend'].delete(v);});[...sel['e-exp']].forEach(v=>{if(!exps.includes(v))sel['e-exp'].delete(v);});[...sel['e-tipo']].forEach(v=>{if(!tipos.includes(v))sel['e-tipo'].delete(v);});buildDropdown('e-vend',vends);buildDropdown('e-exp',exps,e=>expBadge(e));buildDropdown('e-tipo',tipos,t=>tipoBadge(t));}
+function cascadeE(){const camps=sel['e-camp'];const base=camps.size?allE.filter(r=>camps.has(g(r,'Campa'))):allE;const vends=uniq(base.map(r=>r['Vendedor']));const exps=uniq(base.map(r=>r['Exportador']));const tipos=uniq(base.map(r=>r['Tipo']));[...sel['e-vend']].forEach(v=>{if(!vends.includes(v))sel['e-vend'].delete(v);});[...sel['e-exp']].forEach(v=>{if(!exps.includes(v))sel['e-exp'].delete(v);});[...sel['e-tipo']].forEach(v=>{if(!tipos.includes(v))sel['e-tipo'].delete(v);});buildDropdown('e-vend',vends);buildDropdown('e-exp',exps,e=>expBadge(e));buildDropdown('e-tipo',tipos,t=>tipoBadge(t));}
 
 // ── GESTIONES ──
-function filterG(){const q=document.getElementById('g-search').value.toLowerCase();const camps=sel['g-camp'];const exps=sel['g-exp'];const vias=sel['g-via'];return allG.filter(r=>(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!camps.size||camps.has(r['Campana']||r['Campaña']))&&(!exps.size||exps.has(r['Exportador']))&&(!vias.size||vias.has(r['Via web o mail']||r['Vía web o mail'])));}
+function filterG(){const q=document.getElementById('g-search').value.toLowerCase();const camps=sel['g-camp'];const exps=sel['g-exp'];const vias=sel['g-via'];return allG.filter(r=>(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!exps.size||exps.has(r['Exportador']))&&(!vias.size||vias.has(g(r,'web o mail'))));}
 function onFilterG(){renderG();}
 function renderG(){
   const f=filterG();
-  const web=f.filter(r=>(r['Via web o mail']||r['Vía web o mail']||'').toLowerCase()==='web').length;
+  const web=f.filter(r=>(g(r,'web o mail')||'').toLowerCase()==='web').length;
   const exps=uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');
   if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}
   const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Estado</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
-  const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted" style="max-width:260px">${r['Estado']||'\u2014'}</td><td>${viaBadge(r['Via web o mail']||r['Vía web o mail'])}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(r['Campana']||r['Campaña'])}</td></tr>`).join('');
+  const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted" style="max-width:260px">${r['Estado']||'\u2014'}</td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>`).join('');
   document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} de ${allG.length} registros</span>`;
 }
-function clearG(){document.getElementById('g-search').value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());sel['g-camp'].add(CAMP_DEFAULT);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>r['Campana']||r['Campaña'])));updateLabel('g-camp');renderG();}
+function clearG(){document.getElementById('g-search').value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());sel['g-camp'].add(CAMP_DEFAULT);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
 
 // ── HABILITACIONES ──
-function filterE(){const q=document.getElementById('e-search').value.toLowerCase();const camps=sel['e-camp'];const vends=sel['e-vend'];const exps=sel['e-exp'];const tipos=sel['e-tipo'];return allE.filter(r=>(!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q)))&&(!camps.size||camps.has(r['Campana']||r['Campaña']))&&(!vends.size||vends.has(r['Vendedor']))&&(!exps.size||exps.has(r['Exportador']))&&(!tipos.size||tipos.has(r['Tipo'])));}
+function filterE(){const q=document.getElementById('e-search').value.toLowerCase();const camps=sel['e-camp'];const vends=sel['e-vend'];const exps=sel['e-exp'];const tipos=sel['e-tipo'];return allE.filter(r=>(!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!vends.size||vends.has(r['Vendedor']))&&(!exps.size||exps.has(r['Exportador']))&&(!tipos.size||tipos.has(r['Tipo'])));}
 function onFilterE(){renderE();}
 function renderE(){
   const f=filterE();
@@ -359,12 +366,12 @@ function renderE(){
   const exps=uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-e').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}),'Has. sustentables','#1a5a9a')+statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}),'Toneladas','#1a4a2e')+statCard(exps,'Exportadores','#64748b');
   if(!f.length){document.getElementById('e-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('e-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exportador</th><th>Tipo</th><th>Campaña</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Ton. aprobadas al inicio</th></tr></thead>`;
-  const rows=f.map(r=>`<tr><td class="bold" style="white-space:nowrap">${r['Vendedor']||'\u2014'}</td><td class="mono">${r['CUIT']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Localidad en exportador']||'\u2014'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${fmtCamp(r['Campana']||r['Campaña'])}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');
+  const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exp.</th><th>Tipo</th><th>Camp.</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Ton. aprobadas al INICIO</th></tr></thead>`;
+  const rows=f.map(r=>`<tr><td class="bold" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['Vendedor']||'\u2014'}</td><td class="mono">${r['CUIT']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Localidad en exportador']||'\u2014'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');
   document.getElementById('e-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('e-footer').innerHTML=`<span>Mostrando ${f.length} de ${allE.length} registros</span>`;
 }
-function clearE(){document.getElementById('e-search').value='';Object.keys(sel).filter(k=>k.startsWith('e-')).forEach(k=>sel[k].clear());sel['e-camp'].add(CAMP_DEFAULT);cascadeE();buildDropdown('e-camp',uniq(allE.map(r=>r['Campana']||r['Campaña'])));updateLabel('e-camp');renderE();}
+function clearE(){document.getElementById('e-search').value='';Object.keys(sel).filter(k=>k.startsWith('e-')).forEach(k=>sel[k].clear());sel['e-camp'].add(CAMP_DEFAULT);cascadeE();buildDropdown('e-camp',uniq(allE.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('e-camp');renderE();}
 
 // ── INFORMACION DE CAMPOS ──
 function getFieldStatus(r){
@@ -412,16 +419,20 @@ function renderC(){
     const campo=g(r,'NOMBRE DEL CAMPO');
     const status=getFieldStatus(r);
     const rs=renspaStatus(cuit,campo);
-    const renspa=r['N\u00b0 RENSPA']||r['N° RENSPA']||'';
+    const hv=getNotaValor(cuit,campo,'has_sustentables');
+    const hp=g(r,'PRODUCTIVAS');
+    let hasCell;
+    if(!hv)hasCell='<span class="badge badge-na">-</span>';
+    else{const diff=parseNum(hv)!==parseNum(hp);hasCell=diff?'<span style="color:#dc2626;font-weight:600">'+fmt(hv)+'</span>':'<span style="color:#065f46">'+fmt(hv)+'</span>';}
     return `<tr class="clickable" onclick="toggleFicha(${i})">
-      <td class="bold">${r['RAZON SOCIAL']||'\u2014'}</td>
-      <td class="mono">${cuit}</td>
-      <td>${campo}</td>
-      <td class="muted">${r['LOCALIDAD']||'\u2014'}</td>
-      <td class="muted">${r['PROVINCIA']||'\u2014'}</td>
+      <td class="bold" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${g(r,'RAZON SOCIAL')||'\u2014'}</td>
+      <td class="mono" style="font-size:11px">${cuit}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${campo}</td>
+      <td class="muted" style="max-width:100px">${g(r,'LOCALIDAD')||'\u2014'}</td>
+      <td class="muted" style="max-width:90px">${g(r,'PROVINCIA')||'\u2014'}</td>
       <td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td>
       <td class="num">${fmt(g(r,'PRODUCTIVAS'))}</td>
-      <td class="num">\${(function(){const hv=getNotaValor(cuit,campo,'has_sustentables');const hp=g(r,'PRODUCTIVAS');if(!hv)return'<span class="badge badge-na">-</span>';const diff=parseNum(hv)!==parseNum(hp);return diff?'<span style="color:#dc2626;font-weight:600">'+fmt(hv)+'</span>':'<span style="color:#065f46">'+fmt(hv)+'</span>';})()}</td>
+      <td class="num">${hasCell}</td>
       <td><span class="badge ${rs.cls}">${rs.status}</span></td>
       <td>${statusBadge(status)}</td>
     </tr><tr><td colspan="10" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;
@@ -597,8 +608,8 @@ async function loadData(){
     try{await loadNotas();}catch(e){console.warn('Notas no disponibles:',e);}
 
     sel['g-camp'].add(CAMP_DEFAULT);sel['e-camp'].add(CAMP_DEFAULT);
-    buildDropdown('g-camp',uniq(allG.map(r=>r['Campana']||r['Campaña'])));
-    buildDropdown('e-camp',uniq(allE.map(r=>r['Campana']||r['Campaña'])));
+    buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));
+    buildDropdown('e-camp',uniq(allE.map(r=>g(r,'Campa'))),v=>fmtCamp(v));
     updateLabel('g-camp');updateLabel('e-camp');
     cascadeG();cascadeE();
     buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));
