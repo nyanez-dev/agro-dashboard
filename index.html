@@ -339,12 +339,81 @@ function clearFilter(id){sel[id].clear();const opts=document.getElementById('opt
 function onCheck(id,cb){if(cb.checked)sel[id].add(cb.value);else sel[id].delete(cb.value);updateLabel(id);if(id.startsWith('g-')){cascadeG();renderG();}else if(id.startsWith('e-')){cascadeE();renderE();}else{renderC();}}
 function updateLabel(id){const s=sel[id];const lbl=document.getElementById('label-'+id);if(!lbl)return;if(s.size===0)lbl.textContent='Todos';else if(s.size===1){const v=[...s][0];lbl.textContent=(id.includes('camp'))?fmtCamp(v):v;}else lbl.textContent=s.size+' seleccionados';}
 
-// ── CASCADA GESTIONES ──
-function cascadeG(){const camps=sel['g-camp'];const base=camps.size?allG.filter(r=>camps.has(g(r,'Campa'))):allG;const exps=uniq(base.map(r=>r['Exportador']));const vias=uniq(base.map(r=>g(r,'web o mail')));[...sel['g-exp']].forEach(v=>{if(!exps.includes(v))sel['g-exp'].delete(v);});[...sel['g-via']].forEach(v=>{if(!vias.includes(v))sel['g-via'].delete(v);});buildDropdown('g-exp',exps,e=>expBadge(e));buildDropdown('g-via',vias);}
+// ── CASCADA GESTIONES (cruzada) ──
+function cascadeG(){
+  // Para cada filtro, calcular opciones disponibles filtrando por TODOS los otros filtros activos
+  const camps=sel['g-camp'];
+  const exps=sel['g-exp'];
+  const vias=sel['g-via'];
+  // Opciones de Exportador: filtrar por campaña + vía activas
+  const baseExp=allG.filter(r=>
+    (!camps.size||camps.has(g(r,'Campa')))&&
+    (!vias.size||vias.has(g(r,'web o mail')))
+  );
+  const expOpts=uniq(baseExp.map(r=>r['Exportador']));
+  [...sel['g-exp']].forEach(v=>{if(!expOpts.includes(v))sel['g-exp'].delete(v);});
+  // Opciones de Vía: filtrar por campaña + exportador activos
+  const baseVia=allG.filter(r=>
+    (!camps.size||camps.has(g(r,'Campa')))&&
+    (!sel['g-exp'].size||sel['g-exp'].has(r['Exportador']))
+  );
+  const viaOpts=uniq(baseVia.map(r=>g(r,'web o mail')));
+  [...sel['g-via']].forEach(v=>{if(!viaOpts.includes(v))sel['g-via'].delete(v);});
+  // Opciones de Campaña: filtrar por exportador + vía activos
+  const baseCamp=allG.filter(r=>
+    (!sel['g-exp'].size||sel['g-exp'].has(r['Exportador']))&&
+    (!sel['g-via'].size||sel['g-via'].has(g(r,'web o mail')))
+  );
+  const campOpts=uniq(baseCamp.map(r=>g(r,'Campa')));
+  [...sel['g-camp']].forEach(v=>{if(!campOpts.includes(v))sel['g-camp'].delete(v);});
+  buildDropdown('g-camp',campOpts,v=>fmtCamp(v));
+  buildDropdown('g-exp',expOpts,e=>expBadge(e));
+  buildDropdown('g-via',viaOpts);
+}
 
-// ── CASCADA HABILITACIONES ──
-function cascadeE(){const camps=sel['e-camp'];const base=camps.size?allE.filter(r=>camps.has(g(r,'Campa'))):allE;const vends=uniq(base.map(r=>r['Vendedor']));const exps=uniq(base.map(r=>r['Exportador']));const tipos=uniq(base.map(r=>r['Tipo']));[...sel['e-vend']].forEach(v=>{if(!vends.includes(v))sel['e-vend'].delete(v);});[...sel['e-exp']].forEach(v=>{if(!exps.includes(v))sel['e-exp'].delete(v);});[...sel['e-tipo']].forEach(v=>{if(!tipos.includes(v))sel['e-tipo'].delete(v);});buildDropdown('e-vend',vends);buildDropdown('e-exp',exps,e=>expBadge(e));buildDropdown('e-tipo',tipos,t=>tipoBadge(t));}
-
+// ── CASCADA HABILITACIONES (cruzada) ──
+function cascadeE(){
+  const camps=sel['e-camp'];
+  const vends=sel['e-vend'];
+  const exps=sel['e-exp'];
+  const tipos=sel['e-tipo'];
+  // Vendedor: filtrar por campaña + exportador + tipo
+  const baseVend=allE.filter(r=>
+    (!camps.size||camps.has(g(r,'Campa')))&&
+    (!exps.size||exps.has(r['Exportador']))&&
+    (!tipos.size||tipos.has(r['Tipo']))
+  );
+  const vendOpts=uniq(baseVend.map(r=>r['Vendedor']));
+  [...sel['e-vend']].forEach(v=>{if(!vendOpts.includes(v))sel['e-vend'].delete(v);});
+  // Exportador: filtrar por campaña + vendedor + tipo
+  const baseExp=allE.filter(r=>
+    (!camps.size||camps.has(g(r,'Campa')))&&
+    (!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&
+    (!tipos.size||tipos.has(r['Tipo']))
+  );
+  const expOpts=uniq(baseExp.map(r=>r['Exportador']));
+  [...sel['e-exp']].forEach(v=>{if(!expOpts.includes(v))sel['e-exp'].delete(v);});
+  // Tipo: filtrar por campaña + vendedor + exportador
+  const baseTipo=allE.filter(r=>
+    (!camps.size||camps.has(g(r,'Campa')))&&
+    (!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&
+    (!sel['e-exp'].size||sel['e-exp'].has(r['Exportador']))
+  );
+  const tipoOpts=uniq(baseTipo.map(r=>r['Tipo']));
+  [...sel['e-tipo']].forEach(v=>{if(!tipoOpts.includes(v))sel['e-tipo'].delete(v);});
+  // Campaña: filtrar por vendedor + exportador + tipo
+  const baseCamp=allE.filter(r=>
+    (!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&
+    (!sel['e-exp'].size||sel['e-exp'].has(r['Exportador']))&&
+    (!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo']))
+  );
+  const campOpts=uniq(baseCamp.map(r=>g(r,'Campa')));
+  [...sel['e-camp']].forEach(v=>{if(!campOpts.includes(v))sel['e-camp'].delete(v);});
+  buildDropdown('e-camp',campOpts,v=>fmtCamp(v));
+  buildDropdown('e-vend',vendOpts);
+  buildDropdown('e-exp',expOpts,e=>expBadge(e));
+  buildDropdown('e-tipo',tipoOpts,t=>tipoBadge(t));
+}
 // ── GESTIONES ──
 function filterG(){const q=document.getElementById('g-search').value.toLowerCase();const camps=sel['g-camp'];const exps=sel['g-exp'];const vias=sel['g-via'];return allG.filter(r=>(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!exps.size||exps.has(r['Exportador']))&&(!vias.size||vias.has(g(r,'web o mail'))));}
 function onFilterG(){renderG();}
