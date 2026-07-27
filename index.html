@@ -207,7 +207,12 @@ tr.clickable { cursor: pointer; }
 const SHEET_ID = '1-yVmx3D5q-liA0twVVcaRWYJicmZpVBAOXrdPX8jAto';
 const API_KEY = 'AIzaSyA_PNd_cf9LQVUFKSKXVi7CRINBKbCuUEM';
 const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/allariaagro.com.ar/s/AKfycbxPRkT1GSAS5dKLHIA2wHOOOhrz5prERHCt7HH3AaEj-SU3u9-_qhv9Y18LvP1CDCV3Dg/exec';
-const CAMP_DEFAULT = '2526';
+const CAMP_DEFAULTS = ['2526','25/26'];
+function findCampDefault(data){
+  const camps=data.map(r=>g(r,'Campa')).filter(Boolean);
+  for(const cd of CAMP_DEFAULTS){if(camps.includes(cd))return cd;}
+  return camps[camps.length-1]||'';
+}
 const EDIT_PASSWORD = 'compliance2026';
 
 let allG=[], allE=[], allC=[], allNotas=[];
@@ -354,7 +359,7 @@ function renderG(){
   document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} de ${allG.length} registros</span>`;
 }
-function clearG(){document.getElementById('g-search').value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());sel['g-camp'].add(CAMP_DEFAULT);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
+function clearG(){document.getElementById('g-search').value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());const gDef=findCampDefault(allG);if(gDef)sel['g-camp'].add(gDef);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
 
 // ── HABILITACIONES ──
 function filterE(){const q=document.getElementById('e-search').value.toLowerCase();const camps=sel['e-camp'];const vends=sel['e-vend'];const exps=sel['e-exp'];const tipos=sel['e-tipo'];return allE.filter(r=>(!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!vends.size||vends.has(r['Vendedor']))&&(!exps.size||exps.has(r['Exportador']))&&(!tipos.size||tipos.has(r['Tipo'])));}
@@ -367,25 +372,30 @@ function renderE(){
   document.getElementById('stats-e').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}),'Has. sustentables','#1a5a9a')+statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}),'Toneladas','#1a4a2e')+statCard(exps,'Exportadores','#64748b');
   if(!f.length){document.getElementById('e-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('e-footer').innerHTML='';return;}
   const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exp.</th><th>Tipo</th><th>Camp.</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Ton. aprobadas al INICIO</th></tr></thead>`;
-  const rows=f.map(r=>`<tr><td class="bold" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['Vendedor']||'\u2014'}</td><td class="mono">${r['CUIT']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Localidad en exportador']||'\u2014'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');
+  const rows=f.map(r=>`<tr><td class="bold" style="max-width:200px;word-wrap:break-word;white-space:normal">${r['Vendedor']||'\u2014'}</td><td class="mono">${r['CUIT']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Localidad en exportador']||'\u2014'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');
   document.getElementById('e-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('e-footer').innerHTML=`<span>Mostrando ${f.length} de ${allE.length} registros</span>`;
 }
-function clearE(){document.getElementById('e-search').value='';Object.keys(sel).filter(k=>k.startsWith('e-')).forEach(k=>sel[k].clear());sel['e-camp'].add(CAMP_DEFAULT);cascadeE();buildDropdown('e-camp',uniq(allE.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('e-camp');renderE();}
+function clearE(){document.getElementById('e-search').value='';Object.keys(sel).filter(k=>k.startsWith('e-')).forEach(k=>sel[k].clear());const eDef=findCampDefault(allE);if(eDef)sel['e-camp'].add(eDef);cascadeE();buildDropdown('e-camp',uniq(allE.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('e-camp');renderE();}
 
 // ── INFORMACION DE CAMPOS ──
 function getFieldStatus(r){
   const cuit=g(r,'CUIT');
   const campo=g(r,'NOMBRE DEL CAMPO');
-  const renspa=r['N\u00b0 RENSPA']||r['N° RENSPA']||'';
+  const renspa=g(r,'RENSPA');
   const cred=g(r,'CREDENCIAL RENSPA');
-  const poly=r['POLIGONO del Per\u00edmetro total del Campo (subir archivo .KMZ)']||r['POLIGONO del Perímetro total del Campo (subir archivo .KMZ)']||'';
+  const poly=g(r,'POLIGONO');
   const evid=g(r,'EVIDENCIA');
   const vto=getVtoRenspa(cuit,campo);
+  const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
+  const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
   if(vto){const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))return 'RENSPA vencida';}
   if(!renspa&&!cred)return'Falta RENSPA';
   if(!poly)return'Falta poligono';
   if(!evid)return'Falta evidencia';
+  if(!vto)return'A verificar';
+  if(estadoKmz!=='OK')return'A verificar';
+  if(estadoEvid!=='OK')return'A verificar';
   return'Completo';
 }
 
@@ -424,6 +434,9 @@ function renderC(){
     let hasCell;
     if(!hv)hasCell='<span class="badge badge-na">-</span>';
     else{const diff=parseNum(hv)!==parseNum(hp);hasCell=diff?'<span style="color:#dc2626;font-weight:600">'+fmt(hv)+'</span>':'<span style="color:#065f46">'+fmt(hv)+'</span>';}
+    const htot=parseNum(g(r,'TOTALES DEL CAMPO'));
+    const hprod=parseNum(g(r,'PRODUCTIVAS'));
+    const hasProdCell=(hprod>htot&&htot>0)?'<span style="color:#dc2626;font-weight:600" title="Productivas mayor a totales">'+fmt(g(r,'PRODUCTIVAS'))+'</span>':fmt(g(r,'PRODUCTIVAS'));
     return `<tr class="clickable" onclick="toggleFicha(${i})">
       <td class="bold" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${g(r,'RAZON SOCIAL')||'\u2014'}</td>
       <td class="mono" style="font-size:11px">${cuit}</td>
@@ -431,7 +444,7 @@ function renderC(){
       <td class="muted" style="max-width:100px">${g(r,'LOCALIDAD')||'\u2014'}</td>
       <td class="muted" style="max-width:90px">${g(r,'PROVINCIA')||'\u2014'}</td>
       <td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td>
-      <td class="num">${fmt(g(r,'PRODUCTIVAS'))}</td>
+      <td class="num">${hasProdCell}</td>
       <td class="num">${hasCell}</td>
       <td><span class="badge ${rs.cls}">${rs.status}</span></td>
       <td>${statusBadge(status)}</td>
@@ -607,7 +620,10 @@ async function loadData(){
     allG=gData;allE=eData;allC=c;
     try{await loadNotas();}catch(e){console.warn('Notas no disponibles:',e);}
 
-    sel['g-camp'].add(CAMP_DEFAULT);sel['e-camp'].add(CAMP_DEFAULT);
+    const gDefault=findCampDefault(allG);
+    const eDefault=findCampDefault(allE);
+    if(gDefault)sel['g-camp'].add(gDefault);
+    if(eDefault)sel['e-camp'].add(eDefault);
     buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));
     buildDropdown('e-camp',uniq(allE.map(r=>g(r,'Campa'))),v=>fmtCamp(v));
     updateLabel('g-camp');updateLabel('e-camp');
