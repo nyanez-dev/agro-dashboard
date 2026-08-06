@@ -25,6 +25,7 @@ body{font-family:'Inter',sans-serif;background:#F0F2F5;min-height:100vh}
 .tab.active[data-color="navy"]{border-bottom-color:#C9A96E}
 .tab.active[data-color="blue"]{border-bottom-color:#60A5FA}
 .tab.active[data-color="indigo"]{border-bottom-color:#818CF8}
+.tab.active[data-color="green"]{border-bottom-color:#4ADE80}
 
 /* Action bar */
 .action-bar{background:#F7F8FA;border-bottom:1px solid #E5E7EB;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
@@ -139,6 +140,121 @@ tr.clickable{cursor:pointer}
 .muted{color:#6B7280}
 .green{color:#065F46}
 .warn-box{background:#FEF3C7;border:1px solid #FDE68A;border-radius:6px;padding:10px 14px;font-size:13px;color:#92400E}
+
+/* ── ESQUEMAS ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: #1a1a18; color: #fff; padding: 20px 32px; display: flex; align-items: center; gap: 16px; }
+  .header-logo { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: #a8a89a; text-transform: uppercase; }
+  .header-sep { color: #444; font-size: 18px; }
+  .header-title { font-size: 15px; font-weight: 500; color: #fff; }
+  .header-badge { margin-left: auto; background: #2d5a27; color: #7ecf71; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; }
+
+  /* NAV TABS */
+  .nav { background: #fff; border-bottom: 1px solid #e5e4de; padding: 0 32px; display: flex; gap: 0; }
+  .nav-tab { padding: 14px 18px; font-size: 13px; font-weight: 500; color: #888; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+  .nav-tab:hover { color: #1a1a18; }
+  .nav-tab.active { color: #1a1a18; border-bottom-color: #1a1a18; }
+
+  /* MAIN */
+  .main { max-width: 900px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* SECTION TITLE */
+  .section-header { margin-bottom: 24px; }
+  .section-header h1 { font-size: 22px; font-weight: 600; color: #1a1a18; }
+  .section-header p { font-size: 14px; color: #666; margin-top: 4px; }
+
+  /* SCHEME CARDS */
+  .schemes-grid { display: flex; flex-direction: column; gap: 10px; }
+
+  .scheme-card { background: #fff; border: 1px solid #e5e4de; border-radius: 12px; overflow: hidden; transition: box-shadow 0.15s; }
+  .scheme-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+
+  .scheme-header { display: flex; align-items: center; gap: 16px; padding: 18px 20px; cursor: pointer; user-select: none; }
+  .scheme-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .scheme-name { font-size: 15px; font-weight: 600; flex: 1; }
+  .scheme-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.03em; }
+  .scheme-chevron { font-size: 18px; color: #aaa; transition: transform 0.2s; flex-shrink: 0; }
+  .scheme-card.open .scheme-chevron { transform: rotate(180deg); }
+
+  /* Color variants */
+  .dot-green { background: #4caf50; }
+  .dot-emerald { background: #2e7d32; }
+  .dot-blue { background: #1976d2; }
+  .dot-indigo { background: #5c6bc0; }
+  .dot-orange { background: #ef6c00; }
+  .dot-teal { background: #00796b; }
+
+  .tag-ue { background: #e8f5e9; color: #2e7d32; }
+  .tag-usa { background: #e3f2fd; color: #1565c0; }
+  .tag-ue2 { background: #ede7f6; color: #4527a0; }
+  .tag-int { background: #fce4ec; color: #880e4f; }
+  .tag-priv { background: #fff3e0; color: #bf360c; }
+  .tag-can { background: #e0f2f1; color: #004d40; }
+
+  /* SCHEME BODY */
+  .scheme-body { display: none; padding: 0 20px 20px; border-top: 1px solid #f0efe9; }
+  .scheme-card.open .scheme-body { display: block; }
+
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .info-block { }
+  .info-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .info-text { font-size: 13px; color: #333; line-height: 1.55; }
+  .info-full { grid-column: 1 / -1; }
+
+  .alert-box { margin-top: 14px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #5f4400; line-height: 1.5; }
+  .alert-box.red { background: #ffebee; border-color: #ef9a9a; color: #7f0000; }
+  .alert-box.blue { background: #e3f2fd; border-color: #90caf9; color: #0d47a1; }
+  .alert-label { font-weight: 700; display: block; margin-bottom: 3px; }
+
+  /* TABS WITHIN CARD */
+  .sub-tabs { display: flex; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
+  .sub-tab { padding: 6px 14px; font-size: 12px; font-weight: 500; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; color: #555; background: #fff; transition: all 0.15s; }
+  .sub-tab:hover { border-color: #1a1a18; color: #1a1a18; }
+  .sub-tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+
+  .sub-content { display: none; margin-top: 14px; }
+  .sub-content.active { display: block; }
+
+  /* EXPORTADOR SECTION */
+  .exp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .exp-logo { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0; }
+  .exp-name { font-size: 14px; font-weight: 600; }
+  .exp-via { font-size: 11px; color: #888; margin-left: auto; }
+
+  .steps-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .step-item { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 20px; height: 20px; border-radius: 50%; background: #f0efe9; font-size: 11px; font-weight: 700; color: #555; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #333; line-height: 1.5; }
+
+  .req-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .req-item { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #333; line-height: 1.5; }
+  .req-item::before { content: "—"; color: #aaa; flex-shrink: 0; }
+
+  .divider { height: 1px; background: #f0efe9; margin: 16px 0; }
+
+  /* REGLA DE ORO */
+  .gold-rule { background: #fffde7; border: 1.5px solid #f9a825; border-radius: 10px; padding: 16px 18px; margin-top: 28px; }
+  .gold-rule-title { font-size: 13px; font-weight: 700; color: #5f3d00; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .gold-rule-items { display: flex; flex-direction: column; gap: 8px; }
+  .gold-rule-item { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #4a2e00; line-height: 1.5; }
+  .gold-rule-item strong { color: #3d2200; }
+
+  /* SCHEME OVERVIEW */
+  .overview-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 20px; margin-top: 10px; }
+  .pill-seg { background: #ffebee; color: #b71c1c; }
+  .pill-bal { background: #e8f5e9; color: #1b5e20; }
+  .pill-traz { background: #e3f2fd; color: #0d47a1; }
+  .pill-cred { background: #f3e5f5; color: #4a148c; }
+
+  @media (max-width: 600px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .main { padding: 20px 14px 48px; }
+    .header { padding: 14px 16px; }
+    .nav { padding: 0 16px; }
+  }
 </style>
 </head>
 <body>
@@ -158,6 +274,7 @@ tr.clickable{cursor:pointer}
     <button class="tab active" id="tab-g" data-color="navy" onclick="switchTab('g')">Gestiones</button>
     <button class="tab" id="tab-e" data-color="blue" onclick="switchTab('e')">Habilitaciones</button>
     <button class="tab" id="tab-c" data-color="indigo" onclick="switchTab('c')">Información de campos</button>
+    <button class="tab" id="tab-s" data-color="green" onclick="switchTab('s')">Esquemas</button>
   </div>
 </div>
 
@@ -214,6 +331,346 @@ tr.clickable{cursor:pointer}
   </div>
   <div id="c-table"><div class="loading">Cargando datos...</div></div>
   <div class="footer-row" id="c-footer"></div>
+</div>
+
+
+<!-- ESQUEMAS -->
+<div id="panel-s" class="content" style="display:none">
+  <div style="max-width:900px;margin:0 auto;padding-top:8px">
+    <!-- nav interno esquemas -->
+    <nav class="nav" style="background:transparent;border-bottom:1px solid #e5e4de;margin-bottom:24px;padding:0">
+      <div class="nav-tab active" id="esq-tab-esquemas" onclick="showEsqSection('esquemas',this)">Esquemas</div>
+      <div class="nav-tab" id="esq-tab-exportadores" onclick="showEsqSection('exportadores',this)">Por exportador</div>
+      <div class="nav-tab" id="esq-tab-regla" onclick="showEsqSection('regla',this)">Datos para la Carta de Porte</div>
+    </nav>
+    <!-- ===== SECCIÓN: ESQUEMAS ===== -->
+  <div id="sec-esquemas">
+    <div class="section-header">
+      <h1>Esquemas de certificación</h1>
+      <p>Hacé click en cada esquema para ver qué es, cuándo aplica y cómo opera logísticamente.</p>
+    </div>
+
+    <div class="schemes-grid">
+
+      <!-- 2BSvs -->
+      <div class="scheme-card" id="card-2bsvs">
+        <div class="scheme-header" onclick="toggleCard('2bsvs')">
+          <span class="scheme-dot dot-green"></span>
+          <span class="scheme-name">Soja 2BSvs</span>
+          <span class="scheme-tag tag-ue">Directiva UE — RED III</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <span class="overview-pill pill-bal">● Balance de masas</span>
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">¿Qué es?</div>
+              <div class="info-text">Esquema voluntario de certificación reconocido por la UE que garantiza que la soja/maíz cumple criterios de sostenibilidad para la producción de biocombustibles.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">¿Para qué sirve?</div>
+              <div class="info-text">Habilita el grano al mercado europeo de biocombustibles y permite capturar premios o diferenciales comerciales.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">¿Cuándo aplica?</div>
+              <div class="info-text">Tierras de uso agrícola desde antes del 1° de enero de 2008. No deben afectar zonas protegidas, humedales o de alta biodiversidad.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">Logística</div>
+              <div class="info-text">Opera bajo Balance de Masas: el grano certificado puede mezclarse físicamente; el control es administrativo/contable. DDJJ anual por campaña.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- EPA -->
+      <div class="scheme-card" id="card-epa">
+        <div class="scheme-header" onclick="toggleCard('epa')">
+          <span class="scheme-dot dot-emerald"></span>
+          <span class="scheme-name">Soja EPA (EPA-RFS2)</span>
+          <span class="scheme-tag tag-usa">Mercado EE.UU.</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <span class="overview-pill pill-seg">● Segregación física obligatoria</span>
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">¿Qué es?</div>
+              <div class="info-text">Programa regulado por la EPA de EE.UU. para combustibles renovables. Permite que la soja sea exportada para biocombustibles en el mercado norteamericano.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">¿Cuándo aplica?</div>
+              <div class="info-text">Campos agrícolas constituidos como tales antes del 19/12/2007. Requiere evidencia documental sólida (cartas de porte antiguas, facturas de insumos, etc.) y polígono KMZ.</div>
+            </div>
+            <div class="info-block info-full">
+              <div class="info-label">Logística — crítico</div>
+              <div class="info-text">SEGREGACIÓN FÍSICA OBLIGATORIA. El grano certificado debe viajar y almacenarse separado de la soja convencional en todo momento.</div>
+            </div>
+          </div>
+          <div class="alert-box red" style="margin-top:14px;">
+            <span class="alert-label">⚠ Riesgo irreversible</span>
+            Un error en la Carta de Porte causa la pérdida definitiva de la condición EPA al arribo a puerto. No tiene solución posterior.
+          </div>
+        </div>
+      </div>
+
+      <!-- EUDR / VISEC -->
+      <div class="scheme-card" id="card-eudr">
+        <div class="scheme-header" onclick="toggleCard('eudr')">
+          <span class="scheme-dot dot-indigo"></span>
+          <span class="scheme-name">Soja EUDR / VISEC</span>
+          <span class="scheme-tag tag-ue2">Obligatorio UE</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <span class="overview-pill pill-traz">● Trazabilidad georreferenciada</span>
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">¿Qué es?</div>
+              <div class="info-text">Normativa regulatoria obligatoria de la UE para productos libres de deforestación. En Argentina se canaliza a través de VISEC (plataforma de monitoreo y verificación).</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">¿Cuándo aplica?</div>
+              <div class="info-text">Campos que NO hayan sufrido deforestación ni degradación forestal posterior al 31 de diciembre de 2020.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">¿Para qué sirve?</div>
+              <div class="info-text">Es una barrera de entrada ineludible para vender soja o derivados a la UE. Sin verificación VISEC, el grano no puede tener destino UE.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">Logística</div>
+              <div class="info-text">Sistema de trazabilidad digital con polígonos KML/KMZ de perímetro y superficie sembrada.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RTRS -->
+      <div class="scheme-card" id="card-rtrs">
+        <div class="scheme-header" onclick="toggleCard('rtrs')">
+          <span class="scheme-dot dot-blue"></span>
+          <span class="scheme-name">RTRS</span>
+          <span class="scheme-tag tag-int">Estándar internacional</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <span class="overview-pill pill-cred">● Balance de masas + créditos</span>
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">¿Qué es?</div>
+              <div class="info-text">Estándar internacional que certifica producción de soja ambientalmente sostenible, socialmente justa y económicamente viable.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">¿Para qué sirve?</div>
+              <div class="info-text">Alto valor reputacional global para alimentos, piensos y biocombustibles. Permite capturar premios o monetizar mediante venta/transferencia de créditos en plataforma.</div>
+            </div>
+            <div class="info-block info-full">
+              <div class="info-label">¿Cuándo aplica?</div>
+              <div class="info-text">Aplica exclusivamente a productores auditados que ya figuren inscriptos en el listado oficial de RTRS. Verificar en: <a href="https://responsiblesoy.org/productores" target="_blank" style="color:#1565c0;">responsiblesoy.org/productores</a></div>
+            </div>
+          </div>
+          <div class="alert-box red" style="margin-top:14px;">
+            <span class="alert-label">🚨 Regla crítica</span>
+            Si el productor NO figura en el listado oficial, NO PUEDE OPERAR bajo RTRS. El proceso de inscripción es gestionado de forma independiente por el propio productor ante organismos certificadores acreditados.
+          </div>
+        </div>
+      </div>
+
+      <!-- CFR -->
+      <div class="scheme-card" id="card-cfr">
+        <div class="scheme-header" onclick="toggleCard('cfr')">
+          <span class="scheme-dot dot-teal"></span>
+          <span class="scheme-name">CFR (Clean Fuel Regulations)</span>
+          <span class="scheme-tag tag-can">Mercado Canadá</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">¿Qué es?</div>
+              <div class="info-text">Normativa canadiense para reducir la intensidad de carbono en combustibles de baja emisión (LCIF).</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">¿Cuándo aplica?</div>
+              <div class="info-text">Tierras agrícolas sin intervención en bosques, humedales o zonas ribereñas desde julio de 2020. Requiere auditoría al productor (hábitat, plagas) y firma de Declaración Jurada.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">¿Para qué sirve?</div>
+              <div class="info-text">Habilita la exportación de biomasa de soja para la generación de créditos de cumplimiento en Canadá.</div>
+            </div>
+            <div class="info-block">
+              <div class="info-label">Logística</div>
+              <div class="info-text">Al cierre del contrato se requiere Declaración CFR firmada por el cliente, Declaración RTRS y Transferencia de Créditos RTRS equivalente a las toneladas declaradas.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /schemes-grid -->
+  </div><!-- /sec-esquemas -->
+
+
+  <!-- ===== SECCIÓN: POR EXPORTADOR ===== -->
+  <div id="sec-exportadores" style="display:none;">
+    <div class="section-header">
+      <h1>Qué pide cada exportador</h1>
+      <p>Documentación y esquemas disponibles por exportador. Referencia rápida para el equipo.</p>
+    </div>
+
+    <div class="schemes-grid">
+
+      <!-- COFCO -->
+      <div class="scheme-card" id="card-exp-cofco">
+        <div class="scheme-header" onclick="toggleCard('exp-cofco')">
+          <div class="exp-logo" style="background:#d32f2f;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">CO</div>
+          <span class="scheme-name">COFCO International</span>
+          <span class="scheme-tag" style="background:#fce4ec;color:#880e4f;">2BSvs · EPA · VISEC · RTRS</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">Renovación</div>
+              <div class="info-text">Todos los esquemas requieren DDJJ por campaña. Se usa la opción "Copiar solicitud".</div>
+            </div>
+            <div class="info-block info-full">
+              <div class="info-label">Qué pide al productor</div>
+              <div class="info-text">CUIT · RENSPA vigente · KMZ (polígono único) · Código localidad AFIP (6 dígitos exactos, ej: 006172) · Hectáreas de soja/maíz · Rinde estimado (por defecto 4 tn/ha) · DNI del firmante · Estatuto y Poder si es sociedad · Evidencia pre-2007 solo para EPA.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LDC -->
+      <div class="scheme-card" id="card-exp-ldc">
+        <div class="scheme-header" onclick="toggleCard('exp-ldc')">
+          <div class="exp-logo" style="background:#1a237e;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">LD</div>
+          <span class="scheme-name">Louis Dreyfus Company (LDC)</span>
+          <span class="scheme-tag" style="background:#e3f2fd;color:#0d47a1;">2BSvs · EPA · EPA+RTRS · EUDR</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">Renovación campaña anterior</div>
+              <div class="info-text">LDC reutiliza el polígono y solo pide la planilla de actualización. Si el predio cambió, adjuntar nuevo KMZ.</div>
+            </div>
+            <div class="info-block info-full">
+              <div class="info-label">Qué pide al productor</div>
+              <div class="info-text">CUIT · KMZ con polígono cerrado y marca de posición central · Nombre del campo idéntico al de campañas anteriores o al de la evidencia · Mail y datos del firmante (con facultades) · Evidencia pre-2007 para EPA.</div>
+            </div>
+          </div>
+          <div class="alert-box blue" style="margin-top:14px;">
+            <span class="alert-label">Para campaña 25/26 (LDC)</span>
+            Las habilitaciones EPA requieren primero la habilitación en 2BSvs. Se presenta la DJ 2BSvs por web y una vez aprobada se envía documentación para EPA.
+          </div>
+        </div>
+      </div>
+
+      <!-- BUNGE -->
+      <div class="scheme-card" id="card-exp-bunge">
+        <div class="scheme-header" onclick="toggleCard('exp-bunge')">
+          <div class="exp-logo" style="background:#e65100;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">BU</div>
+          <span class="scheme-name">Bunge</span>
+          <span class="scheme-tag" style="background:#fff3e0;color:#bf360c;">EPA</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">Para EPA campaña actual</div>
+              <div class="info-text">Ingresar Acciones → Ver e informar las hectáreas productivas de la nueva siembra. Confirmar habilitación en el panel de "Certificaciones".</div>
+            </div>
+            <div class="info-block info-full">
+              <div class="info-label">Qué pide al productor</div>
+              <div class="info-text">Razón Social y mail de contacto · Poderes con facultades de granos y DNI de firmantes · Hectáreas productivas de la campaña · KMZ solo en alta nueva o cambio de superficie.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOA -->
+      <div class="scheme-card" id="card-exp-moa">
+        <div class="scheme-header" onclick="toggleCard('exp-moa')">
+          <div class="exp-logo" style="background:#2e7d32;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">MO</div>
+          <span class="scheme-name">Molinos Agro (MOA)</span>
+          <span class="scheme-tag" style="background:#e8f5e9;color:#1b5e20;">2BSvs · EPA</span>
+          <span class="scheme-chevron">⌄</span>
+        </div>
+        <div class="scheme-body">
+          <div class="info-grid">
+            <div class="info-block">
+              <div class="info-label">Particularidad del KMZ</div>
+              <div class="info-text">MOA exige un marcador de posición (pinche amarillo) al centro del polígono para extraer Latitud y Longitud. Sin esto no se puede completar la carga.</div>
+            </div>
+            <div class="info-block info-full">
+              <div class="info-label">Qué pide al productor</div>
+              <div class="info-text">KMZ con pin central de referencia · DDJJ de MOA firmada por el titular o apoderado · Evidencia pre-2007 para EPA.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+  </div><!-- /sec-exportadores -->
+
+
+  <!-- ===== SECCIÓN: REGLA CPE ===== -->
+  <div id="sec-regla" style="display:none;">
+    <div class="section-header">
+      <h1>Datos importantes para la Carta de Porte</h1>
+      <p>Cada punto aplica sin excepción. Un error puede ser irreversible.</p>
+    </div>
+
+    <div class="alert-box red" style="margin-bottom:20px; font-size:14px;">
+      <span class="alert-label" style="font-size:14px;">⚠ Para el comercial — crítico</span>
+      Para evitar contingencias económicas, rechazos y pérdida irrecuperable de la condición sustentable al arribo a puerto, respetar siempre estos tres puntos al confeccionar la CPE.
+    </div>
+
+    <div class="gold-rule">
+      <div class="gold-rule-title">📋 Las tres reglas irrompibles</div>
+      <div class="gold-rule-items">
+        <div class="gold-rule-item">
+          <strong style="min-width:130px; flex-shrink:0;">Nombre del campo</strong>
+          <span>Escribirlo en el cuadro <strong>Observaciones de la CPE EXACTAMENTE IGUAL</strong> a como fue declarado en la evidencia y en el sistema del exportador. Ejemplo: <code style="background:#fff8dc;padding:2px 6px;border-radius:4px;font-size:12px;">SOJA EPA - CAMPO LA ELENA - COSECHA 25/26</code></span>
+        </div>
+        <div class="gold-rule-item">
+          <strong style="min-width:130px; flex-shrink:0;">Localidad</strong>
+          <span>La localidad de procedencia debe coincidir de forma idéntica con el código AFIP/localidad aprobada en la habilitación.</span>
+        </div>
+        <div class="gold-rule-item">
+          <strong style="min-width:130px; flex-shrink:0;">RENSPA (VISEC)</strong>
+          <span>Para normativas VISEC/EUDR, la CPE debe incluir el número de RENSPA habilitado del predio.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <div class="info-label" style="margin-bottom:12px;">Formato de observaciones por esquema</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <span class="scheme-tag tag-ue" style="min-width:80px;text-align:center;">2BSvs</span>
+          <code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA 2BSvs - NOMBRE DE CAMPO</code>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <span class="scheme-tag tag-usa" style="min-width:80px;text-align:center;">EPA</span>
+          <code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EPA - NOMBRE DE CAMPO</code>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <span class="scheme-tag tag-ue2" style="min-width:80px;text-align:center;">EUDR</span>
+          <code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EUDR - NOMBRE DE CAMPO (+ RENSPA)</code>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <span class="scheme-tag tag-int" style="min-width:80px;text-align:center;">EPA+RTRS</span>
+          <code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EPA - NOMBRE DE CAMPO - CFR - RTRS</code>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sec-regla -->
+  </div>
 </div>
 
 <script>
@@ -650,7 +1107,7 @@ async function deleteComment(idx,ci){
 function clearC(){document.getElementById('c-search').value='';Object.keys(sel).filter(k=>k.startsWith('c-')).forEach(k=>sel[k].clear());buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));renderC();}
 
 // ── TABS ──
-function switchTab(t){currentTab=t;['g','e','c'].forEach(x=>{const tab=document.getElementById('tab-'+x);const cl=x===t?'tab active':'tab';tab.className=cl;document.getElementById('panel-'+x).style.display=x===t?'':'none';});}
+function switchTab(t){currentTab=t;['g','e','c','s'].forEach(x=>{const tab=document.getElementById('tab-'+x);const cl=x===t?'tab active':'tab';if(tab)tab.className=cl;const panel=document.getElementById('panel-'+x);if(panel)panel.style.display=x===t?'':'none';});}
 
 // ── EXPORT ──
 function exportExcel(){
@@ -732,6 +1189,22 @@ switchTab=function(t){_origSwitch(t);};
 
 // Override stat colors per tab
 var _origStatCard=statCard;
+
+// ── ESQUEMAS INTERNOS ──
+function showEsqSection(name, el) {
+  ['esquemas','exportadores','regla'].forEach(s => {
+    const sec = document.getElementById('sec-'+s);
+    if(sec) sec.style.display = s === name ? '' : 'none';
+  });
+  document.querySelectorAll('#panel-s .nav-tab').forEach(t => t.classList.remove('active'));
+  if(el) el.classList.add('active');
+}
+
+function toggleCard(id) {
+  const card = document.getElementById('card-'+id);
+  if(card) card.classList.toggle('open');
+}
+
 </script>
 </body>
 </html>
