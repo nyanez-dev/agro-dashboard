@@ -141,6 +141,27 @@ tr.clickable{cursor:pointer}
 .green{color:#065F46}
 .warn-box{background:#FEF3C7;border:1px solid #FDE68A;border-radius:6px;padding:10px 14px;font-size:13px;color:#92400E}
 
+/* ── MODAL NUEVA SOLICITUD ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:28px 32px;width:100%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,0.18);position:relative}
+.modal h2{font-size:16px;font-weight:600;color:#1B2A4A;margin-bottom:4px}
+.modal .modal-sub{font-size:12px;color:#6B7280;margin-bottom:22px}
+.modal-close{position:absolute;top:16px;right:18px;background:none;border:none;font-size:20px;color:#9CA3AF;cursor:pointer;line-height:1}
+.modal-close:hover{color:#374151}
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.form-row label{font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em}
+.form-row input[type=text],.form-row select{width:100%;padding:9px 12px;border-radius:7px;border:1px solid #D1D5DB;font-size:13px;color:#374151;font-family:'Inter',sans-serif;outline:none}
+.form-row input[type=text]:focus,.form-row select:focus{border-color:#1B2A4A}
+.esquemas-check{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.esq-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid #D1D5DB;border-radius:20px;font-size:12px;cursor:pointer;user-select:none;color:#374151;background:#fff;transition:all 0.12s}
+.esq-chip input[type=checkbox]{accent-color:#1B2A4A;width:13px;height:13px;cursor:pointer}
+.esq-chip:has(input:checked){background:#EEF2FF;border-color:#818CF8;color:#3730A3;font-weight:500}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;border-top:1px solid #F3F4F6;padding-top:18px}
+.modal-msg{font-size:13px;margin-top:12px;padding:10px 14px;border-radius:7px;display:none}
+.modal-msg.ok{background:#D1FAE5;color:#065F46;display:block}
+.modal-msg.err{background:#FEE2E2;color:#991B1B;display:block}
+
 /* ── ESQUEMAS ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
@@ -282,10 +303,65 @@ tr.clickable{cursor:pointer}
 <div class="action-bar">
   <div class="btn-group">
     <a href="https://script.google.com/macros/s/AKfycbwPs67c0Od3Ca0lZH7TkaW_75Rq8pQGvIPFUmsiRCZ4O-n3EvywAFmF8VpuxztO7mc6/exec" target="_blank" class="btn btn-primary" style="text-decoration:none">Formulario cliente</a>
+    <button class="btn btn-gold" onclick="openNuevaSolicitud()">+ Nueva solicitud</button>
     <button class="btn" onclick="exportExcel()">Exportar Excel</button>
     <button class="btn" onclick="loadData()">Actualizar</button>
   </div>
   <button class="btn btn-edit" id="btn-edit" onclick="toggleEditMode()">Modo edición</button>
+</div>
+
+<!-- MODAL NUEVA SOLICITUD -->
+<div class="modal-overlay" id="modal-solicitud" onclick="closeModalIfOverlay(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeNuevaSolicitud()">×</button>
+    <h2>Nueva solicitud de gestión</h2>
+    <p class="modal-sub">El equipo de Compliance recibirá tu solicitud por mail.</p>
+
+    <div class="form-row">
+      <label>Tu nombre <span style="color:#DC2626">*</span></label>
+      <input type="text" id="sol-nombre" placeholder="Ej: Juan Pérez">
+    </div>
+    <div class="form-row">
+      <label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label>
+      <input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A.">
+    </div>
+    <div class="form-row">
+      <label>CUIT <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <input type="text" id="sol-cuit" placeholder="Ej: 30-12345678-9">
+    </div>
+    <div class="form-row">
+      <label>Exportador <span style="color:#DC2626">*</span></label>
+      <select id="sol-exportador">
+        <option value="">Seleccionar...</option>
+        <option>LDC</option>
+        <option>MOA</option>
+        <option>COFCO</option>
+        <option>Bunge</option>
+        <option>AGD</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Esquema/s <span style="color:#DC2626">*</span></label>
+      <div class="esquemas-check">
+        <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
+        <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
+        <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
+        <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
+        <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Campo <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <input type="text" id="sol-campo" placeholder="Ej: La Elena">
+    </div>
+
+    <div id="sol-msg" class="modal-msg"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeNuevaSolicitud()">Cancelar</button>
+      <button class="btn btn-primary" onclick="enviarSolicitud()" id="btn-enviar-sol">Enviar solicitud</button>
+    </div>
+  </div>
 </div>
 
 <!-- GESTIONES -->
@@ -1189,6 +1265,77 @@ switchTab=function(t){_origSwitch(t);};
 
 // Override stat colors per tab
 var _origStatCard=statCard;
+
+// ── NUEVA SOLICITUD ──
+function openNuevaSolicitud(){
+  document.getElementById('modal-solicitud').classList.add('open');
+  document.getElementById('sol-msg').className='modal-msg';
+  document.getElementById('sol-msg').textContent='';
+  document.getElementById('btn-enviar-sol').disabled=false;
+  document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';
+}
+function closeNuevaSolicitud(){
+  document.getElementById('modal-solicitud').classList.remove('open');
+  // limpiar campos
+  ['sol-nombre','sol-cliente','sol-cuit','sol-campo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sol-exportador').value='';
+  document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);
+}
+function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
+
+async function enviarSolicitud(){
+  const nombre=document.getElementById('sol-nombre').value.trim();
+  const cliente=document.getElementById('sol-cliente').value.trim();
+  const cuit=document.getElementById('sol-cuit').value.trim();
+  const exportador=document.getElementById('sol-exportador').value;
+  const campo=document.getElementById('sol-campo').value.trim();
+  const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');
+  const msg=document.getElementById('sol-msg');
+
+  if(!nombre){msg.className='modal-msg err';msg.textContent='Ingresá tu nombre.';return;}
+  if(!cliente){msg.className='modal-msg err';msg.textContent='Ingresá el nombre del cliente.';return;}
+  if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador.';return;}
+  if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema.';return;}
+
+  const btn=document.getElementById('btn-enviar-sol');
+  btn.disabled=true;btn.textContent='Enviando...';
+  msg.className='modal-msg';msg.textContent='';
+
+  const camp=findCampDefault(allG)||'25/26';
+  const fecha=new Date().toLocaleDateString('es-AR');
+
+  try {
+    const res=await fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      body:JSON.stringify({
+        action:'nuevaSolicitud',
+        productor: cliente,
+        cuit: cuit||'',
+        campo: campo||'',
+        esquema: esquemas,
+        exportador: exportador,
+        estado: 'Solicitud enviada',
+        via: 'Tablero',
+        campana: camp,
+        solicitante: nombre,
+        fecha: fecha
+      })
+    });
+    const data=await res.json();
+    if(data.ok){
+      msg.className='modal-msg ok';
+      msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';
+      btn.textContent='Enviado ✓';
+      setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);
+    } else {
+      throw new Error(data.error||'Error desconocido');
+    }
+  } catch(e){
+    msg.className='modal-msg err';
+    msg.textContent='Error al enviar: '+e.message;
+    btn.disabled=false;btn.textContent='Enviar solicitud';
+  }
+}
 
 // ── ESQUEMAS INTERNOS ──
 function showEsqSection(name, el) {
