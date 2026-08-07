@@ -1328,7 +1328,11 @@ async function enviarSolicitud(){
     }
   } catch(e){
     msg.className='modal-msg err';
-    msg.textContent='Error al enviar: '+e.message;
+    if(e.message==='Failed to fetch'){
+      msg.textContent='No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.';
+    } else {
+      msg.textContent='Error al enviar: '+e.message;
+    }
     btn.disabled=false;btn.textContent='Enviar solicitud';
   }
 }
