@@ -608,11 +608,11 @@ tr.clickable{cursor:pointer}
           <div class="info-grid">
             <div class="info-block">
               <div class="info-label">Renovación</div>
-              <div class="info-text">Todos los esquemas requieren DDJJ por campaña. Se usa la opción "Copiar solicitud".</div>
+              <div class="info-text">Todos los esquemas requieren DDJJ por campaña.</div>
             </div>
             <div class="info-block info-full">
               <div class="info-label">Qué pide al productor</div>
-              <div class="info-text">CUIT · RENSPA vigente · KMZ (polígono único) · Código localidad AFIP (6 dígitos exactos, ej: 006172) · Hectáreas de soja/maíz · Rinde estimado (por defecto 4 tn/ha) · DNI del firmante · Estatuto y Poder si es sociedad · Evidencia pre-2007 solo para EPA.</div>
+              <div class="info-text">CUIT · RENSPA vigente · KMZ (polígono único) · Código localidad AFIP (6 dígitos exactos, ej: 006172) · Hectáreas de soja/maíz · DNI del firmante · Estatuto y Poder si es sociedad · Evidencia pre-2007 solo para EPA.</div>
             </div>
           </div>
         </div>
@@ -654,10 +654,6 @@ tr.clickable{cursor:pointer}
         </div>
         <div class="scheme-body">
           <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">Para EPA campaña actual</div>
-              <div class="info-text">Ingresar Acciones → Ver e informar las hectáreas productivas de la nueva siembra. Confirmar habilitación en el panel de "Certificaciones".</div>
-            </div>
             <div class="info-block info-full">
               <div class="info-label">Qué pide al productor</div>
               <div class="info-text">Razón Social y mail de contacto · Poderes con facultades de granos y DNI de firmantes · Hectáreas productivas de la campaña · KMZ solo en alta nueva o cambio de superficie.</div>
@@ -942,8 +938,8 @@ function renderG(){
   const exps=uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');
   if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Estado</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
-  const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted" style="max-width:260px">${r['Estado']||'\u2014'}</td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>`).join('');
+  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
+  const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Esquema']||'\u2014'}</td><td class="muted" style="max-width:260px">${r['Estado']||'\u2014'}</td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>`).join('');
   document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} de ${allG.length} registros</span>`;
 }
