@@ -7,9 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:#F0F2F5;min-height:100vh}
+
+/* ── AUTH OVERLAY ── */
+#auth-overlay{position:fixed;inset:0;background:#1B2A4A;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px}
+#auth-overlay.hidden{display:none}
 
 /* Header */
 .hdr{background:#1B2A4A;padding:0}
@@ -18,6 +23,7 @@ body{font-family:'Inter',sans-serif;background:#F0F2F5;min-height:100vh}
 .hdr-brand-name{color:#C9A96E;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase}
 .hdr-brand-title{color:#fff;font-size:16px;font-weight:500}
 .hdr-meta{display:flex;align-items:center;gap:16px;color:#7B8BA3;font-size:11px}
+.hdr-user{color:#C9A96E;font-weight:500}
 .hdr-tabs{display:flex;gap:0;padding:0 24px}
 .tab{padding:10px 20px;border:none;background:transparent;cursor:pointer;font-size:13px;color:#7B8BA3;border-bottom:2px solid transparent;font-family:'Inter',sans-serif;transition:all 0.15s}
 .tab:hover{color:#A0B0C4}
@@ -141,7 +147,7 @@ tr.clickable{cursor:pointer}
 .green{color:#065F46}
 .warn-box{background:#FEF3C7;border:1px solid #FDE68A;border-radius:6px;padding:10px 14px;font-size:13px;color:#92400E}
 
-/* ── MODAL NUEVA SOLICITUD ── */
+/* Modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:#fff;border-radius:12px;padding:28px 32px;width:100%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,0.18);position:relative}
@@ -162,123 +168,62 @@ tr.clickable{cursor:pointer}
 .modal-msg.ok{background:#D1FAE5;color:#065F46;display:block}
 .modal-msg.err{background:#FEE2E2;color:#991B1B;display:block}
 
-/* ── ESQUEMAS ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
-
-  /* HEADER */
-  .header { background: #1a1a18; color: #fff; padding: 20px 32px; display: flex; align-items: center; gap: 16px; }
-  .header-logo { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: #a8a89a; text-transform: uppercase; }
-  .header-sep { color: #444; font-size: 18px; }
-  .header-title { font-size: 15px; font-weight: 500; color: #fff; }
-  .header-badge { margin-left: auto; background: #2d5a27; color: #7ecf71; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; }
-
-  /* NAV TABS */
-  .nav { background: #fff; border-bottom: 1px solid #e5e4de; padding: 0 32px; display: flex; gap: 0; }
-  .nav-tab { padding: 14px 18px; font-size: 13px; font-weight: 500; color: #888; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
-  .nav-tab:hover { color: #1a1a18; }
-  .nav-tab.active { color: #1a1a18; border-bottom-color: #1a1a18; }
-
-  /* MAIN */
-  .main { max-width: 900px; margin: 0 auto; padding: 32px 24px 64px; }
-
-  /* SECTION TITLE */
-  .section-header { margin-bottom: 24px; }
-  .section-header h1 { font-size: 22px; font-weight: 600; color: #1a1a18; }
-  .section-header p { font-size: 14px; color: #666; margin-top: 4px; }
-
-  /* SCHEME CARDS */
-  .schemes-grid { display: flex; flex-direction: column; gap: 10px; }
-
-  .scheme-card { background: #fff; border: 1px solid #e5e4de; border-radius: 12px; overflow: hidden; transition: box-shadow 0.15s; }
-  .scheme-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
-
-  .scheme-header { display: flex; align-items: center; gap: 16px; padding: 18px 20px; cursor: pointer; user-select: none; }
-  .scheme-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .scheme-name { font-size: 15px; font-weight: 600; flex: 1; }
-  .scheme-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.03em; }
-  .scheme-chevron { font-size: 18px; color: #aaa; transition: transform 0.2s; flex-shrink: 0; }
-  .scheme-card.open .scheme-chevron { transform: rotate(180deg); }
-
-  /* Color variants */
-  .dot-green { background: #4caf50; }
-  .dot-emerald { background: #2e7d32; }
-  .dot-blue { background: #1976d2; }
-  .dot-indigo { background: #5c6bc0; }
-  .dot-orange { background: #ef6c00; }
-  .dot-teal { background: #00796b; }
-
-  .tag-ue { background: #e8f5e9; color: #2e7d32; }
-  .tag-usa { background: #e3f2fd; color: #1565c0; }
-  .tag-ue2 { background: #ede7f6; color: #4527a0; }
-  .tag-int { background: #fce4ec; color: #880e4f; }
-  .tag-priv { background: #fff3e0; color: #bf360c; }
-  .tag-can { background: #e0f2f1; color: #004d40; }
-
-  /* SCHEME BODY */
-  .scheme-body { display: none; padding: 0 20px 20px; border-top: 1px solid #f0efe9; }
-  .scheme-card.open .scheme-body { display: block; }
-
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
-  .info-block { }
-  .info-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
-  .info-text { font-size: 13px; color: #333; line-height: 1.55; }
-  .info-full { grid-column: 1 / -1; }
-
-  .alert-box { margin-top: 14px; background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #5f4400; line-height: 1.5; }
-  .alert-box.red { background: #ffebee; border-color: #ef9a9a; color: #7f0000; }
-  .alert-box.blue { background: #e3f2fd; border-color: #90caf9; color: #0d47a1; }
-  .alert-label { font-weight: 700; display: block; margin-bottom: 3px; }
-
-  /* TABS WITHIN CARD */
-  .sub-tabs { display: flex; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
-  .sub-tab { padding: 6px 14px; font-size: 12px; font-weight: 500; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; color: #555; background: #fff; transition: all 0.15s; }
-  .sub-tab:hover { border-color: #1a1a18; color: #1a1a18; }
-  .sub-tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
-
-  .sub-content { display: none; margin-top: 14px; }
-  .sub-content.active { display: block; }
-
-  /* EXPORTADOR SECTION */
-  .exp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .exp-logo { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0; }
-  .exp-name { font-size: 14px; font-weight: 600; }
-  .exp-via { font-size: 11px; color: #888; margin-left: auto; }
-
-  .steps-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-  .step-item { display: flex; gap: 10px; align-items: flex-start; }
-  .step-num { width: 20px; height: 20px; border-radius: 50%; background: #f0efe9; font-size: 11px; font-weight: 700; color: #555; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-  .step-text { font-size: 13px; color: #333; line-height: 1.5; }
-
-  .req-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-  .req-item { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #333; line-height: 1.5; }
-  .req-item::before { content: "—"; color: #aaa; flex-shrink: 0; }
-
-  .divider { height: 1px; background: #f0efe9; margin: 16px 0; }
-
-  /* REGLA DE ORO */
-  .gold-rule { background: #fffde7; border: 1.5px solid #f9a825; border-radius: 10px; padding: 16px 18px; margin-top: 28px; }
-  .gold-rule-title { font-size: 13px; font-weight: 700; color: #5f3d00; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-  .gold-rule-items { display: flex; flex-direction: column; gap: 8px; }
-  .gold-rule-item { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #4a2e00; line-height: 1.5; }
-  .gold-rule-item strong { color: #3d2200; }
-
-  /* SCHEME OVERVIEW */
-  .overview-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 20px; margin-top: 10px; }
-  .pill-seg { background: #ffebee; color: #b71c1c; }
-  .pill-bal { background: #e8f5e9; color: #1b5e20; }
-  .pill-traz { background: #e3f2fd; color: #0d47a1; }
-  .pill-cred { background: #f3e5f5; color: #4a148c; }
-
-  @media (max-width: 600px) {
-    .info-grid { grid-template-columns: 1fr; }
-    .main { padding: 20px 14px 48px; }
-    .header { padding: 14px 16px; }
-    .nav { padding: 0 16px; }
-  }
+/* Esquemas */
+.nav{background:#fff;border-bottom:1px solid #e5e4de;padding:0 32px;display:flex;gap:0}
+.nav-tab{padding:14px 18px;font-size:13px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;transition:color 0.15s,border-color 0.15s;white-space:nowrap}
+.nav-tab:hover{color:#1a1a18}
+.nav-tab.active{color:#1a1a18;border-bottom-color:#1a1a18}
+.section-header{margin-bottom:24px}
+.section-header h1{font-size:22px;font-weight:600;color:#1a1a18}
+.section-header p{font-size:14px;color:#666;margin-top:4px}
+.schemes-grid{display:flex;flex-direction:column;gap:10px}
+.scheme-card{background:#fff;border:1px solid #e5e4de;border-radius:12px;overflow:hidden;transition:box-shadow 0.15s}
+.scheme-card:hover{box-shadow:0 2px 12px rgba(0,0,0,0.07)}
+.scheme-header{display:flex;align-items:center;gap:16px;padding:18px 20px;cursor:pointer;user-select:none}
+.scheme-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.scheme-name{font-size:15px;font-weight:600;flex:1}
+.scheme-tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:0.03em}
+.scheme-chevron{font-size:18px;color:#aaa;transition:transform 0.2s;flex-shrink:0}
+.scheme-card.open .scheme-chevron{transform:rotate(180deg)}
+.dot-green{background:#4caf50}.dot-emerald{background:#2e7d32}.dot-blue{background:#1976d2}.dot-indigo{background:#5c6bc0}.dot-teal{background:#00796b}
+.tag-ue{background:#e8f5e9;color:#2e7d32}.tag-usa{background:#e3f2fd;color:#1565c0}.tag-ue2{background:#ede7f6;color:#4527a0}.tag-int{background:#fce4ec;color:#880e4f}.tag-can{background:#e0f2f1;color:#004d40}
+.scheme-body{display:none;padding:0 20px 20px;border-top:1px solid #f0efe9}
+.scheme-card.open .scheme-body{display:block}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.info-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px}
+.info-text{font-size:13px;color:#333;line-height:1.55}
+.info-full{grid-column:1/-1}
+.alert-box{margin-top:14px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:13px;color:#5f4400;line-height:1.5}
+.alert-box.red{background:#ffebee;border-color:#ef9a9a;color:#7f0000}
+.alert-box.blue{background:#e3f2fd;border-color:#90caf9;color:#0d47a1}
+.alert-label{font-weight:700;display:block;margin-bottom:3px}
+.gold-rule{background:#fffde7;border:1.5px solid #f9a825;border-radius:10px;padding:16px 18px;margin-top:28px}
+.gold-rule-title{font-size:13px;font-weight:700;color:#5f3d00;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.gold-rule-items{display:flex;flex-direction:column;gap:8px}
+.gold-rule-item{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#4a2e00;line-height:1.5}
+.gold-rule-item strong{color:#3d2200}
+.overview-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px;margin-top:10px}
+.pill-seg{background:#ffebee;color:#b71c1c}.pill-bal{background:#e8f5e9;color:#1b5e20}.pill-traz{background:#e3f2fd;color:#0d47a1}.pill-cred{background:#f3e5f5;color:#4a148c}
+@media(max-width:600px){.info-grid{grid-template-columns:1fr}.nav{padding:0 16px}}
 </style>
 </head>
 <body>
+
+<!-- ── AUTH OVERLAY ── -->
+<div id="auth-overlay">
+  <div style="text-align:center">
+    <div style="color:#C9A96E;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px">Allaria Agro</div>
+    <div style="color:#fff;font-size:22px;font-weight:600;margin-bottom:4px">Tablero de control</div>
+    <div style="color:#7B8BA3;font-size:13px">Soja sustentable</div>
+  </div>
+  <div style="color:#7B8BA3;font-size:13px;text-align:center">
+    Iniciá sesión con tu cuenta <strong style="color:#C9A96E">@allaria.com.ar</strong> para continuar
+  </div>
+  <div id="google-btn"></div>
+  <div id="auth-error" style="color:#FCA5A5;font-size:13px;display:none;text-align:center;background:rgba(220,38,38,0.15);padding:10px 20px;border-radius:8px;margin-top:-8px">
+    ⚠ Solo pueden acceder cuentas @allaria.com.ar
+  </div>
+</div>
 
 <!-- Header -->
 <div class="hdr">
@@ -288,6 +233,7 @@ tr.clickable{cursor:pointer}
       <span class="hdr-brand-title">Tablero de control · Soja sustentable</span>
     </div>
     <div class="hdr-meta">
+      <span id="auth-user" class="hdr-user"></span>
       <span id="last-update">Cargando...</span>
     </div>
   </div>
@@ -316,32 +262,13 @@ tr.clickable{cursor:pointer}
     <button class="modal-close" onclick="closeNuevaSolicitud()">×</button>
     <h2>Nueva solicitud de gestión</h2>
     <p class="modal-sub">El equipo de Compliance recibirá tu solicitud por mail.</p>
-
-    <div class="form-row">
-      <label>Tu nombre <span style="color:#DC2626">*</span></label>
-      <input type="text" id="sol-nombre" placeholder="Ej: Juan Pérez">
+    <div class="form-row"><label>Tu nombre <span style="color:#DC2626">*</span></label><input type="text" id="sol-nombre" placeholder="Ej: Juan Pérez"></div>
+    <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A."></div>
+    <div class="form-row"><label>CUIT <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" id="sol-cuit" placeholder="Ej: 30-12345678-9"></div>
+    <div class="form-row"><label>Exportador <span style="color:#DC2626">*</span></label>
+      <select id="sol-exportador"><option value="">Seleccionar...</option><option>LDC</option><option>MOA</option><option>COFCO</option><option>Bunge</option><option>AGD</option></select>
     </div>
-    <div class="form-row">
-      <label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label>
-      <input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A.">
-    </div>
-    <div class="form-row">
-      <label>CUIT <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-      <input type="text" id="sol-cuit" placeholder="Ej: 30-12345678-9">
-    </div>
-    <div class="form-row">
-      <label>Exportador <span style="color:#DC2626">*</span></label>
-      <select id="sol-exportador">
-        <option value="">Seleccionar...</option>
-        <option>LDC</option>
-        <option>MOA</option>
-        <option>COFCO</option>
-        <option>Bunge</option>
-        <option>AGD</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <label>Esquema/s <span style="color:#DC2626">*</span></label>
+    <div class="form-row"><label>Esquema/s <span style="color:#DC2626">*</span></label>
       <div class="esquemas-check">
         <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
         <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
@@ -350,13 +277,8 @@ tr.clickable{cursor:pointer}
         <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
       </div>
     </div>
-    <div class="form-row">
-      <label>Campo <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-      <input type="text" id="sol-campo" placeholder="Ej: La Elena">
-    </div>
-
+    <div class="form-row"><label>Campo <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" id="sol-campo" placeholder="Ej: La Elena"></div>
     <div id="sol-msg" class="modal-msg"></div>
-
     <div class="modal-actions">
       <button class="btn" onclick="closeNuevaSolicitud()">Cancelar</button>
       <button class="btn btn-primary" onclick="enviarSolicitud()" id="btn-enviar-sol">Enviar solicitud</button>
@@ -409,359 +331,111 @@ tr.clickable{cursor:pointer}
   <div class="footer-row" id="c-footer"></div>
 </div>
 
-
 <!-- ESQUEMAS -->
 <div id="panel-s" class="content" style="display:none">
   <div style="max-width:900px;margin:0 auto;padding-top:8px">
-    <!-- nav interno esquemas -->
     <nav class="nav" style="background:transparent;border-bottom:1px solid #e5e4de;margin-bottom:24px;padding:0">
       <div class="nav-tab active" id="esq-tab-esquemas" onclick="showEsqSection('esquemas',this)">Esquemas</div>
       <div class="nav-tab" id="esq-tab-exportadores" onclick="showEsqSection('exportadores',this)">Por exportador</div>
       <div class="nav-tab" id="esq-tab-regla" onclick="showEsqSection('regla',this)">Datos para la Carta de Porte</div>
     </nav>
-    <!-- ===== SECCIÓN: ESQUEMAS ===== -->
-  <div id="sec-esquemas">
-    <div class="section-header">
-      <h1>Esquemas de certificación</h1>
-      <p>Hacé click en cada esquema para ver qué es, cuándo aplica y cómo opera logísticamente.</p>
+    <div id="sec-esquemas">
+      <div class="section-header"><h1>Esquemas de certificación</h1><p>Hacé click en cada esquema para ver qué es, cuándo aplica y cómo opera logísticamente.</p></div>
+      <div class="schemes-grid">
+        <div class="scheme-card" id="card-2bsvs"><div class="scheme-header" onclick="toggleCard('2bsvs')"><span class="scheme-dot dot-green"></span><span class="scheme-name">Soja 2BSvs</span><span class="scheme-tag tag-ue">Directiva UE — RED III</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><span class="overview-pill pill-bal">● Balance de masas</span><div class="info-grid"><div class="info-block"><div class="info-label">¿Qué es?</div><div class="info-text">Esquema voluntario de certificación reconocido por la UE que garantiza que la soja/maíz cumple criterios de sostenibilidad para la producción de biocombustibles.</div></div><div class="info-block"><div class="info-label">¿Para qué sirve?</div><div class="info-text">Habilita el grano al mercado europeo de biocombustibles y permite capturar premios o diferenciales comerciales.</div></div><div class="info-block"><div class="info-label">¿Cuándo aplica?</div><div class="info-text">Tierras de uso agrícola desde antes del 1° de enero de 2008. No deben afectar zonas protegidas, humedales o de alta biodiversidad.</div></div><div class="info-block"><div class="info-label">Logística</div><div class="info-text">Opera bajo Balance de Masas: el grano certificado puede mezclarse físicamente; el control es administrativo/contable. DDJJ anual por campaña.</div></div></div></div></div>
+        <div class="scheme-card" id="card-epa"><div class="scheme-header" onclick="toggleCard('epa')"><span class="scheme-dot dot-emerald"></span><span class="scheme-name">Soja EPA (EPA-RFS2)</span><span class="scheme-tag tag-usa">Mercado EE.UU.</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><span class="overview-pill pill-seg">● Segregación física obligatoria</span><div class="info-grid"><div class="info-block"><div class="info-label">¿Qué es?</div><div class="info-text">Programa regulado por la EPA de EE.UU. para combustibles renovables. Permite que la soja sea exportada para biocombustibles en el mercado norteamericano.</div></div><div class="info-block"><div class="info-label">¿Cuándo aplica?</div><div class="info-text">Campos agrícolas constituidos como tales antes del 19/12/2007. Requiere evidencia documental sólida y polígono KMZ.</div></div><div class="info-block info-full"><div class="info-label">Logística — crítico</div><div class="info-text">SEGREGACIÓN FÍSICA OBLIGATORIA. El grano certificado debe viajar y almacenarse separado de la soja convencional en todo momento.</div></div></div><div class="alert-box red"><span class="alert-label">⚠ Riesgo irreversible</span>Un error en la Carta de Porte causa la pérdida definitiva de la condición EPA al arribo a puerto. No tiene solución posterior.</div></div></div>
+        <div class="scheme-card" id="card-eudr"><div class="scheme-header" onclick="toggleCard('eudr')"><span class="scheme-dot dot-indigo"></span><span class="scheme-name">Soja EUDR / VISEC</span><span class="scheme-tag tag-ue2">Obligatorio UE</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><span class="overview-pill pill-traz">● Trazabilidad georreferenciada</span><div class="info-grid"><div class="info-block"><div class="info-label">¿Qué es?</div><div class="info-text">Normativa regulatoria obligatoria de la UE para productos libres de deforestación. En Argentina se canaliza a través de VISEC.</div></div><div class="info-block"><div class="info-label">¿Cuándo aplica?</div><div class="info-text">Campos que NO hayan sufrido deforestación ni degradación forestal posterior al 31 de diciembre de 2020.</div></div><div class="info-block"><div class="info-label">¿Para qué sirve?</div><div class="info-text">Es una barrera de entrada ineludible para vender soja o derivados a la UE. Sin verificación VISEC, el grano no puede tener destino UE.</div></div><div class="info-block"><div class="info-label">Logística</div><div class="info-text">Sistema de trazabilidad digital con polígonos KML/KMZ de perímetro y superficie sembrada.</div></div></div></div></div>
+        <div class="scheme-card" id="card-rtrs"><div class="scheme-header" onclick="toggleCard('rtrs')"><span class="scheme-dot dot-blue"></span><span class="scheme-name">RTRS</span><span class="scheme-tag tag-int">Estándar internacional</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><span class="overview-pill pill-cred">● Balance de masas + créditos</span><div class="info-grid"><div class="info-block"><div class="info-label">¿Qué es?</div><div class="info-text">Estándar internacional que certifica producción de soja ambientalmente sostenible, socialmente justa y económicamente viable.</div></div><div class="info-block"><div class="info-label">¿Para qué sirve?</div><div class="info-text">Alto valor reputacional global. Permite capturar premios o monetizar mediante venta/transferencia de créditos.</div></div><div class="info-block info-full"><div class="info-label">¿Cuándo aplica?</div><div class="info-text">Aplica exclusivamente a productores auditados inscriptos en el listado oficial de RTRS. Verificar en: <a href="https://responsiblesoy.org/productores" target="_blank" style="color:#1565c0;">responsiblesoy.org/productores</a></div></div></div><div class="alert-box red"><span class="alert-label">🚨 Regla crítica</span>Si el productor NO figura en el listado oficial, NO PUEDE OPERAR bajo RTRS.</div></div></div>
+        <div class="scheme-card" id="card-cfr"><div class="scheme-header" onclick="toggleCard('cfr')"><span class="scheme-dot dot-teal"></span><span class="scheme-name">CFR (Clean Fuel Regulations)</span><span class="scheme-tag tag-can">Mercado Canadá</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><div class="info-grid"><div class="info-block"><div class="info-label">¿Qué es?</div><div class="info-text">Normativa canadiense para reducir la intensidad de carbono en combustibles de baja emisión (LCIF).</div></div><div class="info-block"><div class="info-label">¿Cuándo aplica?</div><div class="info-text">Tierras agrícolas sin intervención en bosques, humedales o zonas ribereñas desde julio de 2020. Requiere auditoría al productor y firma de Declaración Jurada.</div></div><div class="info-block"><div class="info-label">¿Para qué sirve?</div><div class="info-text">Habilita la exportación de biomasa de soja para la generación de créditos de cumplimiento en Canadá.</div></div><div class="info-block"><div class="info-label">Logística</div><div class="info-text">Al cierre del contrato se requiere Declaración CFR firmada, Declaración RTRS y Transferencia de Créditos RTRS equivalente a las toneladas declaradas.</div></div></div></div></div>
+      </div>
     </div>
-
-    <div class="schemes-grid">
-
-      <!-- 2BSvs -->
-      <div class="scheme-card" id="card-2bsvs">
-        <div class="scheme-header" onclick="toggleCard('2bsvs')">
-          <span class="scheme-dot dot-green"></span>
-          <span class="scheme-name">Soja 2BSvs</span>
-          <span class="scheme-tag tag-ue">Directiva UE — RED III</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <span class="overview-pill pill-bal">● Balance de masas</span>
-          <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">¿Qué es?</div>
-              <div class="info-text">Esquema voluntario de certificación reconocido por la UE que garantiza que la soja/maíz cumple criterios de sostenibilidad para la producción de biocombustibles.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">¿Para qué sirve?</div>
-              <div class="info-text">Habilita el grano al mercado europeo de biocombustibles y permite capturar premios o diferenciales comerciales.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">¿Cuándo aplica?</div>
-              <div class="info-text">Tierras de uso agrícola desde antes del 1° de enero de 2008. No deben afectar zonas protegidas, humedales o de alta biodiversidad.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">Logística</div>
-              <div class="info-text">Opera bajo Balance de Masas: el grano certificado puede mezclarse físicamente; el control es administrativo/contable. DDJJ anual por campaña.</div>
-            </div>
-          </div>
-
-        </div>
+    <div id="sec-exportadores" style="display:none;">
+      <div class="section-header"><h1>Qué pide cada exportador</h1><p>Documentación y esquemas disponibles por exportador. Referencia rápida para el equipo.</p></div>
+      <div class="schemes-grid">
+        <div class="scheme-card" id="card-exp-cofco"><div class="scheme-header" onclick="toggleCard('exp-cofco')"><div style="background:#d32f2f;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">CO</div><span class="scheme-name">COFCO International</span><span class="scheme-tag" style="background:#fce4ec;color:#880e4f;">2BSvs · EPA · VISEC · RTRS</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><div class="info-grid"><div class="info-block"><div class="info-label">Renovación</div><div class="info-text">Todos los esquemas requieren DDJJ por campaña.</div></div><div class="info-block info-full"><div class="info-label">Qué pide al productor</div><div class="info-text">CUIT · RENSPA vigente · KMZ (polígono único) · Código localidad AFIP (6 dígitos exactos, ej: 006172) · Hectáreas de soja/maíz · DNI del firmante · Estatuto y Poder si es sociedad · Evidencia pre-2007 solo para EPA.</div></div></div></div></div>
+        <div class="scheme-card" id="card-exp-ldc"><div class="scheme-header" onclick="toggleCard('exp-ldc')"><div style="background:#1a237e;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">LD</div><span class="scheme-name">Louis Dreyfus Company (LDC)</span><span class="scheme-tag" style="background:#e3f2fd;color:#0d47a1;">2BSvs · EPA · EPA+RTRS · EUDR</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><div class="info-grid"><div class="info-block"><div class="info-label">Renovación campaña anterior</div><div class="info-text">LDC reutiliza el polígono y solo pide la planilla de actualización. Si el predio cambió, adjuntar nuevo KMZ.</div></div><div class="info-block info-full"><div class="info-label">Qué pide al productor</div><div class="info-text">CUIT · KMZ con polígono cerrado y marca de posición central · Nombre del campo idéntico al de campañas anteriores · Mail y datos del firmante · Evidencia pre-2007 para EPA.</div></div></div><div class="alert-box blue"><span class="alert-label">Para campaña 25/26 (LDC)</span>Las habilitaciones EPA requieren primero la habilitación en 2BSvs. Se presenta la DJ 2BSvs por web y una vez aprobada se envía documentación para EPA.</div></div></div>
+        <div class="scheme-card" id="card-exp-bunge"><div class="scheme-header" onclick="toggleCard('exp-bunge')"><div style="background:#e65100;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">BU</div><span class="scheme-name">Bunge</span><span class="scheme-tag" style="background:#fff3e0;color:#bf360c;">EPA</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><div class="info-grid"><div class="info-block info-full"><div class="info-label">Qué pide al productor</div><div class="info-text">Razón Social y mail de contacto · Poderes con facultades de granos y DNI de firmantes · Hectáreas productivas de la campaña · KMZ solo en alta nueva o cambio de superficie.</div></div></div></div></div>
+        <div class="scheme-card" id="card-exp-moa"><div class="scheme-header" onclick="toggleCard('exp-moa')"><div style="background:#2e7d32;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">MO</div><span class="scheme-name">Molinos Agro (MOA)</span><span class="scheme-tag" style="background:#e8f5e9;color:#1b5e20;">2BSvs · EPA</span><span class="scheme-chevron">⌄</span></div><div class="scheme-body"><div class="info-grid"><div class="info-block"><div class="info-label">Particularidad del KMZ</div><div class="info-text">MOA exige un marcador de posición (pinche amarillo) al centro del polígono. Sin esto no se puede completar la carga.</div></div><div class="info-block info-full"><div class="info-label">Qué pide al productor</div><div class="info-text">KMZ con pin central de referencia · DDJJ de MOA firmada por el titular o apoderado · Evidencia pre-2007 para EPA.</div></div></div></div></div>
       </div>
-
-      <!-- EPA -->
-      <div class="scheme-card" id="card-epa">
-        <div class="scheme-header" onclick="toggleCard('epa')">
-          <span class="scheme-dot dot-emerald"></span>
-          <span class="scheme-name">Soja EPA (EPA-RFS2)</span>
-          <span class="scheme-tag tag-usa">Mercado EE.UU.</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <span class="overview-pill pill-seg">● Segregación física obligatoria</span>
-          <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">¿Qué es?</div>
-              <div class="info-text">Programa regulado por la EPA de EE.UU. para combustibles renovables. Permite que la soja sea exportada para biocombustibles en el mercado norteamericano.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">¿Cuándo aplica?</div>
-              <div class="info-text">Campos agrícolas constituidos como tales antes del 19/12/2007. Requiere evidencia documental sólida (cartas de porte antiguas, facturas de insumos, etc.) y polígono KMZ.</div>
-            </div>
-            <div class="info-block info-full">
-              <div class="info-label">Logística — crítico</div>
-              <div class="info-text">SEGREGACIÓN FÍSICA OBLIGATORIA. El grano certificado debe viajar y almacenarse separado de la soja convencional en todo momento.</div>
-            </div>
-          </div>
-          <div class="alert-box red" style="margin-top:14px;">
-            <span class="alert-label">⚠ Riesgo irreversible</span>
-            Un error en la Carta de Porte causa la pérdida definitiva de la condición EPA al arribo a puerto. No tiene solución posterior.
-          </div>
-        </div>
-      </div>
-
-      <!-- EUDR / VISEC -->
-      <div class="scheme-card" id="card-eudr">
-        <div class="scheme-header" onclick="toggleCard('eudr')">
-          <span class="scheme-dot dot-indigo"></span>
-          <span class="scheme-name">Soja EUDR / VISEC</span>
-          <span class="scheme-tag tag-ue2">Obligatorio UE</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <span class="overview-pill pill-traz">● Trazabilidad georreferenciada</span>
-          <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">¿Qué es?</div>
-              <div class="info-text">Normativa regulatoria obligatoria de la UE para productos libres de deforestación. En Argentina se canaliza a través de VISEC (plataforma de monitoreo y verificación).</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">¿Cuándo aplica?</div>
-              <div class="info-text">Campos que NO hayan sufrido deforestación ni degradación forestal posterior al 31 de diciembre de 2020.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">¿Para qué sirve?</div>
-              <div class="info-text">Es una barrera de entrada ineludible para vender soja o derivados a la UE. Sin verificación VISEC, el grano no puede tener destino UE.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">Logística</div>
-              <div class="info-text">Sistema de trazabilidad digital con polígonos KML/KMZ de perímetro y superficie sembrada.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- RTRS -->
-      <div class="scheme-card" id="card-rtrs">
-        <div class="scheme-header" onclick="toggleCard('rtrs')">
-          <span class="scheme-dot dot-blue"></span>
-          <span class="scheme-name">RTRS</span>
-          <span class="scheme-tag tag-int">Estándar internacional</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <span class="overview-pill pill-cred">● Balance de masas + créditos</span>
-          <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">¿Qué es?</div>
-              <div class="info-text">Estándar internacional que certifica producción de soja ambientalmente sostenible, socialmente justa y económicamente viable.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">¿Para qué sirve?</div>
-              <div class="info-text">Alto valor reputacional global para alimentos, piensos y biocombustibles. Permite capturar premios o monetizar mediante venta/transferencia de créditos en plataforma.</div>
-            </div>
-            <div class="info-block info-full">
-              <div class="info-label">¿Cuándo aplica?</div>
-              <div class="info-text">Aplica exclusivamente a productores auditados que ya figuren inscriptos en el listado oficial de RTRS. Verificar en: <a href="https://responsiblesoy.org/productores" target="_blank" style="color:#1565c0;">responsiblesoy.org/productores</a></div>
-            </div>
-          </div>
-          <div class="alert-box red" style="margin-top:14px;">
-            <span class="alert-label">🚨 Regla crítica</span>
-            Si el productor NO figura en el listado oficial, NO PUEDE OPERAR bajo RTRS. El proceso de inscripción es gestionado de forma independiente por el propio productor ante organismos certificadores acreditados.
-          </div>
-        </div>
-      </div>
-
-      <!-- CFR -->
-      <div class="scheme-card" id="card-cfr">
-        <div class="scheme-header" onclick="toggleCard('cfr')">
-          <span class="scheme-dot dot-teal"></span>
-          <span class="scheme-name">CFR (Clean Fuel Regulations)</span>
-          <span class="scheme-tag tag-can">Mercado Canadá</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">¿Qué es?</div>
-              <div class="info-text">Normativa canadiense para reducir la intensidad de carbono en combustibles de baja emisión (LCIF).</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">¿Cuándo aplica?</div>
-              <div class="info-text">Tierras agrícolas sin intervención en bosques, humedales o zonas ribereñas desde julio de 2020. Requiere auditoría al productor (hábitat, plagas) y firma de Declaración Jurada.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">¿Para qué sirve?</div>
-              <div class="info-text">Habilita la exportación de biomasa de soja para la generación de créditos de cumplimiento en Canadá.</div>
-            </div>
-            <div class="info-block">
-              <div class="info-label">Logística</div>
-              <div class="info-text">Al cierre del contrato se requiere Declaración CFR firmada por el cliente, Declaración RTRS y Transferencia de Créditos RTRS equivalente a las toneladas declaradas.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /schemes-grid -->
-  </div><!-- /sec-esquemas -->
-
-
-  <!-- ===== SECCIÓN: POR EXPORTADOR ===== -->
-  <div id="sec-exportadores" style="display:none;">
-    <div class="section-header">
-      <h1>Qué pide cada exportador</h1>
-      <p>Documentación y esquemas disponibles por exportador. Referencia rápida para el equipo.</p>
     </div>
-
-    <div class="schemes-grid">
-
-      <!-- COFCO -->
-      <div class="scheme-card" id="card-exp-cofco">
-        <div class="scheme-header" onclick="toggleCard('exp-cofco')">
-          <div class="exp-logo" style="background:#d32f2f;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">CO</div>
-          <span class="scheme-name">COFCO International</span>
-          <span class="scheme-tag" style="background:#fce4ec;color:#880e4f;">2BSvs · EPA · VISEC · RTRS</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">Renovación</div>
-              <div class="info-text">Todos los esquemas requieren DDJJ por campaña.</div>
-            </div>
-            <div class="info-block info-full">
-              <div class="info-label">Qué pide al productor</div>
-              <div class="info-text">CUIT · RENSPA vigente · KMZ (polígono único) · Código localidad AFIP (6 dígitos exactos, ej: 006172) · Hectáreas de soja/maíz · DNI del firmante · Estatuto y Poder si es sociedad · Evidencia pre-2007 solo para EPA.</div>
-            </div>
-          </div>
+    <div id="sec-regla" style="display:none;">
+      <div class="section-header"><h1>Datos importantes para la Carta de Porte</h1><p>Cada punto aplica sin excepción. Un error puede ser irreversible.</p></div>
+      <div class="alert-box red" style="margin-bottom:20px;font-size:14px;"><span class="alert-label" style="font-size:14px;">⚠ Para el comercial — crítico</span>Para evitar contingencias económicas, rechazos y pérdida irrecuperable de la condición sustentable al arribo a puerto, respetar siempre estos tres puntos al confeccionar la CPE.</div>
+      <div class="gold-rule">
+        <div class="gold-rule-title">📋 Las tres reglas irrompibles</div>
+        <div class="gold-rule-items">
+          <div class="gold-rule-item"><strong style="min-width:130px;flex-shrink:0;">Nombre del campo</strong><span>Escribirlo en el cuadro <strong>Observaciones de la CPE EXACTAMENTE IGUAL</strong> a como fue declarado en la evidencia y en el sistema del exportador. Ejemplo: <code style="background:#fff8dc;padding:2px 6px;border-radius:4px;font-size:12px;">SOJA EPA - CAMPO LA ELENA - COSECHA 25/26</code></span></div>
+          <div class="gold-rule-item"><strong style="min-width:130px;flex-shrink:0;">Localidad</strong><span>La localidad de procedencia debe coincidir de forma idéntica con el código AFIP/localidad aprobada en la habilitación.</span></div>
+          <div class="gold-rule-item"><strong style="min-width:130px;flex-shrink:0;">RENSPA (VISEC)</strong><span>Para normativas VISEC/EUDR, la CPE debe incluir el número de RENSPA habilitado del predio.</span></div>
         </div>
       </div>
-
-      <!-- LDC -->
-      <div class="scheme-card" id="card-exp-ldc">
-        <div class="scheme-header" onclick="toggleCard('exp-ldc')">
-          <div class="exp-logo" style="background:#1a237e;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">LD</div>
-          <span class="scheme-name">Louis Dreyfus Company (LDC)</span>
-          <span class="scheme-tag" style="background:#e3f2fd;color:#0d47a1;">2BSvs · EPA · EPA+RTRS · EUDR</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">Renovación campaña anterior</div>
-              <div class="info-text">LDC reutiliza el polígono y solo pide la planilla de actualización. Si el predio cambió, adjuntar nuevo KMZ.</div>
-            </div>
-            <div class="info-block info-full">
-              <div class="info-label">Qué pide al productor</div>
-              <div class="info-text">CUIT · KMZ con polígono cerrado y marca de posición central · Nombre del campo idéntico al de campañas anteriores o al de la evidencia · Mail y datos del firmante (con facultades) · Evidencia pre-2007 para EPA.</div>
-            </div>
-          </div>
-          <div class="alert-box blue" style="margin-top:14px;">
-            <span class="alert-label">Para campaña 25/26 (LDC)</span>
-            Las habilitaciones EPA requieren primero la habilitación en 2BSvs. Se presenta la DJ 2BSvs por web y una vez aprobada se envía documentación para EPA.
-          </div>
-        </div>
-      </div>
-
-      <!-- BUNGE -->
-      <div class="scheme-card" id="card-exp-bunge">
-        <div class="scheme-header" onclick="toggleCard('exp-bunge')">
-          <div class="exp-logo" style="background:#e65100;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">BU</div>
-          <span class="scheme-name">Bunge</span>
-          <span class="scheme-tag" style="background:#fff3e0;color:#bf360c;">EPA</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <div class="info-grid">
-            <div class="info-block info-full">
-              <div class="info-label">Qué pide al productor</div>
-              <div class="info-text">Razón Social y mail de contacto · Poderes con facultades de granos y DNI de firmantes · Hectáreas productivas de la campaña · KMZ solo en alta nueva o cambio de superficie.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- MOA -->
-      <div class="scheme-card" id="card-exp-moa">
-        <div class="scheme-header" onclick="toggleCard('exp-moa')">
-          <div class="exp-logo" style="background:#2e7d32;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">MO</div>
-          <span class="scheme-name">Molinos Agro (MOA)</span>
-          <span class="scheme-tag" style="background:#e8f5e9;color:#1b5e20;">2BSvs · EPA</span>
-          <span class="scheme-chevron">⌄</span>
-        </div>
-        <div class="scheme-body">
-          <div class="info-grid">
-            <div class="info-block">
-              <div class="info-label">Particularidad del KMZ</div>
-              <div class="info-text">MOA exige un marcador de posición (pinche amarillo) al centro del polígono para extraer Latitud y Longitud. Sin esto no se puede completar la carga.</div>
-            </div>
-            <div class="info-block info-full">
-              <div class="info-label">Qué pide al productor</div>
-              <div class="info-text">KMZ con pin central de referencia · DDJJ de MOA firmada por el titular o apoderado · Evidencia pre-2007 para EPA.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-    </div>
-  </div><!-- /sec-exportadores -->
-
-
-  <!-- ===== SECCIÓN: REGLA CPE ===== -->
-  <div id="sec-regla" style="display:none;">
-    <div class="section-header">
-      <h1>Datos importantes para la Carta de Porte</h1>
-      <p>Cada punto aplica sin excepción. Un error puede ser irreversible.</p>
-    </div>
-
-    <div class="alert-box red" style="margin-bottom:20px; font-size:14px;">
-      <span class="alert-label" style="font-size:14px;">⚠ Para el comercial — crítico</span>
-      Para evitar contingencias económicas, rechazos y pérdida irrecuperable de la condición sustentable al arribo a puerto, respetar siempre estos tres puntos al confeccionar la CPE.
-    </div>
-
-    <div class="gold-rule">
-      <div class="gold-rule-title">📋 Las tres reglas irrompibles</div>
-      <div class="gold-rule-items">
-        <div class="gold-rule-item">
-          <strong style="min-width:130px; flex-shrink:0;">Nombre del campo</strong>
-          <span>Escribirlo en el cuadro <strong>Observaciones de la CPE EXACTAMENTE IGUAL</strong> a como fue declarado en la evidencia y en el sistema del exportador. Ejemplo: <code style="background:#fff8dc;padding:2px 6px;border-radius:4px;font-size:12px;">SOJA EPA - CAMPO LA ELENA - COSECHA 25/26</code></span>
-        </div>
-        <div class="gold-rule-item">
-          <strong style="min-width:130px; flex-shrink:0;">Localidad</strong>
-          <span>La localidad de procedencia debe coincidir de forma idéntica con el código AFIP/localidad aprobada en la habilitación.</span>
-        </div>
-        <div class="gold-rule-item">
-          <strong style="min-width:130px; flex-shrink:0;">RENSPA (VISEC)</strong>
-          <span>Para normativas VISEC/EUDR, la CPE debe incluir el número de RENSPA habilitado del predio.</span>
+      <div style="margin-top:24px;">
+        <div class="info-label" style="margin-bottom:12px;">Formato de observaciones por esquema</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span class="scheme-tag tag-ue" style="min-width:80px;text-align:center;">2BSvs</span><code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA 2BSvs - NOMBRE DE CAMPO</code></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span class="scheme-tag tag-usa" style="min-width:80px;text-align:center;">EPA</span><code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EPA - NOMBRE DE CAMPO</code></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span class="scheme-tag tag-ue2" style="min-width:80px;text-align:center;">EUDR</span><code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EUDR - NOMBRE DE CAMPO (+ RENSPA)</code></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span class="scheme-tag tag-int" style="min-width:80px;text-align:center;">EPA+RTRS</span><code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EPA - NOMBRE DE CAMPO - CFR - RTRS</code></div>
         </div>
       </div>
     </div>
-
-    <div style="margin-top:24px;">
-      <div class="info-label" style="margin-bottom:12px;">Formato de observaciones por esquema</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-          <span class="scheme-tag tag-ue" style="min-width:80px;text-align:center;">2BSvs</span>
-          <code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA 2BSvs - NOMBRE DE CAMPO</code>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-          <span class="scheme-tag tag-usa" style="min-width:80px;text-align:center;">EPA</span>
-          <code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EPA - NOMBRE DE CAMPO</code>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-          <span class="scheme-tag tag-ue2" style="min-width:80px;text-align:center;">EUDR</span>
-          <code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EUDR - NOMBRE DE CAMPO (+ RENSPA)</code>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
-          <span class="scheme-tag tag-int" style="min-width:80px;text-align:center;">EPA+RTRS</span>
-          <code style="background:#f5f4f0;padding:4px 10px;border-radius:6px;font-size:12px;">SOJA EPA - NOMBRE DE CAMPO - CFR - RTRS</code>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /sec-regla -->
   </div>
 </div>
 
 <script>
 
-const SHEET_ID = '1-yVmx3D5q-liA0twVVcaRWYJicmZpVBAOXrdPX8jAto';
-const API_KEY = 'AIzaSyA_PNd_cf9LQVUFKSKXVi7CRINBKbCuUEM';
+// ── CONFIGURACIÓN ──
+// ⚠ REEMPLAZAR con el Google Client ID que obtuviste en el paso 1 de las instrucciones
+const GOOGLE_CLIENT_ID = '754611299321-stq5blr6m17ft47t3l5geqaghshns3vm.apps.googleusercontent.com';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1xszuicGG3Qh__d71VcXltqjIgjbP9j1J8E9YjiEZIe29pggSUqZHO_v7NZmhsV_H1A/exec';
 const CAMP_DEFAULTS = ['2526','25/26'];
-function findCampDefault(data){
-  const camps=data.map(r=>g(r,'Campa')).filter(Boolean);
-  for(const cd of CAMP_DEFAULTS){if(camps.includes(cd))return cd;}
-  return camps[camps.length-1]||'';
-}
 const EDIT_PASSWORD = 'compliance2026';
 
 let allG=[], allE=[], allC=[], allNotas=[];
 let currentTab='g', editMode=false;
 
-// Helper para buscar columnas por nombre parcial (maneja nombres con espacios/acentos)
+// ── AUTENTICACIÓN CON GOOGLE ──
+function initAuth(){
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleCredential,
+    auto_select: false,
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('google-btn'),
+    {theme:'outline', size:'large', text:'signin_with', locale:'es', width:280}
+  );
+  google.accounts.id.prompt();
+}
+
+function handleCredential(response){
+  try {
+    const parts = response.credential.split('.');
+    const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+    if(!payload.email || !payload.email.toLowerCase().endsWith('@allaria.com.ar')){
+      document.getElementById('auth-error').style.display='block';
+      return;
+    }
+    document.getElementById('auth-overlay').classList.add('hidden');
+    document.getElementById('auth-user').textContent = payload.name || payload.email;
+    loadData();
+  } catch(e) {
+    document.getElementById('auth-error').style.display='block';
+    document.getElementById('auth-error').textContent='Error al verificar identidad. Intentá de nuevo.';
+  }
+}
+
+window.addEventListener('load', function(){
+  const check = setInterval(function(){
+    if(window.google && window.google.accounts){
+      clearInterval(check);
+      initAuth();
+    }
+  }, 50);
+});
+
+// ── HELPERS ──
+function findCampDefault(data){const camps=data.map(r=>g(r,'Campa')).filter(Boolean);for(const cd of CAMP_DEFAULTS){if(camps.includes(cd))return cd;}return camps[camps.length-1]||'';}
 function g(r,partial){const keys=Object.keys(r);const k=keys.find(x=>x.toUpperCase().includes(partial.toUpperCase()));return k?r[k]:'';}
 const sel = {'g-camp':new Set(),'g-exp':new Set(),'g-via':new Set(),'e-camp':new Set(),'e-vend':new Set(),'e-exp':new Set(),'e-tipo':new Set(),'c-prov':new Set(),'c-estado':new Set()};
 
@@ -769,428 +443,101 @@ const sel = {'g-camp':new Set(),'g-exp':new Set(),'g-via':new Set(),'e-camp':new
 const TIPO_COLORS = {'EPA':{bg:'#d1fae5',color:'#065f46'},'2BSvs':{bg:'#fee2e2',color:'#991b1b'},'RTRS':{bg:'#ede9fe',color:'#5b21b6'},'ISCC':{bg:'#fef3c7',color:'#92400e'}};
 const EXP_COLORS = {'LDC':{bg:'#dbeafe',color:'#1e3a8a'},'MOA':{bg:'#fce7f3',color:'#9d174d'},'COFCO':{bg:'#fef3c7',color:'#78350f'},'Bunge':{bg:'#d1fae5',color:'#064e3b'},'AGD':{bg:'#ede9fe',color:'#4c1d95'},'Dreyfus':{bg:'#ffedd5',color:'#7c2d12'}};
 
-function tipoBadge(t){if(!t)return'\u2014';const c=TIPO_COLORS[t]||{bg:'#f1f5f9',color:'#475569'};return `<span class="badge" style="background:${c.bg};color:${c.color}">${t}</span>`;}
-function expBadge(e){if(!e)return'\u2014';const c=EXP_COLORS[e]||{bg:'#f1f5f9',color:'#334155'};return `<span class="badge" style="background:${c.bg};color:${c.color}">${e}</span>`;}
-function viaBadge(v){if(!v)return'\u2014';return `<span class="badge ${v.toLowerCase()==='web'?'badge-web':'badge-mail'}">${v}</span>`;}
+function tipoBadge(t){if(!t)return'—';const c=TIPO_COLORS[t]||{bg:'#f1f5f9',color:'#475569'};return `<span class="badge" style="background:${c.bg};color:${c.color}">${t}</span>`;}
+function expBadge(e){if(!e)return'—';const c=EXP_COLORS[e]||{bg:'#f1f5f9',color:'#334155'};return `<span class="badge" style="background:${c.bg};color:${c.color}">${e}</span>`;}
+function viaBadge(v){if(!v)return'—';return `<span class="badge ${v.toLowerCase()==='web'?'badge-web':'badge-mail'}">${v}</span>`;}
 function statusBadge(s){const m={'Completo':'badge-ok','Falta RENSPA':'badge-err','RENSPA vencida':'badge-warn','Falta evidencia':'badge-err','Falta poligono':'badge-err','Incompleto':'badge-err'};return `<span class="badge ${m[s]||'badge-na'}">${s}</span>`;}
 
 // ── UTILS ──
-function toObjs(rows){if(!rows||rows.length<2)return[];const h=rows[0].map(k=>k.replace(/[\n\r]+/g,' ').replace(/\s+/g,' ').trim());return rows.slice(1).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').toString().trim()])));}
-async function fetchSheet(name,startRow){const range=startRow?`${name}!A${startRow}:Z`:`${name}!A:Z`;const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`;const res=await fetch(url);if(!res.ok)throw new Error('HTTP '+res.status);return toObjs((await res.json()).values||[]);}
 function uniq(arr){return[...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
 function parseNum(v){if(!v)return 0;const c=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(c);return isNaN(n)?0:n;}
-function fmt(v){if(!v)return'\u2014';const clean=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(clean);return isNaN(n)?(v||'\u2014'):n.toLocaleString('es-AR',{maximumFractionDigits:2});}
-function fmtCamp(v){if(!v)return'\u2014';const s=String(v);if(s.length===4&&/^\d{4}$/.test(s))return s.slice(0,2)+'/'+s.slice(2);return s;}
+function fmt(v){if(!v)return'—';const clean=typeof v==='string'?v.replace(/,/g,''):v;const n=parseFloat(clean);return isNaN(n)?(v||'—'):n.toLocaleString('es-AR',{maximumFractionDigits:2});}
+function fmtCamp(v){if(!v)return'—';const s=String(v);if(s.length===4&&/^\d{4}$/.test(s))return s.slice(0,2)+'/'+s.slice(2);return s;}
 function statCard(val,lbl,color){return `<div class="stat"><div class="stat-val" style="color:${color}">${val}</div><div class="stat-lbl">${lbl}</div></div>`;}
 
 // ── EDIT MODE ──
 function toggleEditMode(){
-  if(!editMode){
-    const pw=prompt('Ingresa la contrasena de Compliance:');
-    if(pw!==EDIT_PASSWORD){alert('Contrasena incorrecta.');return;}
-    editMode=true;
-    document.body.classList.add('edit-mode');
-    document.getElementById('btn-edit').textContent='Salir de edicion';
-    document.getElementById('btn-edit').classList.add('active');
-  } else {
-    editMode=false;
-    document.body.classList.remove('edit-mode');
-    document.getElementById('btn-edit').textContent='Modo edicion';
-    document.getElementById('btn-edit').classList.remove('active');
-  }
+  if(!editMode){const pw=prompt('Ingresa la contrasena de Compliance:');if(pw!==EDIT_PASSWORD){alert('Contrasena incorrecta.');return;}editMode=true;document.body.classList.add('edit-mode');document.getElementById('btn-edit').textContent='Salir de edicion';document.getElementById('btn-edit').classList.add('active');}
+  else{editMode=false;document.body.classList.remove('edit-mode');document.getElementById('btn-edit').textContent='Modo edicion';document.getElementById('btn-edit').classList.remove('active');}
 }
 
 // ── NOTAS ──
-async function loadNotas(){
-  return new Promise((resolve)=>{
-    const cb='_notasCb'+Date.now();
-    window[cb]=function(d){allNotas=d.notas||[];delete window[cb];resolve();};
-    const s=document.createElement('script');
-    s.src=APPS_SCRIPT_URL+'?callback='+cb;
-    s.onerror=function(){console.warn('No se pudieron cargar notas');allNotas=[];resolve();};
-    document.body.appendChild(s);
-    setTimeout(()=>{if(window[cb]){allNotas=[];delete window[cb];resolve();}},5000);
-  });
-}
-async function saveNota(cuit,campo,tipo,valor,autor){
-  return new Promise((resolve)=>{
-    const cb='_saveCb'+Date.now();
-    window[cb]=function(d){delete window[cb];resolve(d);};
-    const params=`action=save&cuit=${encodeURIComponent(cuit)}&campo=${encodeURIComponent(campo)}&tipo=${encodeURIComponent(tipo)}&valor=${encodeURIComponent(valor)}&autor=${encodeURIComponent(autor)}&callback=${cb}`;
-    const s=document.createElement('script');
-    s.src=APPS_SCRIPT_URL+'?'+params;
-    s.onerror=function(){delete window[cb];alert('Error guardando. Reintenta.');resolve();};
-    document.body.appendChild(s);
-  });
-}
-function getNotas(cuit,campo,tipo){
-  const deleted=allNotas.filter(n=>String(n.CUIT)==String(cuit)&&String(n.CAMPO)==String(campo)&&n.TIPO==='borrar_comentario').map(n=>n.VALOR);
-  return allNotas.filter(n=>{
-    if(String(n.CUIT)!=String(cuit)||String(n.CAMPO)!=String(campo))return false;
-    if(tipo&&n.TIPO!=tipo)return false;
-    if(n.TIPO==='comentario'&&deleted.includes(n.VALOR+'|||'+n.FECHA))return false;
-    if(n.TIPO==='borrar_comentario')return false;
-    return true;
-  });
-}
+async function loadNotas(){return new Promise((resolve)=>{const cb='_notasCb'+Date.now();window[cb]=function(d){allNotas=d.notas||[];delete window[cb];resolve();};const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?callback='+cb;s.onerror=function(){console.warn('No se pudieron cargar notas');allNotas=[];resolve();};document.body.appendChild(s);setTimeout(()=>{if(window[cb]){allNotas=[];delete window[cb];resolve();}},5000);});}
+async function saveNota(cuit,campo,tipo,valor,autor){return new Promise((resolve)=>{const cb='_saveCb'+Date.now();window[cb]=function(d){delete window[cb];resolve(d);};const params=`action=save&cuit=${encodeURIComponent(cuit)}&campo=${encodeURIComponent(campo)}&tipo=${encodeURIComponent(tipo)}&valor=${encodeURIComponent(valor)}&autor=${encodeURIComponent(autor)}&callback=${cb}`;const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?'+params;s.onerror=function(){delete window[cb];alert('Error guardando. Reintenta.');resolve();};document.body.appendChild(s);});}
+function getNotas(cuit,campo,tipo){const deleted=allNotas.filter(n=>String(n.CUIT)==String(cuit)&&String(n.CAMPO)==String(campo)&&n.TIPO==='borrar_comentario').map(n=>n.VALOR);return allNotas.filter(n=>{if(String(n.CUIT)!=String(cuit)||String(n.CAMPO)!=String(campo))return false;if(tipo&&n.TIPO!=tipo)return false;if(n.TIPO==='comentario'&&deleted.includes(n.VALOR+'|||'+n.FECHA))return false;if(n.TIPO==='borrar_comentario')return false;return true;});}
 function getVtoRenspa(cuit,campo){const n=getNotas(cuit,campo,'vto_renspa');return n.length?n[n.length-1].VALOR:'';}
 function getNotaValor(cuit,campo,tipo){const n=getNotas(cuit,campo,tipo);return n.length?n[n.length-1].VALOR:'';}
 
-function fmtDate(v){
-  if(!v)return'';
-  const s=String(v);
-  let d;
-  if(s.includes('T'))d=new Date(s);
-  else if(s.includes('-')&&s.indexOf('-')===4){const p=s.split('-');d=new Date(p[0],p[1]-1,p[2]);}
-  else return s;
-  if(!d||isNaN(d))return s;
-  const dd=String(d.getDate()).padStart(2,'0');
-  const mm=String(d.getMonth()+1).padStart(2,'0');
-  const yyyy=d.getFullYear();
-  return dd+'/'+mm+'/'+yyyy;
-}
+function fmtDate(v){if(!v)return'';const s=String(v);let d;if(s.includes('T'))d=new Date(s);else if(s.includes('-')&&s.indexOf('-')===4){const p=s.split('-');d=new Date(p[0],p[1]-1,p[2]);}else return s;if(!d||isNaN(d))return s;const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yyyy=d.getFullYear();return dd+'/'+mm+'/'+yyyy;}
 
-function renspaStatus(cuit,campo){
-  const vto=getVtoRenspa(cuit,campo);
-  if(!vto)return{status:'Sin fecha',cls:'badge-na'};
-  const vtoStr=String(vto);
-  let d;
-  if(vtoStr.includes('T'))d=new Date(vtoStr);
-  else{const parts=vtoStr.split(/[-/]/);if(parts[0].length===4)d=new Date(parts[0],parts[1]-1,parts[2]);else d=new Date(parts[2],parts[1]-1,parts[0]);}
-  const today=new Date();today.setHours(0,0,0,0);
-  const diff=Math.floor((d-today)/(1000*60*60*24));
-  const fechaLinda=fmtDate(vto);
-  if(diff<0)return{status:'Vencida ('+fechaLinda+')',cls:'badge-err'};
-  if(diff<=30)return{status:'Vence pronto ('+fechaLinda+')',cls:'badge-warn'};
-  return{status:'Vigente ('+fechaLinda+')',cls:'badge-ok'};
-}
+function renspaStatus(cuit,campo){const vto=getVtoRenspa(cuit,campo);if(!vto)return{status:'Sin fecha',cls:'badge-na'};const vtoStr=String(vto);let d;if(vtoStr.includes('T'))d=new Date(vtoStr);else{const parts=vtoStr.split(/[-/]/);if(parts[0].length===4)d=new Date(parts[0],parts[1]-1,parts[2]);else d=new Date(parts[2],parts[1]-1,parts[0]);}const today=new Date();today.setHours(0,0,0,0);const diff=Math.floor((d-today)/(1000*60*60*24));const fechaLinda=fmtDate(vto);if(diff<0)return{status:'Vencida ('+fechaLinda+')',cls:'badge-err'};if(diff<=30)return{status:'Vence pronto ('+fechaLinda+')',cls:'badge-warn'};return{status:'Vigente ('+fechaLinda+')',cls:'badge-ok'};}
 
 // ── MULTI-SELECT ──
 function toggleDropdown(id){const drop=document.getElementById('drop-'+id);const btn=drop.previousElementSibling;const isOpen=drop.classList.contains('open');document.querySelectorAll('.multi-select-dropdown.open').forEach(d=>{d.classList.remove('open');d.previousElementSibling.classList.remove('open');});if(!isOpen){drop.classList.add('open');btn.classList.add('open');}}
 document.addEventListener('click',e=>{if(!e.target.closest('.multi-select-wrap')){document.querySelectorAll('.multi-select-dropdown.open').forEach(d=>{d.classList.remove('open');d.previousElementSibling.classList.remove('open');});}});
-
-function buildDropdown(id,vals,renderOption){
-  const drop=document.getElementById('drop-'+id);
-  const count=sel[id].size;
-  const clearBtn=count>0?`<button class="drop-clear-btn" onclick="clearFilter('${id}')" title="Limpiar seleccion">x Limpiar (${count})</button>`:`<span class="drop-clear-btn" style="cursor:default;color:#e2e8f0">x Limpiar</span>`;
-  const optionsHtml=vals.map(v=>{const checked=sel[id].has(v)?'checked':'';const optHtml=renderOption?renderOption(v):v;return `<label class="multi-select-option"><input type="checkbox" value="${v}" ${checked} onchange="onCheck('${id}',this)"><span>${optHtml}</span></label>`;}).join('');
-  drop.innerHTML=`<div class="drop-header"><input class="drop-search" type="text" placeholder="Buscar..." oninput="filterDropdown('${id}',this.value)" onclick="event.stopPropagation()">${clearBtn}</div><div class="drop-options" id="opts-${id}">${optionsHtml}</div>`;
-  updateLabel(id);
-}
+function buildDropdown(id,vals,renderOption){const drop=document.getElementById('drop-'+id);const count=sel[id].size;const clearBtn=count>0?`<button class="drop-clear-btn" onclick="clearFilter('${id}')" title="Limpiar seleccion">x Limpiar (${count})</button>`:`<span class="drop-clear-btn" style="cursor:default;color:#e2e8f0">x Limpiar</span>`;const optionsHtml=vals.map(v=>{const checked=sel[id].has(v)?'checked':'';const optHtml=renderOption?renderOption(v):v;return `<label class="multi-select-option"><input type="checkbox" value="${v}" ${checked} onchange="onCheck('${id}',this)"><span>${optHtml}</span></label>`;}).join('');drop.innerHTML=`<div class="drop-header"><input class="drop-search" type="text" placeholder="Buscar..." oninput="filterDropdown('${id}',this.value)" onclick="event.stopPropagation()">${clearBtn}</div><div class="drop-options" id="opts-${id}">${optionsHtml}</div>`;updateLabel(id);}
 function filterDropdown(id,q){const opts=document.getElementById('opts-'+id);if(!opts)return;opts.querySelectorAll('.multi-select-option').forEach(el=>{el.style.display=el.querySelector('span').textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});}
 function clearFilter(id){sel[id].clear();const opts=document.getElementById('opts-'+id);if(opts)opts.querySelectorAll('input[type=checkbox]').forEach(cb=>{cb.checked=false;});updateLabel(id);if(id.startsWith('g-')){cascadeG();renderG();}else if(id.startsWith('e-')){cascadeE();renderE();}else{renderC();}}
 function onCheck(id,cb){if(cb.checked)sel[id].add(cb.value);else sel[id].delete(cb.value);updateLabel(id);if(id.startsWith('g-')){cascadeG();renderG();}else if(id.startsWith('e-')){cascadeE();renderE();}else{renderC();}}
 function updateLabel(id){const s=sel[id];const lbl=document.getElementById('label-'+id);if(!lbl)return;if(s.size===0)lbl.textContent='Todos';else if(s.size===1){const v=[...s][0];lbl.textContent=(id.includes('camp'))?fmtCamp(v):v;}else lbl.textContent=s.size+' seleccionados';}
 
-// ── CASCADA GESTIONES (cruzada) ──
-function cascadeG(){
-  const q=document.getElementById('g-search').value.toLowerCase();
-  const camps=sel['g-camp'];
-  const matchQ=r=>!q||Object.values(r).some(v=>v.toLowerCase().includes(q));
-  // Exportador: filtrar por búsqueda + campaña + vía
-  const baseExp=allG.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['g-via'].size||sel['g-via'].has(g(r,'web o mail'))));
-  const expOpts=uniq(baseExp.map(r=>r['Exportador']));
-  [...sel['g-exp']].forEach(v=>{if(!expOpts.includes(v))sel['g-exp'].delete(v);});
-  // Vía: filtrar por búsqueda + campaña + exportador
-  const baseVia=allG.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['g-exp'].size||sel['g-exp'].has(r['Exportador'])));
-  const viaOpts=uniq(baseVia.map(r=>g(r,'web o mail')));
-  [...sel['g-via']].forEach(v=>{if(!viaOpts.includes(v))sel['g-via'].delete(v);});
-  // Campaña: filtrar por búsqueda + exportador + vía
-  const baseCamp=allG.filter(r=>matchQ(r)&&(!sel['g-exp'].size||sel['g-exp'].has(r['Exportador']))&&(!sel['g-via'].size||sel['g-via'].has(g(r,'web o mail'))));
-  const campOpts=uniq(baseCamp.map(r=>g(r,'Campa')));
-  [...sel['g-camp']].forEach(v=>{if(!campOpts.includes(v))sel['g-camp'].delete(v);});
-  buildDropdown('g-camp',campOpts,v=>fmtCamp(v));
-  buildDropdown('g-exp',expOpts,e=>expBadge(e));
-  buildDropdown('g-via',viaOpts);
-}
+// ── CASCADAS ──
+function cascadeG(){const q=document.getElementById('g-search').value.toLowerCase();const camps=sel['g-camp'];const matchQ=r=>!q||Object.values(r).some(v=>v.toLowerCase().includes(q));const baseExp=allG.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['g-via'].size||sel['g-via'].has(g(r,'web o mail'))));const expOpts=uniq(baseExp.map(r=>r['Exportador']));[...sel['g-exp']].forEach(v=>{if(!expOpts.includes(v))sel['g-exp'].delete(v);});const baseVia=allG.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['g-exp'].size||sel['g-exp'].has(r['Exportador'])));const viaOpts=uniq(baseVia.map(r=>g(r,'web o mail')));[...sel['g-via']].forEach(v=>{if(!viaOpts.includes(v))sel['g-via'].delete(v);});const baseCamp=allG.filter(r=>matchQ(r)&&(!sel['g-exp'].size||sel['g-exp'].has(r['Exportador']))&&(!sel['g-via'].size||sel['g-via'].has(g(r,'web o mail'))));const campOpts=uniq(baseCamp.map(r=>g(r,'Campa')));[...sel['g-camp']].forEach(v=>{if(!campOpts.includes(v))sel['g-camp'].delete(v);});buildDropdown('g-camp',campOpts,v=>fmtCamp(v));buildDropdown('g-exp',expOpts,e=>expBadge(e));buildDropdown('g-via',viaOpts);}
+function cascadeE(){const q=document.getElementById('e-search').value.toLowerCase();const matchQ=r=>!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q));const camps=sel['e-camp'];const baseVend=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));const vendOpts=uniq(baseVend.map(r=>r['Vendedor']));[...sel['e-vend']].forEach(v=>{if(!vendOpts.includes(v))sel['e-vend'].delete(v);});const baseExp=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));const expOpts=uniq(baseExp.map(r=>r['Exportador']));[...sel['e-exp']].forEach(v=>{if(!expOpts.includes(v))sel['e-exp'].delete(v);});const baseTipo=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador'])));const tipoOpts=uniq(baseTipo.map(r=>r['Tipo']));[...sel['e-tipo']].forEach(v=>{if(!tipoOpts.includes(v))sel['e-tipo'].delete(v);});const baseCamp=allE.filter(r=>matchQ(r)&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));const campOpts=uniq(baseCamp.map(r=>g(r,'Campa')));[...sel['e-camp']].forEach(v=>{if(!campOpts.includes(v))sel['e-camp'].delete(v);});buildDropdown('e-camp',campOpts,v=>fmtCamp(v));buildDropdown('e-vend',vendOpts);buildDropdown('e-exp',expOpts,e=>expBadge(e));buildDropdown('e-tipo',tipoOpts,t=>tipoBadge(t));}
 
-function cascadeE(){
-  const q=document.getElementById('e-search').value.toLowerCase();
-  const matchQ=r=>!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q));
-  const camps=sel['e-camp'];
-  // Vendedor: búsqueda + campaña + exportador + tipo
-  const baseVend=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));
-  const vendOpts=uniq(baseVend.map(r=>r['Vendedor']));
-  [...sel['e-vend']].forEach(v=>{if(!vendOpts.includes(v))sel['e-vend'].delete(v);});
-  // Exportador: búsqueda + campaña + vendedor + tipo
-  const baseExp=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));
-  const expOpts=uniq(baseExp.map(r=>r['Exportador']));
-  [...sel['e-exp']].forEach(v=>{if(!expOpts.includes(v))sel['e-exp'].delete(v);});
-  // Tipo: búsqueda + campaña + vendedor + exportador
-  const baseTipo=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador'])));
-  const tipoOpts=uniq(baseTipo.map(r=>r['Tipo']));
-  [...sel['e-tipo']].forEach(v=>{if(!tipoOpts.includes(v))sel['e-tipo'].delete(v);});
-  // Campaña: búsqueda + vendedor + exportador + tipo
-  const baseCamp=allE.filter(r=>matchQ(r)&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));
-  const campOpts=uniq(baseCamp.map(r=>g(r,'Campa')));
-  [...sel['e-camp']].forEach(v=>{if(!campOpts.includes(v))sel['e-camp'].delete(v);});
-  buildDropdown('e-camp',campOpts,v=>fmtCamp(v));
-  buildDropdown('e-vend',vendOpts);
-  buildDropdown('e-exp',expOpts,e=>expBadge(e));
-  buildDropdown('e-tipo',tipoOpts,t=>tipoBadge(t));
-}
 // ── GESTIONES ──
 function filterG(){const q=document.getElementById('g-search').value.toLowerCase();const camps=sel['g-camp'];const exps=sel['g-exp'];const vias=sel['g-via'];return allG.filter(r=>(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!exps.size||exps.has(r['Exportador']))&&(!vias.size||vias.has(g(r,'web o mail'))));}
 function onFilterG(){cascadeG();renderG();}
-function renderG(){
-  const f=filterG();
-  const web=f.filter(r=>(g(r,'web o mail')||'').toLowerCase()==='web').length;
-  const exps=uniq(f.map(r=>r['Exportador'])).length;
-  document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');
-  if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
-  const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Esquema']||'\u2014'}</td><td class="muted" style="max-width:260px">${r['Estado']||'\u2014'}</td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>`).join('');
-  document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
-  document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} de ${allG.length} registros</span>`;
-}
+function renderG(){const f=filterG();const web=f.filter(r=>(g(r,'web o mail')||'').toLowerCase()==='web').length;const exps=uniq(f.map(r=>r['Exportador'])).length;document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${r['Estado']||'—'}</td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>`).join('');document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} de ${allG.length} registros</span>`;}
 function clearG(){document.getElementById('g-search').value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());const gDef=findCampDefault(allG);if(gDef)sel['g-camp'].add(gDef);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
 
 // ── HABILITACIONES ──
 function filterE(){const q=document.getElementById('e-search').value.toLowerCase();const camps=sel['e-camp'];const vends=sel['e-vend'];const exps=sel['e-exp'];const tipos=sel['e-tipo'];return allE.filter(r=>(!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!vends.size||vends.has(r['Vendedor']))&&(!exps.size||exps.has(r['Exportador']))&&(!tipos.size||tipos.has(r['Tipo'])));}
 function onFilterE(){cascadeE();renderE();}
-function renderE(){
-  const f=filterE();
-  const has=f.reduce((s,r)=>s+parseNum(r['Has sustentables']),0);
-  const ton=f.reduce((s,r)=>s+parseNum(r['Rendimiento en ton']),0);
-  const exps=uniq(f.map(r=>r['Exportador'])).length;
-  document.getElementById('stats-e').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}),'Has. sustentables','#1a5a9a')+statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}),'Toneladas','#1a4a2e')+statCard(exps,'Exportadores','#64748b');
-  if(!f.length){document.getElementById('e-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('e-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exp.</th><th>Tipo</th><th>Camp.</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Ton. aprobadas al INICIO</th></tr></thead>`;
-  const rows=f.map(r=>`<tr><td class="bold" style="max-width:200px;word-wrap:break-word;white-space:normal">${r['Vendedor']||'\u2014'}</td><td class="mono">${r['CUIT']||'\u2014'}</td><td>${r['Campo']||'\u2014'}</td><td class="muted">${r['Localidad en exportador']||'\u2014'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');
-  document.getElementById('e-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
-  document.getElementById('e-footer').innerHTML=`<span>Mostrando ${f.length} de ${allE.length} registros</span>`;
-}
+function renderE(){const f=filterE();const has=f.reduce((s,r)=>s+parseNum(r['Has sustentables']),0);const ton=f.reduce((s,r)=>s+parseNum(r['Rendimiento en ton']),0);const exps=uniq(f.map(r=>r['Exportador'])).length;document.getElementById('stats-e').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}),'Has. sustentables','#1a5a9a')+statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}),'Toneladas','#1a4a2e')+statCard(exps,'Exportadores','#64748b');if(!f.length){document.getElementById('e-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('e-footer').innerHTML='';return;}const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exp.</th><th>Tipo</th><th>Camp.</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Ton. aprobadas al INICIO</th></tr></thead>`;const rows=f.map(r=>`<tr><td class="bold" style="max-width:200px;word-wrap:break-word;white-space:normal">${r['Vendedor']||'—'}</td><td class="mono">${r['CUIT']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Localidad en exportador']||'—'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');document.getElementById('e-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;document.getElementById('e-footer').innerHTML=`<span>Mostrando ${f.length} de ${allE.length} registros</span>`;}
 function clearE(){document.getElementById('e-search').value='';Object.keys(sel).filter(k=>k.startsWith('e-')).forEach(k=>sel[k].clear());const eDef=findCampDefault(allE);if(eDef)sel['e-camp'].add(eDef);cascadeE();buildDropdown('e-camp',uniq(allE.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('e-camp');renderE();}
 
-// ── INFORMACION DE CAMPOS ──
-function getFieldStatus(r){
-  const cuit=g(r,'CUIT');
-  const campo=g(r,'NOMBRE DEL CAMPO');
-  const renspa=g(r,'RENSPA');
-  const cred=g(r,'CREDENCIAL RENSPA');
-  const poly=g(r,'POLIGONO');
-  const evid=g(r,'EVIDENCIA');
-  const vto=getVtoRenspa(cuit,campo);
-  const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
-  const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
-  if(vto){const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))return 'RENSPA vencida';}
-  if(!renspa&&!cred)return'Falta RENSPA';
-  if(!poly)return'Falta poligono';
-  if(!evid)return'Falta evidencia';
-  if(!vto)return'A verificar';
-  if(estadoKmz!=='OK')return'A verificar';
-  if(estadoEvid!=='OK')return'A verificar';
-  return'Completo';
-}
+// ── INFORMACIÓN DE CAMPOS ──
+function getFieldStatus(r){const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const renspa=g(r,'RENSPA');const cred=g(r,'CREDENCIAL RENSPA');const poly=g(r,'POLIGONO');const evid=g(r,'EVIDENCIA');const vto=getVtoRenspa(cuit,campo);const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');if(vto){const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))return 'RENSPA vencida';}if(!renspa&&!cred)return'Falta RENSPA';if(!poly)return'Falta poligono';if(!evid)return'Falta evidencia';if(!vto)return'A verificar';if(estadoKmz!=='OK')return'A verificar';if(estadoEvid!=='OK')return'A verificar';return'Completo';}
+function filterC(){const q=document.getElementById('c-search').value.toLowerCase();const provs=sel['c-prov'];const estados=sel['c-estado'];return allC.filter(r=>{const status=getFieldStatus(r);return(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!provs.size||provs.has(r['PROVINCIA']))&&(!estados.size||estados.has(status));});}
+function renderC(){const f=filterC();const completos=f.filter(r=>getFieldStatus(r)==='Completo').length;const provs=uniq(f.map(r=>g(r,'PROVINCIA'))).length;document.getElementById('stats-c').innerHTML=statCard(f.length,'Campos','#1a4a2e')+statCard(completos,'Completos','#065f46')+statCard(f.length-completos,'Pendientes','#991b1b')+statCard(provs,'Provincias','#64748b');const allStatuses=uniq(allC.map(r=>getFieldStatus(r)));const allProvs=uniq(allC.map(r=>g(r,'PROVINCIA')));if(!document.getElementById('opts-c-prov'))buildDropdown('c-prov',allProvs);if(!document.getElementById('opts-c-estado'))buildDropdown('c-estado',allStatuses,s=>statusBadge(s));if(!f.length){document.getElementById('c-table').innerHTML='<div class="loading">Sin resultados.</div>';document.getElementById('c-footer').innerHTML='';return;}const thead=`<thead><tr><th>Razón social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. productivas</th><th>Has. verificadas</th><th>RENSPA</th><th>Estado</th></tr></thead>`;const rows=f.map((r,i)=>{const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const status=getFieldStatus(r);const rs=renspaStatus(cuit,campo);const hv=getNotaValor(cuit,campo,'has_sustentables');const hp=g(r,'PRODUCTIVAS');let hasCell;if(!hv)hasCell='<span class="badge badge-na">-</span>';else{const diff=parseNum(hv)!==parseNum(hp);hasCell=diff?'<span style="color:#dc2626;font-weight:600">'+fmt(hv)+'</span>':'<span style="color:#065f46">'+fmt(hv)+'</span>';}const htot=parseNum(g(r,'TOTALES DEL CAMPO'));const hprod=parseNum(g(r,'PRODUCTIVAS'));const hasProdCell=(hprod>htot&&htot>0)?'<span style="color:#dc2626;font-weight:600" title="Productivas mayor a totales">'+fmt(g(r,'PRODUCTIVAS'))+'</span>':fmt(g(r,'PRODUCTIVAS'));return `<tr class="clickable" onclick="toggleFicha(${i})"><td class="bold" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${g(r,'RAZON SOCIAL')||'—'}</td><td class="mono" style="font-size:11px">${cuit}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${campo}</td><td class="muted" style="max-width:100px">${g(r,'LOCALIDAD')||'—'}</td><td class="muted" style="max-width:90px">${g(r,'PROVINCIA')||'—'}</td><td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td><td class="num">${hasProdCell}</td><td class="num">${hasCell}</td><td><span class="badge ${rs.cls}">${rs.status}</span></td><td>${statusBadge(status)}</td></tr><tr><td colspan="10" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;}).join('');document.getElementById('c-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;document.getElementById('c-footer').innerHTML=`<span>Mostrando ${f.length} de ${allC.length} campos</span>`;}
 
-function filterC(){
-  const q=document.getElementById('c-search').value.toLowerCase();
-  const provs=sel['c-prov'];
-  const estados=sel['c-estado'];
-  return allC.filter(r=>{
-    const status=getFieldStatus(r);
-    return(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!provs.size||provs.has(r['PROVINCIA']))&&(!estados.size||estados.has(status));
-  });
-}
-
-function renderC(){
-  const f=filterC();
-  const completos=f.filter(r=>getFieldStatus(r)==='Completo').length;
-  const provs=uniq(f.map(r=>g(r,'PROVINCIA'))).length;
-  const hasTot=f.reduce((s,r)=>s+parseNum(g(r,'TOTALES DEL CAMPO')),0);
-  document.getElementById('stats-c').innerHTML=statCard(f.length,'Campos','#1a4a2e')+statCard(completos,'Completos','#065f46')+statCard(f.length-completos,'Pendientes','#991b1b')+statCard(provs,'Provincias','#64748b');
-
-  // Poblar filtros
-  const allStatuses=uniq(allC.map(r=>getFieldStatus(r)));
-  const allProvs=uniq(allC.map(r=>g(r,'PROVINCIA')));
-  if(!document.getElementById('opts-c-prov'))buildDropdown('c-prov',allProvs);
-  if(!document.getElementById('opts-c-estado'))buildDropdown('c-estado',allStatuses,s=>statusBadge(s));
-
-  if(!f.length){document.getElementById('c-table').innerHTML='<div class="loading">Sin resultados.</div>';document.getElementById('c-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Razón social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. productivas</th><th>Has. verificadas</th><th>RENSPA</th><th>Estado</th></tr></thead>`;
-  const rows=f.map((r,i)=>{
-    const cuit=g(r,'CUIT');
-    const campo=g(r,'NOMBRE DEL CAMPO');
-    const status=getFieldStatus(r);
-    const rs=renspaStatus(cuit,campo);
-    const hv=getNotaValor(cuit,campo,'has_sustentables');
-    const hp=g(r,'PRODUCTIVAS');
-    let hasCell;
-    if(!hv)hasCell='<span class="badge badge-na">-</span>';
-    else{const diff=parseNum(hv)!==parseNum(hp);hasCell=diff?'<span style="color:#dc2626;font-weight:600">'+fmt(hv)+'</span>':'<span style="color:#065f46">'+fmt(hv)+'</span>';}
-    const htot=parseNum(g(r,'TOTALES DEL CAMPO'));
-    const hprod=parseNum(g(r,'PRODUCTIVAS'));
-    const hasProdCell=(hprod>htot&&htot>0)?'<span style="color:#dc2626;font-weight:600" title="Productivas mayor a totales">'+fmt(g(r,'PRODUCTIVAS'))+'</span>':fmt(g(r,'PRODUCTIVAS'));
-    return `<tr class="clickable" onclick="toggleFicha(${i})">
-      <td class="bold" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${g(r,'RAZON SOCIAL')||'\u2014'}</td>
-      <td class="mono" style="font-size:11px">${cuit}</td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${campo}</td>
-      <td class="muted" style="max-width:100px">${g(r,'LOCALIDAD')||'\u2014'}</td>
-      <td class="muted" style="max-width:90px">${g(r,'PROVINCIA')||'\u2014'}</td>
-      <td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td>
-      <td class="num">${hasProdCell}</td>
-      <td class="num">${hasCell}</td>
-      <td><span class="badge ${rs.cls}">${rs.status}</span></td>
-      <td>${statusBadge(status)}</td>
-    </tr><tr><td colspan="10" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;
-  }).join('');
-  document.getElementById('c-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
-  document.getElementById('c-footer').innerHTML=`<span>Mostrando ${f.length} de ${allC.length} campos</span>`;
-}
-
-function buildFicha(r,idx){
-  const cuit=g(r,'CUIT');
-  const campo=g(r,'NOMBRE DEL CAMPO');
-  const cred=g(r,'CREDENCIAL RENSPA');
-  const poly=g(r,'POLIGONO');
-  const evid=g(r,'EVIDENCIA');
-  const tipoEvid=g(r,'TIPO DE EVIDENCIA');
-  const mail=g(r,'MAIL DE CONTACTO');
-  const rs=renspaStatus(cuit,campo);
-  const vto=getVtoRenspa(cuit,campo);
-  const vtoFmt=vto&&String(vto).includes('T')?String(vto).split('T')[0]:vto;
-  const comentarios=getNotas(cuit,campo,'comentario');
-  const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
-  const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
-  const hasSust=getNotaValor(cuit,campo,'has_sustentables');
-  function estadoBadge(val){if(!val)return'<span class="badge badge-na">A verificar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
-
-  let html=`<div class="ficha-grid">
-    <div class="ficha-field"><label>Razon social</label><div class="val bold">${g(r,'RAZON SOCIAL')}</div></div>
-    <div class="ficha-field"><label>Tipo sociedad</label><div class="val">${g(r,'TIPO SOCIEDAD')}</div></div>
-    <div class="ficha-field"><label>CUIT</label><div class="val mono">${cuit}</div></div>
-    <div class="ficha-field"><label>Mail contacto</label><div class="val">${mail?`<a href="mailto:${mail}">${mail}</a>`:'\u2014'}</div></div>
-    <div class="ficha-field"><label>Departamento</label><div class="val">${g(r,'DEPARTAMENTO')}</div></div>
-    <div class="ficha-field"><label>Provincia</label><div class="val">${g(r,'PROVINCIA')}</div></div>
-    <div class="ficha-field"><label>Localidad</label><div class="val">${g(r,'LOCALIDAD')}</div></div>
-    <div class="ficha-field"><label>Cod. localidad ARCA</label><div class="val">${g(r,'LOCALIDAD ARCA')}</div></div>
-  </div>`;
-
-  html+=`<div class="ficha-section"><h3>Hectareas sustentables</h3><div class="ficha-grid">
-    <div class="ficha-field"><label>Has. totales (Sheet)</label><div class="val">${fmt(g(r,'TOTALES DEL CAMPO'))}</div></div>
-    <div class="ficha-field"><label>Has. productivas (Sheet)</label><div class="val">${fmt(g(r,'PRODUCTIVAS'))}</div></div>
-    <div class="ficha-field"><label>Has. sustentables (verificadas)</label><div class="val">${hasSust?fmt(hasSust):'<span class="badge badge-na">Sin cargar</span>'}</div>
-      <div class="vto-input edit-only" style="margin-top:6px"><input type="text" id="has-${idx}" placeholder="Ej: 1200" value="${hasSust||''}"><button onclick="saveHas(${idx})">Guardar</button></div>
-    </div>
-  </div></div>`;
-
-  html+=`<div class="ficha-section"><h3>Documentacion</h3><div class="ficha-grid">
-    <div class="ficha-field"><label>N\u00b0 RENSPA</label><div class="val">${g(r,'RENSPA')||'\u2014'}</div></div>
-    <div class="ficha-field"><label>Credencial RENSPA</label><div class="val">${cred?`<a href="${cred}" target="_blank">Ver documento</a>`:'No adjunto'}</div></div>
-    <div class="ficha-field"><label>Estado RENSPA</label><div class="val"><span class="badge ${rs.cls}">${rs.status}</span></div>
-      <div class="vto-input edit-only" style="margin-top:6px"><input type="date" id="vto-${idx}" value="${vtoFmt||''}"><button onclick="saveVto(${idx})">Guardar fecha</button></div>
-    </div>
-    <div class="ficha-field"><label>Poligono KMZ</label>
-      <div class="val">${poly?`<a href="${poly}" target="_blank">Descargar KMZ</a>`:'No adjunto'}</div>
-      <div class="val" style="margin-top:4px">${estadoBadge(estadoKmz)}</div>
-      <div class="vto-input edit-only" style="margin-top:6px"><select id="kmz-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoKmz==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoKmz==='Con observaciones'?'selected':''}>Con observaciones</option></select><button onclick="saveEstadoKmz(${idx})">Guardar</button></div>
-    </div>
-    <div class="ficha-field"><label>Tipo evidencia</label><div class="val">${tipoEvid||'\u2014'}</div></div>
-    <div class="ficha-field"><label>Evidencia</label>
-      <div class="val">${evid?`<a href="${evid}" target="_blank">Ver evidencia</a>`:'No adjunto'}</div>
-      <div class="val" style="margin-top:4px">${estadoBadge(estadoEvid)}</div>
-      <div class="vto-input edit-only" style="margin-top:6px"><select id="evid-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoEvid==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoEvid==='Con observaciones'?'selected':''}>Con observaciones</option></select><button onclick="saveEstadoEvid(${idx})">Guardar</button></div>
-    </div>
-    <div class="ficha-field"><label>PCUS 1</label><div class="val">${g(r,'PCUS 1')||'\u2014'}</div></div>
-  </div></div>`;
-
-  html+=`<div class="ficha-section"><h3>Comentarios del equipo</h3>`;
-  comentarios.forEach((c,ci)=>{html+=`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${fmtDate(c.FECHA)||c.FECHA}</span><span class="edit-only" style="display:inline;margin-left:8px"><button onclick="editComment(${idx},${ci})" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button><button onclick="deleteComment(${idx},${ci})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button></span></div><div class="comment-text" id="cmtxt-${idx}-${ci}">${c.VALOR}</div></div>`;});
-  html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
-  return html;
-}
-
+function buildFicha(r,idx){const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const cred=g(r,'CREDENCIAL RENSPA');const poly=g(r,'POLIGONO');const evid=g(r,'EVIDENCIA');const tipoEvid=g(r,'TIPO DE EVIDENCIA');const mail=g(r,'MAIL DE CONTACTO');const rs=renspaStatus(cuit,campo);const vto=getVtoRenspa(cuit,campo);const vtoFmt=vto&&String(vto).includes('T')?String(vto).split('T')[0]:vto;const comentarios=getNotas(cuit,campo,'comentario');const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');const hasSust=getNotaValor(cuit,campo,'has_sustentables');function estadoBadge(val){if(!val)return'<span class="badge badge-na">A verificar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
+let html=`<div class="ficha-grid"><div class="ficha-field"><label>Razon social</label><div class="val bold">${g(r,'RAZON SOCIAL')}</div></div><div class="ficha-field"><label>Tipo sociedad</label><div class="val">${g(r,'TIPO SOCIEDAD')}</div></div><div class="ficha-field"><label>CUIT</label><div class="val mono">${cuit}</div></div><div class="ficha-field"><label>Mail contacto</label><div class="val">${mail?`<a href="mailto:${mail}">${mail}</a>`:'—'}</div></div><div class="ficha-field"><label>Departamento</label><div class="val">${g(r,'DEPARTAMENTO')}</div></div><div class="ficha-field"><label>Provincia</label><div class="val">${g(r,'PROVINCIA')}</div></div><div class="ficha-field"><label>Localidad</label><div class="val">${g(r,'LOCALIDAD')}</div></div><div class="ficha-field"><label>Cod. localidad ARCA</label><div class="val">${g(r,'LOCALIDAD ARCA')}</div></div></div>`;
+html+=`<div class="ficha-section"><h3>Hectareas sustentables</h3><div class="ficha-grid"><div class="ficha-field"><label>Has. totales (Sheet)</label><div class="val">${fmt(g(r,'TOTALES DEL CAMPO'))}</div></div><div class="ficha-field"><label>Has. productivas (Sheet)</label><div class="val">${fmt(g(r,'PRODUCTIVAS'))}</div></div><div class="ficha-field"><label>Has. sustentables (verificadas)</label><div class="val">${hasSust?fmt(hasSust):'<span class="badge badge-na">Sin cargar</span>'}</div><div class="vto-input edit-only" style="margin-top:6px"><input type="text" id="has-${idx}" placeholder="Ej: 1200" value="${hasSust||''}"><button onclick="saveHas(${idx})">Guardar</button></div></div></div></div>`;
+html+=`<div class="ficha-section"><h3>Documentacion</h3><div class="ficha-grid"><div class="ficha-field"><label>N° RENSPA</label><div class="val">${g(r,'RENSPA')||'—'}</div></div><div class="ficha-field"><label>Credencial RENSPA</label><div class="val">${cred?`<a href="${cred}" target="_blank">Ver documento</a>`:'No adjunto'}</div></div><div class="ficha-field"><label>Estado RENSPA</label><div class="val"><span class="badge ${rs.cls}">${rs.status}</span></div><div class="vto-input edit-only" style="margin-top:6px"><input type="date" id="vto-${idx}" value="${vtoFmt||''}"><button onclick="saveVto(${idx})">Guardar fecha</button></div></div><div class="ficha-field"><label>Poligono KMZ</label><div class="val">${poly?`<a href="${poly}" target="_blank">Descargar KMZ</a>`:'No adjunto'}</div><div class="val" style="margin-top:4px">${estadoBadge(estadoKmz)}</div><div class="vto-input edit-only" style="margin-top:6px"><select id="kmz-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoKmz==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoKmz==='Con observaciones'?'selected':''}>Con observaciones</option></select><button onclick="saveEstadoKmz(${idx})">Guardar</button></div></div><div class="ficha-field"><label>Tipo evidencia</label><div class="val">${tipoEvid||'—'}</div></div><div class="ficha-field"><label>Evidencia</label><div class="val">${evid?`<a href="${evid}" target="_blank">Ver evidencia</a>`:'No adjunto'}</div><div class="val" style="margin-top:4px">${estadoBadge(estadoEvid)}</div><div class="vto-input edit-only" style="margin-top:6px"><select id="evid-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoEvid==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoEvid==='Con observaciones'?'selected':''}>Con observaciones</option></select><button onclick="saveEstadoEvid(${idx})">Guardar</button></div></div><div class="ficha-field"><label>PCUS 1</label><div class="val">${g(r,'PCUS 1')||'—'}</div></div></div></div>`;
+html+=`<div class="ficha-section"><h3>Comentarios del equipo</h3>`;
+comentarios.forEach((c,ci)=>{html+=`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${fmtDate(c.FECHA)||c.FECHA}</span><span class="edit-only" style="display:inline;margin-left:8px"><button onclick="editComment(${idx},${ci})" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button><button onclick="deleteComment(${idx},${ci})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button></span></div><div class="comment-text" id="cmtxt-${idx}-${ci}">${c.VALOR}</div></div>`;});
+html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
+return html;}
 
 function toggleFicha(i){const el=document.getElementById('ficha-'+i);if(el)el.classList.toggle('open');}
-
-async function saveVto(idx){
-  const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const val=document.getElementById('vto-'+idx).value;
-  if(!val){alert('Selecciona una fecha.');return;}
-  await saveNota(cuit,campo,'vto_renspa',val,'Compliance');
-  await loadNotas();renderC();
-}
-
-async function saveEstadoKmz(idx){
-  const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const val=document.getElementById('kmz-'+idx).value;
-  if(!val){alert('Selecciona un estado.');return;}
-  await saveNota(cuit,campo,'estado_kmz',val,'Compliance');
-  await loadNotas();renderC();
-}
-
-async function saveEstadoEvid(idx){
-  const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const val=document.getElementById('evid-'+idx).value;
-  if(!val){alert('Selecciona un estado.');return;}
-  await saveNota(cuit,campo,'estado_evidencia',val,'Compliance');
-  await loadNotas();renderC();
-}
-
-async function saveHas(idx){
-  const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const val=document.getElementById('has-'+idx).value.trim();
-  if(!val){alert('Ingresa un valor.');return;}
-  await saveNota(cuit,campo,'has_sustentables',val,'Compliance');
-  await loadNotas();renderC();
-}
-
-async function saveComment(idx){
-  const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const input=document.getElementById('cmt-'+idx);
-  const val=input.value.trim();
-  if(!val){alert('Escribi un comentario.');return;}
-  const autor=prompt('Tu nombre:');
-  if(!autor)return;
-  await saveNota(cuit,campo,'comentario',val,autor);
-  input.value='';
-  await loadNotas();renderC();
-}
-
-async function editComment(idx,ci){
-  const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const comentarios=getNotas(cuit,campo,'comentario');
-  const cmt=comentarios[ci];if(!cmt)return;
-  const newVal=prompt('Editar comentario:',cmt.VALOR);
-  if(newVal===null||!newVal.trim())return;
-  // Save as new comment with same author, delete logic handled by updating
-  await saveNota(cuit,campo,'comentario',newVal.trim(),cmt.AUTOR);
-  // Mark old one for deletion
-  await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');
-  await loadNotas();renderC();
-}
-
-async function deleteComment(idx,ci){
-  if(!confirm('Seguro que queres borrar este comentario?'))return;
-  const f=filterC();const r=f[idx];if(!r)return;
-  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const comentarios=getNotas(cuit,campo,'comentario');
-  const cmt=comentarios[ci];if(!cmt)return;
-  await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');
-  await loadNotas();renderC();
-}
-
+async function saveVto(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('vto-'+idx).value;if(!val){alert('Selecciona una fecha.');return;}await saveNota(cuit,campo,'vto_renspa',val,'Compliance');await loadNotas();renderC();}
+async function saveEstadoKmz(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('kmz-'+idx).value;if(!val){alert('Selecciona un estado.');return;}await saveNota(cuit,campo,'estado_kmz',val,'Compliance');await loadNotas();renderC();}
+async function saveEstadoEvid(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('evid-'+idx).value;if(!val){alert('Selecciona un estado.');return;}await saveNota(cuit,campo,'estado_evidencia',val,'Compliance');await loadNotas();renderC();}
+async function saveHas(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('has-'+idx).value.trim();if(!val){alert('Ingresa un valor.');return;}await saveNota(cuit,campo,'has_sustentables',val,'Compliance');await loadNotas();renderC();}
+async function saveComment(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const input=document.getElementById('cmt-'+idx);const val=input.value.trim();if(!val){alert('Escribi un comentario.');return;}const autor=prompt('Tu nombre:');if(!autor)return;await saveNota(cuit,campo,'comentario',val,autor);input.value='';await loadNotas();renderC();}
+async function editComment(idx,ci){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const comentarios=getNotas(cuit,campo,'comentario');const cmt=comentarios[ci];if(!cmt)return;const newVal=prompt('Editar comentario:',cmt.VALOR);if(newVal===null||!newVal.trim())return;await saveNota(cuit,campo,'comentario',newVal.trim(),cmt.AUTOR);await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');await loadNotas();renderC();}
+async function deleteComment(idx,ci){if(!confirm('Seguro que queres borrar este comentario?'))return;const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const comentarios=getNotas(cuit,campo,'comentario');const cmt=comentarios[ci];if(!cmt)return;await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');await loadNotas();renderC();}
 function clearC(){document.getElementById('c-search').value='';Object.keys(sel).filter(k=>k.startsWith('c-')).forEach(k=>sel[k].clear());buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));renderC();}
 
 // ── TABS ──
 function switchTab(t){currentTab=t;['g','e','c','s'].forEach(x=>{const tab=document.getElementById('tab-'+x);const cl=x===t?'tab active':'tab';if(tab)tab.className=cl;const panel=document.getElementById('panel-'+x);if(panel)panel.style.display=x===t?'':'none';});}
 
 // ── EXPORT ──
-function exportExcel(){
-  let data,name;
-  if(currentTab==='g'){data=filterG();name='Gestiones';}
-  else if(currentTab==='e'){data=filterE();name='Habilitaciones';}
-  else{data=filterC();name='Informacion_Campos';}
-  if(!data.length){alert('No hay datos para exportar.');return;}
-  const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,name);
-  const date=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');
-  XLSX.writeFile(wb,`${name}-${date}.xlsx`);
+function exportExcel(){let data,name;if(currentTab==='g'){data=filterG();name='Gestiones';}else if(currentTab==='e'){data=filterE();name='Habilitaciones';}else{data=filterC();name='Informacion_Campos';}if(!data.length){alert('No hay datos para exportar.');return;}const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,name);const date=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');XLSX.writeFile(wb,`${name}-${date}.xlsx`);}
+
+// ── FETCH DATOS VIA APPS SCRIPT (sin API key expuesta) ──
+async function fetchAllData(){
+  return new Promise((resolve, reject)=>{
+    const cb='_dataCb'+Date.now();
+    window[cb]=function(d){delete window[cb];resolve(d);};
+    const s=document.createElement('script');
+    s.src=APPS_SCRIPT_URL+'?action=getData&callback='+cb;
+    s.onerror=function(){delete window[cb];reject(new Error('Error de conexion con el servidor de datos'));};
+    document.body.appendChild(s);
+    setTimeout(()=>{if(window[cb]){delete window[cb];reject(new Error('Timeout al cargar datos. Verificá tu conexión.'));}},20000);
+  });
 }
 
 // ── CARGA ──
@@ -1200,12 +547,12 @@ async function loadData(){
   document.getElementById('e-table').innerHTML='<div class="loading">Cargando...</div>';
   document.getElementById('c-table').innerHTML='<div class="loading">Cargando...</div>';
   try{
-    const [gData,eData,c]=await Promise.all([fetchSheet('Gestiones'),fetchSheet('Exportadores'),fetchSheet('BASE DATOS FINAL',2)]);
-    allG=gData;allE=eData;allC=c;
+    const data = await fetchAllData();
+    allG = data.gestiones || [];
+    allE = data.exportadores || [];
+    allC = data.campos || [];
     try{await loadNotas();}catch(e){console.warn('Notas no disponibles:',e);}
-
-    const gDefault=findCampDefault(allG);
-    const eDefault=findCampDefault(allE);
+    const gDefault=findCampDefault(allG);const eDefault=findCampDefault(allE);
     if(gDefault)sel['g-camp'].add(gDefault);
     if(eDefault)sel['e-camp'].add(eDefault);
     buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));
@@ -1225,132 +572,23 @@ async function loadData(){
     document.getElementById('last-update').textContent='Error al cargar';
   }
 }
-loadData();
 
-// ── SECTION BAR UPDATE ──
-function updateSectionBars(){
-  // Gestiones
-  var gCamps=sel['g-camp'];
-  var gLabel='Gestiones';
-  if(gCamps.size===1)gLabel='Gestiones · Campaña '+fmtCamp([...gCamps][0]);
-  else if(gCamps.size>1)gLabel='Gestiones · '+gCamps.size+' campañas';
-  document.getElementById('section-label-g').textContent=gLabel;
-  var gCount=document.getElementById('g-footer').textContent;
-  document.getElementById('section-count-g').textContent=filterG().length+' registros';
-  // Habilitaciones
-  var eCamps=sel['e-camp'];
-  var eLabel='Habilitaciones';
-  if(eCamps.size===1)eLabel='Habilitaciones · Campaña '+fmtCamp([...eCamps][0]);
-  else if(eCamps.size>1)eLabel='Habilitaciones · '+eCamps.size+' campañas';
-  document.getElementById('section-label-e').textContent=eLabel;
-  document.getElementById('section-count-e').textContent=filterE().length+' registros';
-  // Info campos
-  document.getElementById('section-label-c').textContent='Información de campos';
-  document.getElementById('section-count-c').textContent=filterC().length+' campos';
-}
-
-// Override renderG/E/C to also update section bars
+// ── SECTION BARS ──
+function updateSectionBars(){var gCamps=sel['g-camp'];var gLabel='Gestiones';if(gCamps.size===1)gLabel='Gestiones · Campaña '+fmtCamp([...gCamps][0]);else if(gCamps.size>1)gLabel='Gestiones · '+gCamps.size+' campañas';document.getElementById('section-label-g').textContent=gLabel;document.getElementById('section-count-g').textContent=filterG().length+' registros';var eCamps=sel['e-camp'];var eLabel='Habilitaciones';if(eCamps.size===1)eLabel='Habilitaciones · Campaña '+fmtCamp([...eCamps][0]);else if(eCamps.size>1)eLabel='Habilitaciones · '+eCamps.size+' campañas';document.getElementById('section-label-e').textContent=eLabel;document.getElementById('section-count-e').textContent=filterE().length+' registros';document.getElementById('section-label-c').textContent='Información de campos';document.getElementById('section-count-c').textContent=filterC().length+' campos';}
 var _origRenderG=renderG,_origRenderE=renderE,_origRenderC=renderC;
 renderG=function(){_origRenderG();try{updateSectionBars();}catch(e){}};
 renderE=function(){_origRenderE();try{updateSectionBars();}catch(e){}};
 renderC=function(){_origRenderC();try{updateSectionBars();}catch(e){}};
 
-// Override switchTab to update colors
-var _origSwitch=switchTab;
-switchTab=function(t){_origSwitch(t);};
-
-// Override stat colors per tab
-var _origStatCard=statCard;
-
 // ── NUEVA SOLICITUD ──
-function openNuevaSolicitud(){
-  document.getElementById('modal-solicitud').classList.add('open');
-  document.getElementById('sol-msg').className='modal-msg';
-  document.getElementById('sol-msg').textContent='';
-  document.getElementById('btn-enviar-sol').disabled=false;
-  document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';
-}
-function closeNuevaSolicitud(){
-  document.getElementById('modal-solicitud').classList.remove('open');
-  // limpiar campos
-  ['sol-nombre','sol-cliente','sol-cuit','sol-campo'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('sol-exportador').value='';
-  document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);
-}
+function openNuevaSolicitud(){document.getElementById('modal-solicitud').classList.add('open');document.getElementById('sol-msg').className='modal-msg';document.getElementById('sol-msg').textContent='';document.getElementById('btn-enviar-sol').disabled=false;document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';}
+function closeNuevaSolicitud(){document.getElementById('modal-solicitud').classList.remove('open');['sol-nombre','sol-cliente','sol-cuit','sol-campo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sol-exportador').value='';document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);}
 function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
+async function enviarSolicitud(){const nombre=document.getElementById('sol-nombre').value.trim();const cliente=document.getElementById('sol-cliente').value.trim();const cuit=document.getElementById('sol-cuit').value.trim();const exportador=document.getElementById('sol-exportador').value;const campo=document.getElementById('sol-campo').value.trim();const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');const msg=document.getElementById('sol-msg');if(!nombre){msg.className='modal-msg err';msg.textContent='Ingresá tu nombre.';return;}if(!cliente){msg.className='modal-msg err';msg.textContent='Ingresá el nombre del cliente.';return;}if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador.';return;}if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema.';return;}const btn=document.getElementById('btn-enviar-sol');btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';const camp=findCampDefault(allG)||'25/26';const fecha=new Date().toLocaleDateString('es-AR');try{const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:cuit||'',campo:campo||'',esquema:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});const data=await res.json();if(data.ok){msg.className='modal-msg ok';msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';btn.textContent='Enviado ✓';setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);}else{throw new Error(data.error||'Error desconocido');}}catch(e){msg.className='modal-msg err';if(e.message==='Failed to fetch'){msg.textContent='No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.';}else{msg.textContent='Error al enviar: '+e.message;}btn.disabled=false;btn.textContent='Enviar solicitud';}}
 
-async function enviarSolicitud(){
-  const nombre=document.getElementById('sol-nombre').value.trim();
-  const cliente=document.getElementById('sol-cliente').value.trim();
-  const cuit=document.getElementById('sol-cuit').value.trim();
-  const exportador=document.getElementById('sol-exportador').value;
-  const campo=document.getElementById('sol-campo').value.trim();
-  const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');
-  const msg=document.getElementById('sol-msg');
-
-  if(!nombre){msg.className='modal-msg err';msg.textContent='Ingresá tu nombre.';return;}
-  if(!cliente){msg.className='modal-msg err';msg.textContent='Ingresá el nombre del cliente.';return;}
-  if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador.';return;}
-  if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema.';return;}
-
-  const btn=document.getElementById('btn-enviar-sol');
-  btn.disabled=true;btn.textContent='Enviando...';
-  msg.className='modal-msg';msg.textContent='';
-
-  const camp=findCampDefault(allG)||'25/26';
-  const fecha=new Date().toLocaleDateString('es-AR');
-
-  try {
-    const res=await fetch(APPS_SCRIPT_URL,{
-      method:'POST',
-      body:JSON.stringify({
-        action:'nuevaSolicitud',
-        productor: cliente,
-        cuit: cuit||'',
-        campo: campo||'',
-        esquema: esquemas,
-        exportador: exportador,
-        estado: 'Solicitud enviada',
-        via: 'Tablero',
-        campana: camp,
-        solicitante: nombre,
-        fecha: fecha
-      })
-    });
-    const data=await res.json();
-    if(data.ok){
-      msg.className='modal-msg ok';
-      msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';
-      btn.textContent='Enviado ✓';
-      setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);
-    } else {
-      throw new Error(data.error||'Error desconocido');
-    }
-  } catch(e){
-    msg.className='modal-msg err';
-    if(e.message==='Failed to fetch'){
-      msg.textContent='No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.';
-    } else {
-      msg.textContent='Error al enviar: '+e.message;
-    }
-    btn.disabled=false;btn.textContent='Enviar solicitud';
-  }
-}
-
-// ── ESQUEMAS INTERNOS ──
-function showEsqSection(name, el) {
-  ['esquemas','exportadores','regla'].forEach(s => {
-    const sec = document.getElementById('sec-'+s);
-    if(sec) sec.style.display = s === name ? '' : 'none';
-  });
-  document.querySelectorAll('#panel-s .nav-tab').forEach(t => t.classList.remove('active'));
-  if(el) el.classList.add('active');
-}
-
-function toggleCard(id) {
-  const card = document.getElementById('card-'+id);
-  if(card) card.classList.toggle('open');
-}
+// ── ESQUEMAS ──
+function showEsqSection(name,el){['esquemas','exportadores','regla'].forEach(s=>{const sec=document.getElementById('sec-'+s);if(sec)sec.style.display=s===name?'':'none';});document.querySelectorAll('#panel-s .nav-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');}
+function toggleCard(id){const card=document.getElementById('card-'+id);if(card)card.classList.toggle('open');}
 
 </script>
 </body>
