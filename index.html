@@ -217,11 +217,11 @@ tr.clickable{cursor:pointer}
     <div style="color:#7B8BA3;font-size:13px">Soja sustentable</div>
   </div>
   <div style="color:#7B8BA3;font-size:13px;text-align:center">
-    Iniciá sesión con tu cuenta <strong style="color:#C9A96E">@allaria.com.ar</strong> para continuar
+    Iniciá sesión con tu cuenta <strong style="color:#C9A96E">@allariaagro.com.ar</strong> o <strong style="color:#C9A96E">@allaria.com.ar</strong> para continuar
   </div>
   <div id="google-btn"></div>
   <div id="auth-error" style="color:#FCA5A5;font-size:13px;display:none;text-align:center;background:rgba(220,38,38,0.15);padding:10px 20px;border-radius:8px;margin-top:-8px">
-    ⚠ Solo pueden acceder cuentas @allaria.com.ar
+    ⚠ Solo pueden acceder cuentas @allariaagro.com.ar o @allaria.com.ar
   </div>
 </div>
 
@@ -412,7 +412,7 @@ function handleCredential(response){
   try {
     const parts = response.credential.split('.');
     const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
-    if(!payload.email || !payload.email.toLowerCase().endsWith('@allaria.com.ar')){
+    if(!payload.email || (!payload.email.toLowerCase().endsWith('@allariaagro.com.ar') && !payload.email.toLowerCase().endsWith('@allaria.com.ar'))){
       document.getElementById('auth-error').style.display='block';
       return;
     }
