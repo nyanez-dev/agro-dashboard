@@ -395,11 +395,42 @@ let allG=[], allE=[], allC=[], allNotas=[];
 let currentTab='g', editMode=false;
 
 // ── AUTENTICACIÓN CON GOOGLE ──
+const AUTH_KEY = 'allaria_auth';
+const AUTH_TTL = 24 * 60 * 60 * 1000; // 24 horas en ms
+
+function saveSession(payload){
+  localStorage.setItem(AUTH_KEY, JSON.stringify({
+    email: payload.email,
+    name: payload.name || payload.email,
+    ts: Date.now()
+  }));
+}
+
+function loadSession(){
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    if(Date.now() - data.ts > AUTH_TTL){ localStorage.removeItem(AUTH_KEY); return null; }
+    return data;
+  } catch(e){ return null; }
+}
+
+function applySession(name){
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('auth-user').textContent = name;
+  loadData();
+}
+
 function initAuth(){
+  // Si hay sesión guardada válida, entrar directamente
+  const session = loadSession();
+  if(session){ applySession(session.name); return; }
+
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: handleCredential,
-    auto_select: false,
+    auto_select: true,
   });
   google.accounts.id.renderButton(
     document.getElementById('google-btn'),
@@ -416,9 +447,8 @@ function handleCredential(response){
       document.getElementById('auth-error').style.display='block';
       return;
     }
-    document.getElementById('auth-overlay').classList.add('hidden');
-    document.getElementById('auth-user').textContent = payload.name || payload.email;
-    loadData();
+    saveSession(payload);
+    applySession(payload.name || payload.email);
   } catch(e) {
     document.getElementById('auth-error').style.display='block';
     document.getElementById('auth-error').textContent='Error al verificar identidad. Intentá de nuevo.';
