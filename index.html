@@ -518,7 +518,83 @@ function cascadeE(){const q=document.getElementById('e-search').value.toLowerCas
 // ── GESTIONES ──
 function filterG(){const q=document.getElementById('g-search').value.toLowerCase();const camps=sel['g-camp'];const exps=sel['g-exp'];const vias=sel['g-via'];return allG.filter(r=>(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!exps.size||exps.has(r['Exportador']))&&(!vias.size||vias.has(g(r,'web o mail'))));}
 function onFilterG(){cascadeG();renderG();}
-function renderG(){const f=filterG();const web=f.filter(r=>(g(r,'web o mail')||'').toLowerCase()==='web').length;const exps=uniq(f.map(r=>r['Exportador'])).length;document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;const rows=f.map(r=>`<tr><td class="bold">${r['Productor']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${r['Estado']||'—'}</td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>`).join('');document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} de ${allG.length} registros</span>`;}
+// ── GESTIONES CRM — helpers ──
+function getGestionId(r){return[r['Productor']||'',r['Campo']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');}
+function getGestionEstados(gid){return allNotas.filter(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');}
+function isGestionPasada(gid){return allNotas.some(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada');}
+
+function buildFichaG(r,idx,gid,estados){
+  const histHtml=estados.length===0
+    ?'<div class="muted" style="font-size:13px;margin-bottom:10px">Sin historial aún.</div>'
+    :estados.map(e=>`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${e.AUTOR||'—'}</span><span class="comment-date">${fmtDate(e.FECHA)||e.FECHA||''}</span></div><div class="comment-text">${e.VALOR}</div></div>`).join('');
+  return `<div class="ficha-grid">
+    <div class="ficha-field"><label>Productor</label><div class="val bold">${r['Productor']||'—'}</div></div>
+    <div class="ficha-field"><label>Campo</label><div class="val">${r['Campo']||'—'}</div></div>
+    <div class="ficha-field"><label>Exportador</label><div class="val">${expBadge(r['Exportador'])}</div></div>
+    <div class="ficha-field"><label>Esquema</label><div class="val">${r['Esquema']||'—'}</div></div>
+    <div class="ficha-field"><label>Via</label><div class="val">${viaBadge(g(r,'web o mail'))}</div></div>
+    <div class="ficha-field"><label>Campaña</label><div class="val">${fmtCamp(g(r,'Campa'))}</div></div>
+  </div>
+  <div class="ficha-section"><h3>Historial de estados</h3>
+    ${histHtml}
+    <div class="comment-input edit-only"><input type="text" id="gst-${idx}" placeholder="Nuevo estado... ej: Documentación completa"><button onclick="guardarEstadoGestion(${idx})">Guardar estado</button></div>
+  </div>
+  <div class="ficha-section edit-only" style="display:none">
+    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px">
+      <div style="flex:1;font-size:12px;color:#1E40AF;line-height:1.5">¿Lista para pasar a Habilitaciones? Se trasladarán los datos disponibles y la gestión desaparecerá del tablero.</div>
+      <button class="btn btn-gold" onclick="pasarAHabilitaciones(${idx})">Pasar a Habilitaciones ✓</button>
+    </div>
+  </div>`;
+}
+
+function toggleFichaG(i){const el=document.getElementById('ficha-g-'+i);if(el)el.classList.toggle('open');}
+
+async function guardarEstadoGestion(idx){
+  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r)));
+  const r=f[idx];if(!r)return;
+  const gid=getGestionId(r);
+  const input=document.getElementById('gst-'+idx);
+  const val=input.value.trim();
+  if(!val){alert('Escribí un estado.');return;}
+  const userName=document.getElementById('auth-user').textContent||'Compliance';
+  await saveNota(gid,'__GESTION__','estado',val,userName);
+  input.value='';
+  await loadNotas();
+  renderG();
+}
+
+async function pasarAHabilitaciones(idx){
+  if(!confirm('¿Confirmás pasar esta gestión a Habilitaciones? Desaparecerá del tablero.'))return;
+  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r)));
+  const r=f[idx];if(!r)return;
+  const gid=getGestionId(r);
+  const userName=document.getElementById('auth-user').textContent||'Compliance';
+  await saveNota(gid,'__GESTION__','pasada','SI',userName);
+  try{
+    await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'pasarAHabilitaciones',vendedor:r['Productor']||'',campo:r['Campo']||'',tipo:r['Esquema']||'',exportador:r['Exportador']||'',campana:g(r,'Campa')||'2526',cuit:r['CUIT']||'',pasadoPor:userName,fecha:new Date().toLocaleDateString('es-AR')})});
+  }catch(e){console.warn('Error al escribir en Exportadores:',e);}
+  await loadNotas();
+  renderG();
+}
+
+function renderG(){
+  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r)));
+  const web=f.filter(r=>(g(r,'web o mail')||'').toLowerCase()==='web').length;
+  const exps=uniq(f.map(r=>r['Exportador'])).length;
+  document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');
+  if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}
+  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
+  const rows=f.map((r,i)=>{
+    const gid=getGestionId(r);
+    const estados=getGestionEstados(gid);
+    const ultimo=estados.length?estados[estados.length-1].VALOR:'—';
+    const badgeCls=ultimo==='—'?'badge-na':'badge-warn';
+    return `<tr class="clickable" onclick="toggleFichaG(${i})"><td class="bold">${r['Productor']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Esquema']||'—'}</td><td><span class="badge ${badgeCls}">${ultimo}</span></td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
+    <tr><td colspan="7" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
+  }).join('');
+  document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
+  document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} gestiones activas</span>`;
+}
 function clearG(){document.getElementById('g-search').value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());const gDef=findCampDefault(allG);if(gDef)sel['g-camp'].add(gDef);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
 
 // ── HABILITACIONES ──
@@ -614,7 +690,7 @@ renderC=function(){_origRenderC();try{updateSectionBars();}catch(e){}};
 function openNuevaSolicitud(){document.getElementById('modal-solicitud').classList.add('open');document.getElementById('sol-msg').className='modal-msg';document.getElementById('sol-msg').textContent='';document.getElementById('btn-enviar-sol').disabled=false;document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';}
 function closeNuevaSolicitud(){document.getElementById('modal-solicitud').classList.remove('open');['sol-nombre','sol-cliente','sol-cuit','sol-campo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sol-exportador').value='';document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);}
 function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
-async function enviarSolicitud(){const nombre=document.getElementById('sol-nombre').value.trim();const cliente=document.getElementById('sol-cliente').value.trim();const cuit=document.getElementById('sol-cuit').value.trim();const exportador=document.getElementById('sol-exportador').value;const campo=document.getElementById('sol-campo').value.trim();const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');const msg=document.getElementById('sol-msg');if(!nombre){msg.className='modal-msg err';msg.textContent='Ingresá tu nombre.';return;}if(!cliente){msg.className='modal-msg err';msg.textContent='Ingresá el nombre del cliente.';return;}if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador.';return;}if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema.';return;}const btn=document.getElementById('btn-enviar-sol');btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';const camp=findCampDefault(allG)||'25/26';const fecha=new Date().toLocaleDateString('es-AR');try{const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:cuit||'',campo:campo||'',esquema:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});const data=await res.json();if(data.ok){msg.className='modal-msg ok';msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';btn.textContent='Enviado ✓';setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);}else{throw new Error(data.error||'Error desconocido');}}catch(e){msg.className='modal-msg err';if(e.message==='Failed to fetch'){msg.textContent='No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.';}else{msg.textContent='Error al enviar: '+e.message;}btn.disabled=false;btn.textContent='Enviar solicitud';}}
+async function enviarSolicitud(){const nombre=document.getElementById('sol-nombre').value.trim();const cliente=document.getElementById('sol-cliente').value.trim();const cuit=document.getElementById('sol-cuit').value.trim();const exportador=document.getElementById('sol-exportador').value;const campo=document.getElementById('sol-campo').value.trim();const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');const msg=document.getElementById('sol-msg');if(!nombre){msg.className='modal-msg err';msg.textContent='Ingresá tu nombre.';return;}if(!cliente){msg.className='modal-msg err';msg.textContent='Ingresá el nombre del cliente.';return;}if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador.';return;}if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema.';return;}const btn=document.getElementById('btn-enviar-sol');btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';const camp=findCampDefault(allG)||'25/26';const fecha=new Date().toLocaleDateString('es-AR');try{const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:cuit||'',campo:campo||'',esquema:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});const data=await res.json();if(data.ok){msg.className='modal-msg ok';msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';btn.textContent='Enviado ✓';const gid=[cliente,campo||'',exportador,camp].join('||');await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);}else{throw new Error(data.error||'Error desconocido');}}catch(e){msg.className='modal-msg err';if(e.message==='Failed to fetch'){msg.textContent='No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.';}else{msg.textContent='Error al enviar: '+e.message;}btn.disabled=false;btn.textContent='Enviar solicitud';}}
 
 // ── ESQUEMAS ──
 function showEsqSection(name,el){['esquemas','exportadores','regla'].forEach(s=>{const sec=document.getElementById('sec-'+s);if(sec)sec.style.display=s===name?'':'none';});document.querySelectorAll('#panel-s .nav-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');}
