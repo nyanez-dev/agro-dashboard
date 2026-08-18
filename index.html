@@ -524,9 +524,16 @@ function getGestionEstados(gid){return allNotas.filter(n=>n.CUIT===gid&&n.CAMPO=
 function isGestionPasada(gid){return allNotas.some(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada');}
 
 function buildFichaG(r,idx,gid,estados){
-  const histHtml=estados.length===0
-    ?'<div class="muted" style="font-size:13px;margin-bottom:10px">Sin historial aún.</div>'
-    :estados.map(e=>`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${e.AUTOR||'—'}</span><span class="comment-date">${fmtDate(e.FECHA)||e.FECHA||''}</span></div><div class="comment-text">${e.VALOR}</div></div>`).join('');
+  const estadoSheetVal=r['Estado']||'';
+  let histHtml;
+  if(estados.length===0){
+    histHtml=estadoSheetVal
+      ?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial (Sheet)</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`
+      :'<div class="muted" style="font-size:13px;margin-bottom:10px">Sin historial aún.</div>';
+  } else {
+    const inicial=estadoSheetVal?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial (Sheet)</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`:'';
+    histHtml=inicial+estados.map(e=>`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${e.AUTOR||'—'}</span><span class="comment-date">${fmtDate(e.FECHA)||e.FECHA||''}</span></div><div class="comment-text">${e.VALOR}</div></div>`).join('');
+  }
   return `<div class="ficha-grid">
     <div class="ficha-field"><label>Productor</label><div class="val bold">${r['Productor']||'—'}</div></div>
     <div class="ficha-field"><label>Campo</label><div class="val">${r['Campo']||'—'}</div></div>
@@ -587,8 +594,9 @@ function renderG(){
   const rows=f.map((r,i)=>{
     const gid=getGestionId(r);
     const estados=getGestionEstados(gid);
-    const ultimo=estados.length?estados[estados.length-1].VALOR:'—';
-    const badgeCls=ultimo==='—'?'badge-na':'badge-warn';
+    const estadoSheet=r['Estado']||'';
+    const ultimo=estados.length?estados[estados.length-1].VALOR:(estadoSheet||'—');
+    const badgeCls=(!estados.length&&!estadoSheet)?'badge-na':'badge-warn';
     return `<tr class="clickable" onclick="toggleFichaG(${i})"><td class="bold">${r['Productor']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Esquema']||'—'}</td><td><span class="badge ${badgeCls}">${ultimo}</span></td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
     <tr><td colspan="7" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
   }).join('');
