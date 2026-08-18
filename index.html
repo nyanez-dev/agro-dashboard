@@ -262,7 +262,6 @@ tr.clickable{cursor:pointer}
     <button class="modal-close" onclick="closeNuevaSolicitud()">×</button>
     <h2>Nueva solicitud de gestión</h2>
     <p class="modal-sub">El equipo de Compliance recibirá tu solicitud por mail.</p>
-    <div class="form-row"><label>Tu nombre <span style="color:#DC2626">*</span></label><input type="text" id="sol-nombre" placeholder="Ej: Juan Pérez"></div>
     <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A."></div>
     <div class="form-row"><label>CUIT <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" id="sol-cuit" placeholder="Ej: 30-12345678-9"></div>
     <div class="form-row"><label>Exportador <span style="color:#DC2626">*</span></label>
@@ -695,9 +694,39 @@ renderC=function(){_origRenderC();try{updateSectionBars();}catch(e){}};
 
 // ── NUEVA SOLICITUD ──
 function openNuevaSolicitud(){document.getElementById('modal-solicitud').classList.add('open');document.getElementById('sol-msg').className='modal-msg';document.getElementById('sol-msg').textContent='';document.getElementById('btn-enviar-sol').disabled=false;document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';}
-function closeNuevaSolicitud(){document.getElementById('modal-solicitud').classList.remove('open');['sol-nombre','sol-cliente','sol-cuit','sol-campo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sol-exportador').value='';document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);}
+function closeNuevaSolicitud(){document.getElementById('modal-solicitud').classList.remove('open');['sol-cliente','sol-cuit','sol-campo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sol-exportador').value='';document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);}
 function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
-async function enviarSolicitud(){const nombre=document.getElementById('sol-nombre').value.trim();const cliente=document.getElementById('sol-cliente').value.trim();const cuit=document.getElementById('sol-cuit').value.trim();const exportador=document.getElementById('sol-exportador').value;const campo=document.getElementById('sol-campo').value.trim();const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');const msg=document.getElementById('sol-msg');if(!nombre){msg.className='modal-msg err';msg.textContent='Ingresá tu nombre.';return;}if(!cliente){msg.className='modal-msg err';msg.textContent='Ingresá el nombre del cliente.';return;}if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador.';return;}if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema.';return;}const btn=document.getElementById('btn-enviar-sol');btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';const camp=findCampDefault(allG)||'25/26';const fecha=new Date().toLocaleDateString('es-AR');try{const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:cuit||'',campo:campo||'',esquema:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});const data=await res.json();if(data.ok){msg.className='modal-msg ok';msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';btn.textContent='Enviado ✓';const gid=[cliente,campo||'',exportador,camp].join('||');await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);}else{throw new Error(data.error||'Error desconocido');}}catch(e){msg.className='modal-msg err';if(e.message==='Failed to fetch'){msg.textContent='No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.';}else{msg.textContent='Error al enviar: '+e.message;}btn.disabled=false;btn.textContent='Enviar solicitud';}}
+async function enviarSolicitud(){
+  const nombre=document.getElementById('auth-user').textContent||'Comercial';
+  const cliente=document.getElementById('sol-cliente').value.trim();
+  const cuit=document.getElementById('sol-cuit').value.trim();
+  const exportador=document.getElementById('sol-exportador').value;
+  const campo=document.getElementById('sol-campo').value.trim();
+  const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');
+  const msg=document.getElementById('sol-msg');
+  // Validación con mensajes claros
+  if(!cliente){msg.className='modal-msg err';msg.textContent='Completá el nombre del cliente antes de continuar.';document.getElementById('sol-cliente').focus();return;}
+  if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador antes de continuar.';return;}
+  if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema antes de continuar.';return;}
+  const btn=document.getElementById('btn-enviar-sol');
+  btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
+  const camp=findCampDefault(allG)||'25/26';
+  const fecha=new Date().toLocaleDateString('es-AR');
+  try{
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:cuit||'',campo:campo||'',esquema:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
+    const data=await res.json();
+    if(data.ok){
+      msg.className='modal-msg ok';msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';btn.textContent='Enviado ✓';
+      const gid=[cliente,campo||'',exportador,camp].join('||');
+      await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);
+      setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);
+    }else{throw new Error(data.error||'Error desconocido');}
+  }catch(e){
+    msg.className='modal-msg err';
+    msg.textContent=e.message==='Failed to fetch'?'No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.':'Error al enviar: '+e.message;
+    btn.disabled=false;btn.textContent='Enviar solicitud';
+  }
+}
 
 // ── ESQUEMAS ──
 function showEsqSection(name,el){['esquemas','exportadores','regla'].forEach(s=>{const sec=document.getElementById('sec-'+s);if(sec)sec.style.display=s===name?'':'none';});document.querySelectorAll('#panel-s .nav-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');}
