@@ -596,8 +596,7 @@ function renderG(){
     const estados=getGestionEstados(gid);
     const estadoSheet=r['Estado']||'';
     const ultimo=estados.length?estados[estados.length-1].VALOR:(estadoSheet||'—');
-    const badgeCls='badge-na';
-    return `<tr class="clickable" onclick="toggleFichaG(${i})"><td class="bold">${r['Productor']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Esquema']||'—'}</td><td><span class="badge ${badgeCls}">${ultimo}</span></td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
+    return `<tr class="clickable" onclick="toggleFichaG(${i})"><td class="bold">${r['Productor']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${ultimo}</td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
     <tr><td colspan="7" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
   }).join('');
   document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
