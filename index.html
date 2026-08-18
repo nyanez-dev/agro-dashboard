@@ -263,7 +263,6 @@ tr.clickable{cursor:pointer}
     <h2>Nueva solicitud de gestión</h2>
     <p class="modal-sub">El equipo de Compliance recibirá tu solicitud por mail.</p>
     <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A."></div>
-    <div class="form-row"><label>CUIT <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" id="sol-cuit" placeholder="Ej: 30-12345678-9"></div>
     <div class="form-row"><label>Exportador <span style="color:#DC2626">*</span></label>
       <select id="sol-exportador"><option value="">Seleccionar...</option><option>LDC</option><option>MOA</option><option>COFCO</option><option>Bunge</option></select>
     </div>
@@ -276,7 +275,6 @@ tr.clickable{cursor:pointer}
         <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
       </div>
     </div>
-    <div class="form-row"><label>Campo <span style="color:#9CA3AF;font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" id="sol-campo" placeholder="Ej: La Elena"></div>
     <div id="sol-msg" class="modal-msg"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeNuevaSolicitud()">Cancelar</button>
@@ -546,6 +544,11 @@ function buildFichaG(r,idx,gid,estados){
     <div class="comment-input edit-only"><input type="text" id="gst-${idx}" placeholder="Nuevo estado... ej: Documentación completa"><button onclick="guardarEstadoGestion(${idx})">Guardar estado</button></div>
   </div>
   <div class="ficha-section edit-only" style="display:none">
+    <h3>Agregar campo</h3>
+    <div class="comment-input" style="margin-top:6px"><input type="text" id="ncampo-${idx}" placeholder="Nombre del campo... ej: La Elena"><button onclick="agregarCampoGestion(${idx})">Crear fila</button></div>
+    <div style="font-size:11px;color:#6B7280;margin-top:6px">Crea una nueva fila en Gestiones con los mismos datos pero con el campo que escribís.</div>
+  </div>
+  <div class="ficha-section edit-only" style="display:none">
     <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px">
       <div style="flex:1;font-size:12px;color:#1E40AF;line-height:1.5">¿Lista para pasar a Habilitaciones? Se trasladarán los datos disponibles y la gestión desaparecerá del tablero.</div>
       <button class="btn btn-gold" onclick="pasarAHabilitaciones(${idx})">Pasar a Habilitaciones ✓</button>
@@ -567,6 +570,29 @@ async function guardarEstadoGestion(idx){
   input.value='';
   await loadNotas();
   renderG();
+}
+
+async function agregarCampoGestion(idx){
+  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r)));
+  const r=f[idx];if(!r)return;
+  const input=document.getElementById('ncampo-'+idx);
+  const campo=input.value.trim();
+  if(!campo){alert('Escribí el nombre del campo.');return;}
+  const userName=document.getElementById('auth-user').textContent||'Compliance';
+  const camp=g(r,'Campa')||'2526';
+  const fecha=new Date().toLocaleDateString('es-AR');
+  try{
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:r['Productor']||'',cuit:'',campo:campo,esquema:r['Esquema']||'',exportador:r['Exportador']||'',estado:'Solicitud enviada',via:g(r,'web o mail')||'Tablero',campana:camp,solicitante:userName,fecha:fecha})});
+    const data=await res.json();
+    if(data.ok){
+      // Registrar estado inicial en la nueva gestión
+      const newGid=[r['Productor']||'',campo,r['Exportador']||'',camp].join('||');
+      await saveNota(newGid,'__GESTION__','estado','Solicitud enviada',userName);
+      input.value='';
+      alert('Campo "'+campo+'" agregado. La tabla se va a actualizar.');
+      await loadData();
+    }else{throw new Error(data.error||'Error');}
+  }catch(e){alert('Error al crear la fila: '+e.message);}
 }
 
 async function pasarAHabilitaciones(idx){
@@ -694,26 +720,25 @@ renderC=function(){_origRenderC();try{updateSectionBars();}catch(e){}};
 
 // ── NUEVA SOLICITUD ──
 function openNuevaSolicitud(){document.getElementById('modal-solicitud').classList.add('open');document.getElementById('sol-msg').className='modal-msg';document.getElementById('sol-msg').textContent='';document.getElementById('btn-enviar-sol').disabled=false;document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';}
-function closeNuevaSolicitud(){document.getElementById('modal-solicitud').classList.remove('open');['sol-cliente','sol-cuit','sol-campo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sol-exportador').value='';document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);}
+function closeNuevaSolicitud(){document.getElementById('modal-solicitud').classList.remove('open');['sol-cliente'].forEach(id=>document.getElementById(id).value='');document.getElementById('sol-exportador').value='';document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);}
 function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
 async function enviarSolicitud(){
   const nombre=document.getElementById('auth-user').textContent||'Comercial';
   const cliente=document.getElementById('sol-cliente').value.trim();
-  const cuit=document.getElementById('sol-cuit').value.trim();
   const exportador=document.getElementById('sol-exportador').value;
-  const campo=document.getElementById('sol-campo').value.trim();
+  const campo='';
   const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');
   const msg=document.getElementById('sol-msg');
   // Validación con mensajes claros
   if(!cliente){msg.className='modal-msg err';msg.textContent='Completá el nombre del cliente antes de continuar.';document.getElementById('sol-cliente').focus();return;}
-  if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador antes de continuar.';return;}
+if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador antes de continuar.';return;}
   if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema antes de continuar.';return;}
   const btn=document.getElementById('btn-enviar-sol');
   btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
   const camp=findCampDefault(allG)||'25/26';
   const fecha=new Date().toLocaleDateString('es-AR');
   try{
-    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:cuit||'',campo:campo||'',esquema:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:'',campo:campo||'',esquema:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
     const data=await res.json();
     if(data.ok){
       msg.className='modal-msg ok';msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';btn.textContent='Enviado ✓';
