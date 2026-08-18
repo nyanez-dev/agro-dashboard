@@ -515,14 +515,14 @@ function cascadeE(){const q=document.getElementById('e-search').value.toLowerCas
 function filterG(){const q=document.getElementById('g-search').value.toLowerCase();const camps=sel['g-camp'];const exps=sel['g-exp'];return allG.filter(r=>(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!exps.size||exps.has(r['Exportador'])));}
 function onFilterG(){cascadeG();renderG();}
 // ── GESTIONES CRM — helpers ──
-function getGestionId(r){return[r['Productor']||'',r['Campo']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');}
+function getGestionId(r){return[r['Productor']||'',r['Campo']||'',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');}
 function getGestionEstados(gid,r){
   // También busca notas guardadas cuando el campo estaba vacío (migración automática)
-  const emptyGid=r?[r['Productor']||'','',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
+  const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
   return allNotas.filter(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');
 }
 function isGestionPasada(gid,r){
-  const emptyGid=r?[r['Productor']||'','',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
+  const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
   return allNotas.some(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada');
 }
 
@@ -605,7 +605,7 @@ async function agregarCampoGestion(idx){
     })});
     const data=await res.json();
     if(data.ok){
-      const newGid=[r['Productor']||'',campo,r['Exportador']||'',camp].join('||');
+      const newGid=[r['Productor']||'',campo,r['Esquema']||'',r['Exportador']||'',camp].join('||');
       await saveNota(newGid,'__GESTION__','estado','Solicitud enviada',userName);
       input.value='';
       await loadData();
@@ -744,26 +744,26 @@ async function enviarSolicitud(){
   const nombre=document.getElementById('auth-user').textContent||'Comercial';
   const cliente=document.getElementById('sol-cliente').value.trim();
   const exportador=document.getElementById('sol-exportador').value;
-  const campo='';
-  const esquemas=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value).join(', ');
+  const esqList=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value);
   const msg=document.getElementById('sol-msg');
-  // Validación con mensajes claros
   if(!cliente){msg.className='modal-msg err';msg.textContent='Completá el nombre del cliente antes de continuar.';document.getElementById('sol-cliente').focus();return;}
-if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador antes de continuar.';return;}
-  if(!esquemas){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema antes de continuar.';return;}
+  if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador antes de continuar.';return;}
+  if(!esqList.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema antes de continuar.';return;}
   const btn=document.getElementById('btn-enviar-sol');
   btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
   const camp=findCampDefault(allG)||'25/26';
   const fecha=new Date().toLocaleDateString('es-AR');
   try{
-    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:'',campo:campo||'',esquema:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
-    const data=await res.json();
-    if(data.ok){
-      msg.className='modal-msg ok';msg.textContent='Solicitud enviada correctamente. El equipo de Compliance fue notificado.';btn.textContent='Enviado ✓';
-      const gid=[cliente,campo||'',exportador,camp].join('||');
+    // Una fila por esquema
+    for(const esquema of esqList){
+      const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:'',campo:'',esquema:esquema,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
+      const data=await res.json();
+      if(!data.ok) throw new Error(data.error||'Error desconocido');
+      const gid=[cliente,'',esquema,exportador,camp].join('||');
       await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);
-      setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);
-    }else{throw new Error(data.error||'Error desconocido');}
+    }
+    msg.className='modal-msg ok';msg.textContent=`${esqList.length} fila${esqList.length>1?'s':''} enviada${esqList.length>1?'s':''} correctamente.`;btn.textContent='Enviado ✓';
+    setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);
   }catch(e){
     msg.className='modal-msg err';
     msg.textContent=e.message==='Failed to fetch'?'No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.':'Error al enviar: '+e.message;
