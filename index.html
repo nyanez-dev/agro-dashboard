@@ -291,7 +291,6 @@ tr.clickable{cursor:pointer}
     <div class="filter-group"><label>Campaña</label><div class="multi-select-wrap" id="wrap-g-camp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-camp')"><span id="label-g-camp">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-camp"></div></div></div>
     <div class="filter-group"><label>Buscar</label><input type="text" id="g-search" placeholder="Productor, campo, estado..." oninput="onFilterG()"></div>
     <div class="filter-group"><label>Exportador</label><div class="multi-select-wrap" id="wrap-g-exp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-exp')"><span id="label-g-exp">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-exp"></div></div></div>
-    <div class="filter-group"><label>Vía</label><div class="multi-select-wrap" id="wrap-g-via"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-via')"><span id="label-g-via">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-via"></div></div></div>
     <button class="btn-clear" onclick="clearG()">Limpiar filtros</button>
   </div>
   <div id="g-table"><div class="loading">Cargando datos...</div></div>
@@ -517,8 +516,15 @@ function filterG(){const q=document.getElementById('g-search').value.toLowerCase
 function onFilterG(){cascadeG();renderG();}
 // ── GESTIONES CRM — helpers ──
 function getGestionId(r){return[r['Productor']||'',r['Campo']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');}
-function getGestionEstados(gid){return allNotas.filter(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');}
-function isGestionPasada(gid){return allNotas.some(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada');}
+function getGestionEstados(gid,r){
+  // También busca notas guardadas cuando el campo estaba vacío (migración automática)
+  const emptyGid=r?[r['Productor']||'','',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
+  return allNotas.filter(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');
+}
+function isGestionPasada(gid,r){
+  const emptyGid=r?[r['Productor']||'','',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
+  return allNotas.some(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada');
+}
 
 function buildFichaG(r,idx,gid,estados){
   const estadoSheetVal=r['Estado']||'';
@@ -573,26 +579,38 @@ async function guardarEstadoGestion(idx){
 }
 
 async function agregarCampoGestion(idx){
-  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r)));
+  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r),r));
   const r=f[idx];if(!r)return;
   const input=document.getElementById('ncampo-'+idx);
   const campo=input.value.trim();
   if(!campo){alert('Escribí el nombre del campo.');return;}
   const userName=document.getElementById('auth-user').textContent||'Compliance';
   const camp=g(r,'Campa')||'2526';
-  const fecha=new Date().toLocaleDateString('es-AR');
+  const campoActual=r['Campo']||'';
+  // Si la fila no tiene campo: actualizar esa fila. Si ya tiene: crear fila nueva.
+  const action=(!campoActual||campoActual==='—')?'actualizarCampo':'nuevaSolicitud';
   try{
-    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:r['Productor']||'',cuit:'',campo:campo,esquema:r['Esquema']||'',exportador:r['Exportador']||'',estado:'Solicitud enviada',via:g(r,'web o mail')||'Tablero',campana:camp,solicitante:userName,fecha:fecha})});
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+      action:action,
+      productor:r['Productor']||'',
+      campo:campo,
+      esquema:r['Esquema']||'',
+      exportador:r['Exportador']||'',
+      campana:camp,
+      cuit:'',
+      estado:'Solicitud enviada',
+      via:g(r,'web o mail')||'Tablero',
+      solicitante:userName,
+      fecha:new Date().toLocaleDateString('es-AR')
+    })});
     const data=await res.json();
     if(data.ok){
-      // Registrar estado inicial en la nueva gestión
       const newGid=[r['Productor']||'',campo,r['Exportador']||'',camp].join('||');
       await saveNota(newGid,'__GESTION__','estado','Solicitud enviada',userName);
       input.value='';
-      alert('Campo "'+campo+'" agregado. La tabla se va a actualizar.');
       await loadData();
     }else{throw new Error(data.error||'Error');}
-  }catch(e){alert('Error al crear la fila: '+e.message);}
+  }catch(e){alert('Error: '+e.message);}
 }
 
 async function pasarAHabilitaciones(idx){
@@ -610,19 +628,19 @@ async function pasarAHabilitaciones(idx){
 }
 
 function renderG(){
-  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r)));
+  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r),r));
   const web=f.filter(r=>(g(r,'web o mail')||'').toLowerCase()==='web').length;
   const exps=uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');
   if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Via</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
+  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
   const rows=f.map((r,i)=>{
     const gid=getGestionId(r);
-    const estados=getGestionEstados(gid);
+    const estados=getGestionEstados(gid,r);
     const estadoSheet=r['Estado']||'';
     const ultimo=estados.length?estados[estados.length-1].VALOR:(estadoSheet||'—');
-    return `<tr class="clickable" onclick="toggleFichaG(${i})"><td class="bold">${r['Productor']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${ultimo}</td><td>${viaBadge(g(r,'web o mail'))}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
-    <tr><td colspan="7" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
+    return `<tr class="clickable" onclick="toggleFichaG(${i})"><td class="bold">${r['Productor']||'—'}</td><td>${r['Campo']||'<span style="color:#9CA3AF">Sin campo</span>'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${ultimo}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
+    <tr><td colspan="6" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
   }).join('');
   document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} gestiones activas</span>`;
