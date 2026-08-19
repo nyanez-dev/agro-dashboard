@@ -439,7 +439,7 @@ function handleCredential(response){
   try {
     const parts = response.credential.split('.');
     const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
-    if(!payload.email || (!payload.email.toLowerCase().endsWith('@allariaagro.com.ar') && !payload.email.toLowerCase().endsWith('@allaria.com.ar'))){
+    if(!payload.email || (!payload.email.toLowerCase().endsWith('@allariaagro.com.ar') && !payload.email.toLowerCase().endsWith('@allaria.com.ar') && !payload.email.toLowerCase().endsWith('@allariaagronegocios.com.ar'))){
       document.getElementById('auth-error').style.display='block';
       return;
     }
