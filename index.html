@@ -405,6 +405,17 @@ tr.clickable{cursor:pointer}
 const GOOGLE_CLIENT_ID = '754611299321-stq5blr6m17ft47t3l5geqaghshns3vm.apps.googleusercontent.com';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1xszuicGG3Qh__d71VcXltqjIgjbP9j1J8E9YjiEZIe29pggSUqZHO_v7NZmhsV_H1A/exec';
 const CAMP_DEFAULTS = ['2526','25/26'];
+const BLOCKED_EMAILS = new Set([
+  'agenciacordoba@allariaagro.com.ar',
+  'agenciariocuarto@allariaagro.com.ar',
+  'agenciavenadotuerto@allariaagro.com.ar',
+  'agenciamjuarez@allariaagro.com.ar',
+  'agenciagralpico@allariaagro.com.ar',
+  'agenciacruzalta@allariaagro.com.ar',
+  'agenciavillaguay@allariaagro.com.ar',
+  'rmartin@allariaagro.com.ar'
+]);
+
 const EDIT_EMAILS = new Set([
   'nyanez@allariaagro.com.ar',
   'mlopez@allariaagro.com.ar',
@@ -476,6 +487,11 @@ function handleCredential(response){
     const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
     if(!payload.email || (!payload.email.toLowerCase().endsWith('@allariaagro.com.ar') && !payload.email.toLowerCase().endsWith('@allaria.com.ar') && !payload.email.toLowerCase().endsWith('@allariaagronegocios.com.ar'))){
       document.getElementById('auth-error').style.display='block';
+      return;
+    }
+    if(BLOCKED_EMAILS.has(payload.email.toLowerCase())){
+      document.getElementById('auth-error').style.display='block';
+      document.getElementById('auth-error').textContent='Tu cuenta no tiene acceso a este tablero.';
       return;
     }
     saveSession(payload);
