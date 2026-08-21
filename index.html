@@ -405,7 +405,13 @@ tr.clickable{cursor:pointer}
 const GOOGLE_CLIENT_ID = '754611299321-stq5blr6m17ft47t3l5geqaghshns3vm.apps.googleusercontent.com';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1xszuicGG3Qh__d71VcXltqjIgjbP9j1J8E9YjiEZIe29pggSUqZHO_v7NZmhsV_H1A/exec';
 const CAMP_DEFAULTS = ['2526','25/26'];
-const EDIT_PASSWORD = 'compliance2026';
+const EDIT_EMAILS = new Set([
+  'nyanez@allariaagro.com.ar',
+  'mlopez@allariaagro.com.ar',
+  'cacosta@allariaagro.com.ar',
+  'vgreco@allariaagro.com.ar',
+  'clezcano@allariaagro.com.ar'
+]);
 
 let allG=[], allE=[], allC=[], allNotas=[];
 let currentTab='g', editMode=false;
@@ -432,16 +438,25 @@ function loadSession(){
   } catch(e){ return null; }
 }
 
-function applySession(name){
+function applySession(name, email){
   document.getElementById('auth-overlay').classList.add('hidden');
   document.getElementById('auth-user').textContent = name;
+  // Mostrar botón de edición solo a usuarios autorizados
+  const btnEdit = document.getElementById('btn-edit');
+  if(email && EDIT_EMAILS.has(email.toLowerCase())){
+    editMode = true;
+    document.body.classList.add('edit-mode');
+    btnEdit.style.display = 'none'; // no necesitan el botón
+  } else {
+    btnEdit.style.display = 'none';
+  }
   loadData();
 }
 
 function initAuth(){
   // Si hay sesión guardada válida, entrar directamente
   const session = loadSession();
-  if(session){ applySession(session.name); return; }
+  if(session){ applySession(session.name, session.email); return; }
 
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
@@ -464,7 +479,7 @@ function handleCredential(response){
       return;
     }
     saveSession(payload);
-    applySession(payload.name || payload.email);
+    applySession(payload.name || payload.email, payload.email);
   } catch(e) {
     document.getElementById('auth-error').style.display='block';
     document.getElementById('auth-error').textContent='Error al verificar identidad. Intentá de nuevo.';
@@ -503,8 +518,8 @@ function statCard(val,lbl,color){return `<div class="stat"><div class="stat-val"
 
 // ── EDIT MODE ──
 function toggleEditMode(){
-  if(!editMode){const pw=prompt('Ingresa la contrasena de Compliance:');if(pw!==EDIT_PASSWORD){alert('Contrasena incorrecta.');return;}editMode=true;document.body.classList.add('edit-mode');document.getElementById('btn-edit').textContent='Salir de edicion';document.getElementById('btn-edit').classList.add('active');}
-  else{editMode=false;document.body.classList.remove('edit-mode');document.getElementById('btn-edit').textContent='Modo edicion';document.getElementById('btn-edit').classList.remove('active');}
+  if(!editMode){editMode=true;document.body.classList.add('edit-mode');document.getElementById('btn-edit').textContent='Salir de edición';document.getElementById('btn-edit').classList.add('active');}
+  else{editMode=false;document.body.classList.remove('edit-mode');document.getElementById('btn-edit').textContent='Modo edición';document.getElementById('btn-edit').classList.remove('active');}
 }
 
 // ── NOTAS ──
