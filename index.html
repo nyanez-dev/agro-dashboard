@@ -859,6 +859,9 @@ async function enviarSolicitud(){
       if(!data.ok) throw new Error(data.error||'Error desconocido');
       const gid=[cliente,'',esquema,exportador,camp].join('||');
       await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);
+      // Guardar email del solicitante para notificaciones futuras
+      const session=loadSession();
+      if(session&&session.email) await saveNota(gid,'__GESTION__','sol_email',session.email,nombre);
     }
     const auto2BSvs=esqFinal.length>esqList.length?' (+ 2BSvs agregado automáticamente por regla LDC)':'';
     msg.className='modal-msg ok';msg.textContent=`${esqFinal.length} fila${esqFinal.length>1?'s':''} enviada${esqFinal.length>1?'s':''} correctamente${auto2BSvs}.`;btn.textContent='Enviado ✓';
