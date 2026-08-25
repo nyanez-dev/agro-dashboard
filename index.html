@@ -212,7 +212,7 @@ tr.clickable{cursor:pointer}
 <!-- ── AUTH OVERLAY ── -->
 <div id="auth-overlay">
   <div style="text-align:center">
-    <img src="data:image/png;base64," alt="Allaria Agro" style="height:48px;margin-bottom:12px">
+    <svg viewBox="0 0 220 56" width="160" xmlns="http://www.w3.org/2000/svg" style="display:block;margin-bottom:12px"><text x="0" y="32" font-family="Georgia,'Times New Roman',serif" font-size="28" font-weight="700" fill="#FFFFFF" letter-spacing="1.5">allaria</text><text x="2" y="50" font-family="Georgia,'Times New Roman',serif" font-size="16" fill="#C9A96E" letter-spacing="6">agro</text></svg>
     <div style="color:#fff;font-size:22px;font-weight:600;margin-bottom:4px">Tablero de control</div>
     <div style="color:#7B8BA3;font-size:13px">Soja sustentable</div>
   </div>
@@ -229,7 +229,7 @@ tr.clickable{cursor:pointer}
 <div class="hdr">
   <div class="hdr-top">
     <div class="hdr-brand">
-      <img src="data:image/png;base64," alt="Allaria Agro" style="height:32px;display:block;margin-bottom:2px">
+      <svg viewBox="0 0 220 56" height="36" xmlns="http://www.w3.org/2000/svg" style="display:block"><text x="0" y="32" font-family="Georgia,'Times New Roman',serif" font-size="28" font-weight="700" fill="#FFFFFF" letter-spacing="1.5">allaria</text><text x="2" y="50" font-family="Georgia,'Times New Roman',serif" font-size="16" fill="#C9A96E" letter-spacing="6">agro</text></svg>
       <span class="hdr-brand-title">Tablero de control · Soja sustentable</span>
     </div>
     <div class="hdr-meta">
@@ -305,7 +305,7 @@ tr.clickable{cursor:pointer}
 
 <!-- GESTIONES -->
 <div id="panel-g" class="content">
-  <div class="stats" id="stats-g"></div>
+  <div id="stats-g" style="display:none"></div>
   <div class="section-bar navy"><span id="section-label-g">Gestiones</span><span class="count" id="section-count-g"></span></div>
   <div class="filters-wrap">
     <div class="filter-group"><label>Campaña</label><div class="multi-select-wrap" id="wrap-g-camp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-camp')"><span id="label-g-camp">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-camp"></div></div></div>
@@ -320,7 +320,7 @@ tr.clickable{cursor:pointer}
 
 <!-- HABILITACIONES -->
 <div id="panel-e" class="content" style="display:none">
-  <div class="stats" id="stats-e"></div>
+  <div id="stats-e" style="display:none"></div>
   <div class="section-bar blue"><span id="section-label-e">Habilitaciones</span><span class="count" id="section-count-e"></span></div>
   <div class="filters-wrap">
     <div class="filter-group"><label>Campaña</label><div class="multi-select-wrap" id="wrap-e-camp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('e-camp')"><span id="label-e-camp">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-e-camp"></div></div></div>
@@ -336,7 +336,7 @@ tr.clickable{cursor:pointer}
 
 <!-- INFORMACIÓN DE CAMPOS -->
 <div id="panel-c" class="content" style="display:none">
-  <div class="stats" id="stats-c"></div>
+  <div id="stats-c" style="display:none"></div>
   <div class="section-bar indigo"><span id="section-label-c">Información de campos</span><span class="count" id="section-count-c"></span></div>
   <div class="filters-wrap">
     <div class="filter-group"><label>Buscar</label><input type="text" id="c-search" placeholder="Razón social, campo, CUIT..." oninput="renderC()"></div>
