@@ -658,7 +658,7 @@ async function guardarEstadoGestion(idx){
 }
 
 async function agregarCampoGestion(idx){
-  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r),r));
+  const showBajas=document.getElementById('g-show-bajas')?.checked;const f=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&(showBajas||!isGestionDadaDeBaja(gid,r));});
   const r=f[idx];if(!r)return;
   const input=document.getElementById('ncampo-'+idx);
   const campo=input.value.trim();
@@ -695,7 +695,7 @@ async function agregarCampoGestion(idx){
 var _habIdx = null;
 function pasarAHabilitaciones(idx){
   _habIdx = idx;
-  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r),r));
+  const showBajas=document.getElementById('g-show-bajas')?.checked;const f=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&(showBajas||!isGestionDadaDeBaja(gid,r));});
   const r=f[idx];if(!r)return;
   // Pre-llenar resumen y campos disponibles
   document.getElementById('hab-resumen').innerHTML=
@@ -717,7 +717,7 @@ function cerrarModalHab(){
 }
 async function confirmarPasarAHabilitaciones(){
   if(_habIdx===null)return;
-  const f=filterG().filter(r=>!isGestionPasada(getGestionId(r),r));
+  const showBajas=document.getElementById('g-show-bajas')?.checked;const f=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&(showBajas||!isGestionDadaDeBaja(gid,r));});
   const r=f[_habIdx];if(!r)return;
   const gid=getGestionId(r);
   const userName=document.getElementById('auth-user').textContent||'Compliance';
