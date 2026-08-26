@@ -205,6 +205,26 @@ tr.clickable{cursor:pointer}
 .overview-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px;margin-top:10px}
 .pill-seg{background:#ffebee;color:#b71c1c}.pill-bal{background:#e8f5e9;color:#1b5e20}.pill-traz{background:#e3f2fd;color:#0d47a1}.pill-cred{background:#f3e5f5;color:#4a148c}
 @media(max-width:600px){.info-grid{grid-template-columns:1fr}.nav{padding:0 16px}}
+/* Toast */
+#toast-container{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:10px;min-width:280px;max-width:380px;box-shadow:0 4px 20px rgba(0,0,0,0.18);pointer-events:all;animation:toastIn 0.25s ease;font-size:13px;line-height:1.5}
+.toast-err{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B}
+.toast-warn{background:#FFFBEB;border:1px solid #FCD34D;color:#92400E}
+.toast-info{background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF}
+.toast-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.toast-body{flex:1}
+.toast-title{font-weight:700;margin-bottom:2px}
+.toast-close{background:none;border:none;cursor:pointer;font-size:16px;opacity:0.5;padding:0;line-height:1;flex-shrink:0}
+.toast-close:hover{opacity:1}
+@keyframes toastIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toastOut{to{transform:translateX(40px);opacity:0}}
+/* Exportador+esquema rows en modal */
+.exp-esq-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.exp-row{border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;transition:border-color 0.12s;background:#fff}
+.exp-row.active{border-color:#818CF8;background:#F5F3FF}
+.exp-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;margin-bottom:0}
+.exp-check input[type=checkbox]{accent-color:#1B2A4A;width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.exp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #F3F4F6}
 </style>
 </head>
 <body>
@@ -255,6 +275,8 @@ tr.clickable{cursor:pointer}
   <button class="btn btn-edit" id="btn-edit" onclick="toggleEditMode()">Modo edición</button>
 </div>
 
+<div id="toast-container"></div>
+
 <!-- MODAL NUEVA SOLICITUD -->
 <div class="modal-overlay" id="modal-solicitud" onclick="closeModalIfOverlay(event)">
   <div class="modal">
@@ -262,16 +284,50 @@ tr.clickable{cursor:pointer}
     <h2>Nueva solicitud de gestión</h2>
     <p class="modal-sub">El equipo de Compliance recibirá tu solicitud por mail.</p>
     <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A."></div>
-    <div class="form-row"><label>Exportador <span style="color:#DC2626">*</span></label>
-      <select id="sol-exportador"><option value="">Seleccionar...</option><option>LDC</option><option>MOA</option><option>COFCO</option><option>Bunge</option></select>
-    </div>
-    <div class="form-row"><label>Esquema/s <span style="color:#DC2626">*</span></label>
-      <div class="esquemas-check">
-        <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
-        <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
-        <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
-        <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
-        <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+    <div class="form-row">
+      <label>Exportadores y esquemas <span style="color:#DC2626">*</span></label>
+      <p style="font-size:12px;color:#6B7280;margin:4px 0 8px 0">Marcá el exportador y seleccioná sus esquemas.</p>
+      <div class="exp-esq-list">
+        <div class="exp-row" id="exprow-LDC">
+          <label class="exp-check"><input type="checkbox" class="exp-cb" value="LDC" onchange="toggleExpRow(this)"> LDC</label>
+          <div class="exp-chips" id="chips-LDC" style="display:none">
+            <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
+            <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
+            <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
+            <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
+            <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+          </div>
+        </div>
+        <div class="exp-row" id="exprow-MOA">
+          <label class="exp-check"><input type="checkbox" class="exp-cb" value="MOA" onchange="toggleExpRow(this)"> MOA</label>
+          <div class="exp-chips" id="chips-MOA" style="display:none">
+            <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
+            <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
+            <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
+            <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
+            <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+          </div>
+        </div>
+        <div class="exp-row" id="exprow-COFCO">
+          <label class="exp-check"><input type="checkbox" class="exp-cb" value="COFCO" onchange="toggleExpRow(this)"> COFCO</label>
+          <div class="exp-chips" id="chips-COFCO" style="display:none">
+            <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
+            <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
+            <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
+            <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
+            <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+          </div>
+        </div>
+        <div class="exp-row" id="exprow-Bunge">
+          <label class="exp-check"><input type="checkbox" class="exp-cb" value="Bunge" onchange="toggleExpRow(this)"> Bunge</label>
+          <div class="exp-chips" id="chips-Bunge" style="display:none">
+            <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
+            <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
+            <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
+            <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
+            <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+          </div>
+        </div>
       </div>
     </div>
     <div id="sol-msg" class="modal-msg"></div>
@@ -540,7 +596,7 @@ function toggleEditMode(){
 
 // ── NOTAS ──
 async function loadNotas(){return new Promise((resolve)=>{const cb='_notasCb'+Date.now();window[cb]=function(d){allNotas=d.notas||[];delete window[cb];resolve();};const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?callback='+cb;s.onerror=function(){console.warn('No se pudieron cargar notas');allNotas=[];resolve();};document.body.appendChild(s);setTimeout(()=>{if(window[cb]){allNotas=[];delete window[cb];resolve();}},5000);});}
-async function saveNota(cuit,campo,tipo,valor,autor){return new Promise((resolve)=>{const cb='_saveCb'+Date.now();window[cb]=function(d){delete window[cb];resolve(d);};const params=`action=save&cuit=${encodeURIComponent(cuit)}&campo=${encodeURIComponent(campo)}&tipo=${encodeURIComponent(tipo)}&valor=${encodeURIComponent(valor)}&autor=${encodeURIComponent(autor)}&callback=${cb}`;const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?'+params;s.onerror=function(){delete window[cb];alert('Error guardando. Reintenta.');resolve();};document.body.appendChild(s);});}
+async function saveNota(cuit,campo,tipo,valor,autor){return new Promise((resolve)=>{const cb='_saveCb'+Date.now();window[cb]=function(d){delete window[cb];resolve(d);};const params=`action=save&cuit=${encodeURIComponent(cuit)}&campo=${encodeURIComponent(campo)}&tipo=${encodeURIComponent(tipo)}&valor=${encodeURIComponent(valor)}&autor=${encodeURIComponent(autor)}&callback=${cb}`;const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?'+params;s.onerror=function(){delete window[cb];showToast('err','Error al guardar','No se pudo guardar el cambio. Verificá tu conexión e intentá de nuevo. Si el error persiste, contactá a Compliance.');resolve();};document.body.appendChild(s);});}
 function getNotas(cuit,campo,tipo){const deleted=allNotas.filter(n=>String(n.CUIT)==String(cuit)&&String(n.CAMPO)==String(campo)&&n.TIPO==='borrar_comentario').map(n=>n.VALOR);return allNotas.filter(n=>{if(String(n.CUIT)!=String(cuit)||String(n.CAMPO)!=String(campo))return false;if(tipo&&n.TIPO!=tipo)return false;if(n.TIPO==='comentario'&&deleted.includes(n.VALOR+'|||'+n.FECHA))return false;if(n.TIPO==='borrar_comentario')return false;return true;});}
 function getVtoRenspa(cuit,campo){const n=getNotas(cuit,campo,'vto_renspa');return n.length?n[n.length-1].VALOR:'';}
 function getNotaValor(cuit,campo,tipo){const n=getNotas(cuit,campo,tipo);return n.length?n[n.length-1].VALOR:'';}
@@ -886,6 +942,7 @@ async function loadData(){
     allG = data.gestiones || [];
     allE = data.exportadores || [];
     allC = data.campos || [];
+    if(!allG.length&&!allE.length&&!allC.length)showToast('warn','Sin datos cargados','El servidor respondió pero no devolvió registros. Probá con el botón <strong>Actualizar</strong>. Si sigue vacío, la planilla puede tener un problema — contactá a Compliance.');
     const gDefault=findCampDefault(allG);const eDefault=findCampDefault(allE);
     if(gDefault)sel['g-camp'].add(gDefault);
     if(eDefault)sel['e-camp'].add(eDefault);
@@ -904,6 +961,14 @@ async function loadData(){
     document.getElementById('e-table').innerHTML=msg;
     document.getElementById('c-table').innerHTML=msg;
     document.getElementById('last-update').textContent='Error al cargar';
+    const isTimeout=e.message&&e.message.toLowerCase().includes('timeout');
+    const isNet=e.message&&(e.message.toLowerCase().includes('fetch')||e.message.toLowerCase().includes('conexion')||e.message.toLowerCase().includes('conexión'));
+    const toastMsg=isTimeout
+      ?'El servidor tardó demasiado en responder. Esperá unos segundos y presioná <strong>Actualizar</strong>.'
+      :isNet
+        ?'No se pudo conectar al servidor. Verificá tu conexión a internet y presioná <strong>Actualizar</strong>.'
+        :'Ocurrió un error inesperado: '+e.message+'. Intentá actualizar. Si persiste, contactá a Compliance.';
+    showToast('err',isTimeout?'Timeout al cargar':'Error de conexión',toastMsg);
   }
 }
 
@@ -914,42 +979,77 @@ renderG=function(){_origRenderG();try{updateSectionBars();}catch(e){}};
 renderE=function(){_origRenderE();try{updateSectionBars();}catch(e){}};
 renderC=function(){_origRenderC();try{updateSectionBars();}catch(e){}};
 
+// ── TOAST ──
+const _shownToasts=new Set();
+function showToast(type,title,detail,{once=false}={}){
+  const key=type+':'+title;
+  if(once&&_shownToasts.has(key))return;
+  if(once)_shownToasts.add(key);
+  const icon={'err':'⚠️','warn':'🔔','info':'ℹ️'}[type]||'⚠️';
+  const cls={'err':'toast-err','warn':'toast-warn','info':'toast-info'}[type]||'toast-err';
+  const t=document.createElement('div');
+  t.className='toast '+cls;
+  t.innerHTML=`<span class="toast-icon">${icon}</span><div class="toast-body"><div class="toast-title">${title}</div>${detail?`<div>${detail}</div>`:''}</div><button class="toast-close" onclick="this.closest('.toast').remove()">×</button>`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(()=>{t.style.animation='toastOut 0.3s ease forwards';setTimeout(()=>t.remove(),300);},10000);
+}
+// Check de versión por tiempo en página (>8h)
+(function(){const loaded=Date.now();window.addEventListener('focus',function(){if(Date.now()-loaded>8*3600*1000)showToast('info','Posible versión en caché','Recargá la página para asegurarte de tener los últimos datos.',{once:true});});})();
+
 // ── NUEVA SOLICITUD ──
+function toggleExpRow(cb){
+  const chips=document.getElementById('chips-'+cb.value);
+  const row=document.getElementById('exprow-'+cb.value);
+  if(!chips||!row)return;
+  chips.style.display=cb.checked?'flex':'none';
+  row.classList.toggle('active',cb.checked);
+  if(!cb.checked)chips.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
+}
 function openNuevaSolicitud(){document.getElementById('modal-solicitud').classList.add('open');document.getElementById('sol-msg').className='modal-msg';document.getElementById('sol-msg').textContent='';document.getElementById('btn-enviar-sol').disabled=false;document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';}
-function closeNuevaSolicitud(){document.getElementById('modal-solicitud').classList.remove('open');['sol-cliente'].forEach(id=>document.getElementById(id).value='');document.getElementById('sol-exportador').value='';document.querySelectorAll('.esq-chip input[type=checkbox]').forEach(cb=>cb.checked=false);}
+function closeNuevaSolicitud(){
+  document.getElementById('modal-solicitud').classList.remove('open');
+  document.getElementById('sol-cliente').value='';
+  document.querySelectorAll('.exp-cb').forEach(cb=>{cb.checked=false;toggleExpRow(cb);});
+}
 function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
 async function enviarSolicitud(){
   const nombre=document.getElementById('auth-user').textContent||'Comercial';
   const cliente=document.getElementById('sol-cliente').value.trim();
-  const exportador=document.getElementById('sol-exportador').value;
-  const esqList=[...document.querySelectorAll('.esq-chip input:checked')].map(cb=>cb.value);
   const msg=document.getElementById('sol-msg');
   if(!cliente){msg.className='modal-msg err';msg.textContent='Completá el nombre del cliente antes de continuar.';document.getElementById('sol-cliente').focus();return;}
-  if(!exportador){msg.className='modal-msg err';msg.textContent='Seleccioná un exportador antes de continuar.';return;}
-  if(!esqList.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un esquema antes de continuar.';return;}
+  // Recopilar exportadores seleccionados con sus esquemas
+  const selecciones=[];
+  document.querySelectorAll('.exp-cb:checked').forEach(cb=>{
+    const exp=cb.value;
+    const esqs=[...document.querySelectorAll('#chips-'+exp+' input:checked')].map(c=>c.value);
+    // Regla: LDC + EPA → agregar 2BSvs automáticamente
+    if(exp==='LDC'&&esqs.includes('EPA')&&!esqs.includes('2BSvs'))esqs.push('2BSvs');
+    if(esqs.length)selecciones.push({exportador:exp,esquemas:esqs});
+  });
+  if(!selecciones.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un exportador con esquema.';return;}
   const btn=document.getElementById('btn-enviar-sol');
   btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
   const camp=findCampDefault(allG)||'25/26';
   const fecha=new Date().toLocaleDateString('es-AR');
+  let totalFilas=0;
   try{
-    // Regla: EPA + LDC → también crea 2BSvs automáticamente si no fue seleccionado
-    const esqFinal = [...esqList];
-    if(esqList.includes('EPA') && exportador.toLowerCase().includes('ldc') && !esqList.includes('2BSvs')){
-      esqFinal.push('2BSvs');
-    }
-    // Una fila por esquema
-    for(const esquema of esqFinal){
-      const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:'',campo:'',esquema:esquema,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
+    for(const {exportador,esquemas} of selecciones){
+      // Un POST por exportador (backend crea una fila por esquema y manda un solo mail)
+      const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:'',campo:'',esquemas:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
       const data=await res.json();
-      if(!data.ok) throw new Error(data.error||'Error desconocido');
-      const gid=[cliente,'',esquema,exportador,camp].join('||');
-      await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);
-      // Guardar email del solicitante para notificaciones futuras
+      if(!data.ok)throw new Error(data.error||'Error desconocido');
+      totalFilas+=(data.filasCreadas||esquemas.length);
+      // Crear notas de estado para cada gestión
       const session=loadSession();
-      if(session&&session.email) await saveNota(gid,'__GESTION__','sol_email',session.email,nombre);
+      for(const esquema of esquemas){
+        const gid=[cliente,'',esquema,exportador,camp].join('||');
+        await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);
+        if(session&&session.email)await saveNota(gid,'__GESTION__','sol_email',session.email,nombre);
+      }
     }
-    const auto2BSvs=esqFinal.length>esqList.length?' (+ 2BSvs agregado automáticamente por regla LDC)':'';
-    msg.className='modal-msg ok';msg.textContent=`${esqFinal.length} fila${esqFinal.length>1?'s':''} enviada${esqFinal.length>1?'s':''} correctamente${auto2BSvs}.`;btn.textContent='Enviado ✓';
+    msg.className='modal-msg ok';
+    msg.textContent=`${totalFilas} gestión${totalFilas>1?'es':''} creada${totalFilas>1?'s':''} para ${selecciones.length} exportador${selecciones.length>1?'es':''}.`;
+    btn.textContent='Enviado ✓';
     setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);
   }catch(e){
     msg.className='modal-msg err';
