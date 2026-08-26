@@ -698,6 +698,10 @@ function buildFichaG(r,idx,gid,estados){
 
 function toggleFichaG(i){const el=document.getElementById('ficha-g-'+i);if(el)el.classList.toggle('open');}
 
+// ── Helpers de notas por gestión ──
+function getSolEmail(gid){const ns=allNotas.filter(n=>String(n.CUIT)===String(gid)&&n.CAMPO==='__GESTION__'&&n.TIPO==='sol_email');return ns.length?ns[ns.length-1].VALOR:'';}
+function getEstadoActual(gid){const ns=allNotas.filter(n=>String(n.CUIT)===String(gid)&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');return ns.length?ns[ns.length-1].VALOR:'Sin estado';}
+
 async function guardarEstadoGestion(idx){
   const showBajas=document.getElementById('g-show-bajas')?.checked;
   const f=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&(showBajas||!isGestionDadaDeBaja(gid,r));});
@@ -707,8 +711,25 @@ async function guardarEstadoGestion(idx){
   const val=input.value.trim();
   if(!val){alert('Escribí un estado.');return;}
   const userName=document.getElementById('auth-user').textContent||'Compliance';
+  const estadoAnterior=getEstadoActual(gid);
+  const solEmail=getSolEmail(gid);
   await saveNota(gid,'__GESTION__','estado',val,userName);
   input.value='';
+  // Notificar al comercial que cargó la solicitud
+  if(solEmail){
+    try{
+      await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+        action:'notificarEstado',
+        solEmail,
+        productor:r['Productor']||'',
+        exportador:r['Exportador']||'',
+        esquema:r['Esquema']||'',
+        estadoAnterior,
+        estadoNuevo:val,
+        cambioPor:userName
+      })});
+    }catch(e){console.warn('Notificación de estado no enviada:',e);}
+  }
   await loadNotas();
   renderG();
 }
@@ -784,6 +805,7 @@ async function confirmarPasarAHabilitaciones(){
   const ton=document.getElementById('hab-ton').value.trim();
   const btn=document.getElementById('btn-confirmar-hab');
   btn.disabled=true;btn.textContent='Procesando...';
+  const solEmail=getSolEmail(gid);
   await saveNota(gid,'__GESTION__','pasada','SI',userName);
   try{
     await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
@@ -794,6 +816,20 @@ async function confirmarPasarAHabilitaciones(){
       pasadoPor:userName,fecha:new Date().toLocaleDateString('es-AR')
     })});
   }catch(e){console.warn('Error al escribir en Exportadores:',e);}
+  // Notificar al comercial que pasó a Habilitaciones
+  if(solEmail){
+    try{
+      await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
+        action:'notificarHabilitaciones',
+        solEmail,
+        productor:r['Productor']||'',
+        exportador:r['Exportador']||'',
+        esquema:r['Esquema']||'',
+        campo:r['Campo']||'',
+        pasadoPor:userName
+      })});
+    }catch(e){console.warn('Notificación de habilitaciones no enviada:',e);}
+  }
   cerrarModalHab();
   await loadNotas();
   renderG();
