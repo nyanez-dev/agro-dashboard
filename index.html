@@ -681,15 +681,14 @@ function getGestionBaja(gid,r){
 
 function buildFichaG(r,idx,gid,estados){
   const estadoSheetVal=r['Estado']||'';
-  // Filtrar "Solicitud enviada" automático — es el estado inicial, no un cambio manual
-  const estadosFiltrados=estados.filter(e=>e.VALOR!=='Solicitud enviada');
   let histHtml;
-  if(estadosFiltrados.length===0){
-    histHtml=estadoSheetVal&&estadoSheetVal!=='Solicitud enviada'
-      ?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`
+  if(estados.length===0){
+    histHtml=estadoSheetVal
+      ?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial (Sheet)</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`
       :'<div class="muted" style="font-size:13px;margin-bottom:10px">Sin historial aún.</div>';
   } else {
-    histHtml=estadosFiltrados.map(e=>`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${e.AUTOR||'—'}</span><span class="comment-date">${fmtDate(e.FECHA)||e.FECHA||''}</span></div><div class="comment-text">${e.VALOR}</div></div>`).join('');
+    const inicial=estadoSheetVal?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial (Sheet)</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`:'';
+    histHtml=inicial+estados.map(e=>`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${e.AUTOR||'—'}</span><span class="comment-date">${fmtDate(e.FECHA)||e.FECHA||''}</span></div><div class="comment-text">${e.VALOR}</div></div>`).join('');
   }
   return `<div class="ficha-grid">
     <div class="ficha-field"><label>Productor</label><div class="val bold">${r['Productor']||'—'}</div></div>
