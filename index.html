@@ -218,6 +218,16 @@ tr.clickable{cursor:pointer}
 .toast-close:hover{opacity:1}
 @keyframes toastIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes toastOut{to{transform:translateX(40px);opacity:0}}
+/* Botones adicionales */
+.btn-danger{background:#DC2626;color:#fff;border-color:#DC2626}
+.btn-danger:hover{background:#B91C1C}
+.btn-sm{padding:5px 14px;font-size:12px}
+/* Action bar en ficha gestión */
+.ficha-action-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 0 2px}
+.ficha-campo-inline{display:flex;align-items:center;gap:6px;flex:1;min-width:160px}
+.ficha-campo-inline input{flex:1;max-width:200px;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:'Inter',sans-serif;color:#374151}
+.ficha-campo-inline input:focus{border-color:#1B2A4A;outline:none}
+.ficha-action-sep{flex:1}
 /* Exportador+esquema rows en modal */
 .exp-esq-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .exp-row{border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;transition:border-color 0.12s;background:#fff}
@@ -345,8 +355,8 @@ tr.clickable{cursor:pointer}
     <h2>Pasar a Habilitaciones</h2>
     <p class="modal-sub">Completá los datos disponibles. Lo que falte se puede completar después en el Sheet.</p>
     <div id="hab-resumen" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#374151;line-height:1.8"></div>
-    <div class="form-row"><label>CUIT</label><input type="text" id="hab-cuit" placeholder="Ej: 20-12345678-9"></div>
-    <div class="form-row"><label>Localidad</label><input type="text" id="hab-localidad" placeholder="Ej: Pergamino"></div>
+    <div class="form-row"><label>CUIT <span style="color:#DC2626">*</span></label><input type="text" id="hab-cuit" placeholder="Ej: 20-12345678-9"></div>
+    <div class="form-row"><label>Localidad <span style="color:#DC2626">*</span></label><input type="text" id="hab-localidad" placeholder="Ej: Pergamino"></div>
     <div class="form-row"><label>Has. sustentables</label><input type="number" id="hab-has" placeholder="Ej: 1200" min="0"></div>
     <div class="form-row"><label>Coef. rendimiento</label><input type="number" id="hab-coef" placeholder="Ej: 0.85" step="0.01" min="0"></div>
     <div class="form-row"><label>Rendimiento en ton</label><input type="number" id="hab-ton" placeholder="Ej: 1020" min="0"></div>
@@ -354,6 +364,22 @@ tr.clickable{cursor:pointer}
     <div class="modal-actions">
       <button class="btn" onclick="cerrarModalHab()">Cancelar</button>
       <button class="btn btn-gold" onclick="confirmarPasarAHabilitaciones()" id="btn-confirmar-hab">Pasar a Habilitaciones ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DAR DE BAJA -->
+<div class="modal-overlay" id="modal-baja">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrarModalBaja()">×</button>
+    <h2>Dar de baja gestión</h2>
+    <p class="modal-sub">La gestión quedará oculta del tablero. Todos los usuarios pueden verla activando "Mostrar bajas".</p>
+    <div id="baja-resumen" style="background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#374151;line-height:1.8"></div>
+    <div class="form-row"><label>Motivo de la baja <span style="color:#DC2626">*</span></label><input type="text" id="baja-motivo-modal" placeholder="Ej: Productor desistió"></div>
+    <div id="baja-msg" class="modal-msg"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="cerrarModalBaja()">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarBaja()" id="btn-confirmar-baja">Dar de baja</button>
     </div>
   </div>
 </div>
@@ -367,7 +393,7 @@ tr.clickable{cursor:pointer}
     <div class="filter-group"><label>Buscar</label><input type="text" id="g-search" placeholder="Productor, campo, estado..." oninput="onFilterG()"></div>
     <div class="filter-group"><label>Exportador</label><div class="multi-select-wrap" id="wrap-g-exp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-exp')"><span id="label-g-exp">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-exp"></div></div></div>
     <button class="btn-clear" onclick="clearG()">Limpiar filtros</button>
-    <label class="edit-only" style="display:none;align-items:center;gap:6px;font-size:12px;color:#6B7280;cursor:pointer;margin-left:4px"><input type="checkbox" id="g-show-bajas" onchange="renderG()"> Mostrar bajas</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6B7280;cursor:pointer;margin-left:4px"><input type="checkbox" id="g-show-bajas" onchange="renderG()"> Mostrar bajas</label>
   </div>
   <div id="g-table"><div class="loading">Cargando datos...</div></div>
   <div class="footer-row" id="g-footer"></div>
@@ -655,14 +681,15 @@ function getGestionBaja(gid,r){
 
 function buildFichaG(r,idx,gid,estados){
   const estadoSheetVal=r['Estado']||'';
+  // Filtrar "Solicitud enviada" automático — es el estado inicial, no un cambio manual
+  const estadosFiltrados=estados.filter(e=>e.VALOR!=='Solicitud enviada');
   let histHtml;
-  if(estados.length===0){
-    histHtml=estadoSheetVal
-      ?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial (Sheet)</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`
+  if(estadosFiltrados.length===0){
+    histHtml=estadoSheetVal&&estadoSheetVal!=='Solicitud enviada'
+      ?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`
       :'<div class="muted" style="font-size:13px;margin-bottom:10px">Sin historial aún.</div>';
   } else {
-    const inicial=estadoSheetVal?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial (Sheet)</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`:'';
-    histHtml=inicial+estados.map(e=>`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${e.AUTOR||'—'}</span><span class="comment-date">${fmtDate(e.FECHA)||e.FECHA||''}</span></div><div class="comment-text">${e.VALOR}</div></div>`).join('');
+    histHtml=estadosFiltrados.map(e=>`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${e.AUTOR||'—'}</span><span class="comment-date">${fmtDate(e.FECHA)||e.FECHA||''}</span></div><div class="comment-text">${e.VALOR}</div></div>`).join('');
   }
   return `<div class="ficha-grid">
     <div class="ficha-field"><label>Productor</label><div class="val bold">${r['Productor']||'—'}</div></div>
@@ -676,22 +703,15 @@ function buildFichaG(r,idx,gid,estados){
     ${histHtml}
     <div class="comment-input edit-only"><input type="text" id="gst-${idx}" placeholder="Nuevo estado... ej: Documentación completa"><button onclick="guardarEstadoGestion(${idx})">Guardar estado</button></div>
   </div>
-  <div class="ficha-section edit-only" style="display:none">
-    <h3>Agregar campo</h3>
-    <div class="comment-input" style="margin-top:6px"><input type="text" id="ncampo-${idx}" placeholder="Nombre del campo... ej: La Elena"><button onclick="agregarCampoGestion(${idx})">Crear fila</button></div>
-    <div style="font-size:11px;color:#6B7280;margin-top:6px">Crea una nueva fila en Gestiones con los mismos datos pero con el campo que escribís.</div>
-  </div>
-  <div class="ficha-section edit-only" style="display:none">
-    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px">
-      <div style="flex:1;font-size:12px;color:#1E40AF;line-height:1.5">¿Lista para pasar a Habilitaciones? Se trasladarán los datos disponibles y la gestión desaparecerá del tablero.</div>
-      <button class="btn btn-gold" onclick="pasarAHabilitaciones(${idx})">Pasar a Habilitaciones ✓</button>
-    </div>
-  </div>
-  <div class="ficha-section edit-only" style="display:none">
-    <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px">
-      <div style="font-size:12px;color:#991B1B;font-weight:600;margin-bottom:8px">⚠ Dar de baja esta gestión</div>
-      <div style="font-size:12px;color:#7F1D1D;margin-bottom:10px">La gestión quedará oculta del tablero. Podés verla activando "Mostrar bajas" en los filtros.</div>
-      <div class="comment-input" style="margin-top:0"><input type="text" id="baja-motivo-${idx}" placeholder="Motivo de la baja... ej: Productor desistió"><button onclick="darDeBajaGestion(${idx})" style="background:#DC2626">Dar de baja</button></div>
+  <div class="ficha-section edit-only" style="display:none;border-top:1px solid #E5E7EB;padding-top:14px;margin-top:14px">
+    <div class="ficha-action-bar">
+      <div class="ficha-campo-inline">
+        <input type="text" id="ncampo-${idx}" placeholder="Nombre del campo...">
+        <button class="btn btn-sm" onclick="agregarCampoGestion(${idx})">Agregar campo</button>
+      </div>
+      <div class="ficha-action-sep"></div>
+      <button class="btn btn-gold btn-sm" onclick="pasarAHabilitaciones(${idx})">✓ Pasar a Habilitaciones</button>
+      <button class="btn btn-danger btn-sm" onclick="abrirModalBaja(${idx})">Dar de baja</button>
     </div>
   </div>`;
 }
@@ -757,7 +777,8 @@ async function agregarCampoGestion(idx){
       estado:'Solicitud enviada',
       via:g(r,'web o mail')||'Tablero',
       solicitante:userName,
-      fecha:new Date().toLocaleDateString('es-AR')
+      fecha:new Date().toLocaleDateString('es-AR'),
+      skipEmail:true
     })});
     const data=await res.json();
     if(data.ok){
@@ -803,6 +824,9 @@ async function confirmarPasarAHabilitaciones(){
   const has=document.getElementById('hab-has').value.trim();
   const coef=document.getElementById('hab-coef').value.trim();
   const ton=document.getElementById('hab-ton').value.trim();
+  const habMsg=document.getElementById('hab-msg');
+  if(!cuit){habMsg.className='modal-msg err';habMsg.textContent='El CUIT es obligatorio.';document.getElementById('hab-cuit').focus();return;}
+  if(!localidad){habMsg.className='modal-msg err';habMsg.textContent='La localidad es obligatoria.';document.getElementById('hab-localidad').focus();return;}
   const btn=document.getElementById('btn-confirmar-hab');
   btn.disabled=true;btn.textContent='Procesando...';
   const solEmail=getSolEmail(gid);
@@ -835,12 +859,45 @@ async function confirmarPasarAHabilitaciones(){
   renderG();
 }
 
+var _bajaIdx=null;
+function abrirModalBaja(idx){
+  _bajaIdx=idx;
+  const showBajas=document.getElementById('g-show-bajas')?.checked;
+  const f=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&(showBajas||!isGestionDadaDeBaja(gid,r));});
+  const r=f[idx];if(!r)return;
+  document.getElementById('baja-resumen').innerHTML=
+    `<b>${r['Productor']||'—'}</b> &nbsp;·&nbsp; ${r['Campo']||'Sin campo'} &nbsp;·&nbsp; ${r['Esquema']||'—'} &nbsp;·&nbsp; ${expBadge(r['Exportador'])}`;
+  document.getElementById('baja-motivo-modal').value='';
+  document.getElementById('baja-msg').className='modal-msg';
+  document.getElementById('baja-msg').textContent='';
+  document.getElementById('btn-confirmar-baja').disabled=false;
+  document.getElementById('btn-confirmar-baja').textContent='Dar de baja';
+  document.getElementById('modal-baja').classList.add('open');
+}
+function cerrarModalBaja(){document.getElementById('modal-baja').classList.remove('open');_bajaIdx=null;}
+async function confirmarBaja(){
+  if(_bajaIdx===null)return;
+  const showBajas=document.getElementById('g-show-bajas')?.checked;
+  const f=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&(showBajas||!isGestionDadaDeBaja(gid,r));});
+  const r=f[_bajaIdx];if(!r)return;
+  const motivo=document.getElementById('baja-motivo-modal').value.trim();
+  const bajaMsg=document.getElementById('baja-msg');
+  if(!motivo){bajaMsg.className='modal-msg err';bajaMsg.textContent='Escribí el motivo de la baja.';return;}
+  const gid=getGestionId(r);
+  const userName=document.getElementById('auth-user').textContent||'Compliance';
+  document.getElementById('btn-confirmar-baja').disabled=true;
+  document.getElementById('btn-confirmar-baja').textContent='Procesando...';
+  await saveNota(gid,'__GESTION__','baja',motivo,userName);
+  cerrarModalBaja();
+  await loadNotas();renderG();
+}
+
 async function darDeBajaGestion(idx){
   const showBajas=document.getElementById('g-show-bajas')?.checked;
   const f=filterG().filter(r=>{const gid=getGestionId(r);return !isGestionPasada(gid,r)&&(showBajas||!isGestionDadaDeBaja(gid,r));});
   const r=f[idx];if(!r)return;
   const input=document.getElementById('baja-motivo-'+idx);
-  const motivo=input.value.trim();
+  const motivo=input?input.value.trim():'';
   if(!motivo){alert('Escribí el motivo de la baja.');return;}
   if(!confirm('¿Confirmás dar de baja esta gestión? Se ocultará del tablero.'))return;
   const gid=getGestionId(r);
