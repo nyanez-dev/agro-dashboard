@@ -672,7 +672,7 @@ function getGestionEstados(gid,r){
 }
 function isGestionPasada(gid,r){
   const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
-  return allNotas.some(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada');
+  return allNotas.some(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada'&&n.VALOR==='SI');
 }
 function isGestionDadaDeBaja(gid,r){
   const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
