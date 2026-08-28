@@ -970,7 +970,20 @@ function renderE(){const f=filterE();const has=f.reduce((s,r)=>s+parseNum(r['Has
 function clearE(){document.getElementById('e-search').value='';Object.keys(sel).filter(k=>k.startsWith('e-')).forEach(k=>sel[k].clear());const eDef=findCampDefault(allE);if(eDef)sel['e-camp'].add(eDef);cascadeE();buildDropdown('e-camp',uniq(allE.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('e-camp');renderE();}
 
 // ── INFORMACIÓN DE CAMPOS ──
-function getFieldStatus(r){const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const renspa=g(r,'RENSPA');const cred=g(r,'CREDENCIAL RENSPA');const poly=g(r,'POLIGONO');const evid=g(r,'EVIDENCIA');const vto=getVtoRenspa(cuit,campo);const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');if(vto){const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))return 'RENSPA vencida';}if(!renspa&&!cred)return'Falta RENSPA';if(!poly)return'Falta poligono';if(!evid)return'Falta evidencia';if(!vto)return'A verificar';if(estadoKmz!=='OK')return'A verificar';if(estadoEvid!=='OK')return'A verificar';return'Completo';}
+function getFieldStatus(r){
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const vto=getVtoRenspa(cuit,campo);
+  const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
+  const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
+  // Incompleto: algo revisado con resultado negativo
+  if(vto){const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))return'Incompleto';}
+  if(estadoKmz&&estadoKmz!=='OK')return'Incompleto';
+  if(estadoEvid&&estadoEvid!=='OK')return'Incompleto';
+  // Completo: los tres ítems explícitamente OK
+  if(vto&&!renspaStatus(cuit,campo).status.includes('Vencida')&&estadoKmz==='OK'&&estadoEvid==='OK')return'Completo';
+  // Cualquier otra cosa: a verificar
+  return'A verificar';
+}
 // Muestra todos los problemas simultáneos en la tabla (no solo el primero)
 function getFieldIssuesBadges(r){
   const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
@@ -980,13 +993,20 @@ function getFieldIssuesBadges(r){
   const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
   const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
   const issues=[];
+  // RENSPA
   if(!renspa&&!cred) issues.push('<span class="badge badge-err" style="font-size:10px">Sin RENSPA</span>');
-  else if(vto){const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))issues.push('<span class="badge badge-err" style="font-size:10px">RENSPA vencida</span>');else if(rs.status.includes('pronto'))issues.push('<span class="badge badge-warn" style="font-size:10px">RENSPA por vencer</span>');}
-  else issues.push('<span class="badge badge-warn" style="font-size:10px">Sin fecha RENSPA</span>');
+  else if(!vto) issues.push('<span class="badge badge-warn" style="font-size:10px">Sin fecha RENSPA</span>');
+  else{const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))issues.push('<span class="badge badge-err" style="font-size:10px">RENSPA vencida</span>');else if(rs.status.includes('pronto'))issues.push('<span class="badge badge-warn" style="font-size:10px">RENSPA por vencer</span>');}
+  // KMZ: exige OK explícito
   if(!poly) issues.push('<span class="badge badge-err" style="font-size:10px">Sin KMZ</span>');
-  else if(estadoKmz&&estadoKmz!=='OK') issues.push('<span class="badge badge-warn" style="font-size:10px">KMZ: obs.</span>');
+  else if(estadoKmz==='OK'){/* ok */}
+  else if(estadoKmz) issues.push('<span class="badge badge-warn" style="font-size:10px">KMZ: obs.</span>');
+  else issues.push('<span class="badge badge-na" style="font-size:10px">KMZ: pendiente</span>');
+  // Evidencia: exige OK explícito
   if(!evid) issues.push('<span class="badge badge-err" style="font-size:10px">Sin evidencia</span>');
-  else if(estadoEvid&&estadoEvid!=='OK') issues.push('<span class="badge badge-warn" style="font-size:10px">Evidencia: obs.</span>');
+  else if(estadoEvid==='OK'){/* ok */}
+  else if(estadoEvid) issues.push('<span class="badge badge-warn" style="font-size:10px">Evidencia: obs.</span>');
+  else issues.push('<span class="badge badge-na" style="font-size:10px">Evidencia: pendiente</span>');
   if(!issues.length) return '<span class="badge badge-ok" style="font-size:10px">Completo</span>';
   return issues.join(' ');
 }
