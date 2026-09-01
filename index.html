@@ -671,16 +671,13 @@ function getGestionEstados(gid,r){
   return allNotas.filter(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');
 }
 function isGestionPasada(gid,r){
-  const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
-  return allNotas.some(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada'&&n.VALOR==='SI');
+  return allNotas.some(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada'&&n.VALOR==='SI');
 }
 function isGestionDadaDeBaja(gid,r){
-  const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
-  return allNotas.some(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='baja');
+  return allNotas.some(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='baja');
 }
 function getGestionBaja(gid,r){
-  const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
-  return allNotas.find(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='baja');
+  return allNotas.find(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='baja');
 }
 
 function buildFichaG(r,idx,gid,estados){
@@ -840,9 +837,6 @@ async function confirmarPasarAHabilitaciones(){
   btn.disabled=true;btn.textContent='Procesando...';
   const solEmail=getSolEmail(gid);
   await saveNota(gid,'__GESTION__','pasada','SI',userName);
-  // También marcar el gid sin campo (para que checkGestionesSinCambios lo filtre correctamente)
-  const emptyGid=[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');
-  if(emptyGid!==gid)await saveNota(emptyGid,'__GESTION__','pasada','SI',userName);
   try{
     await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({
       action:'pasarAHabilitaciones',
@@ -901,9 +895,6 @@ async function confirmarBaja(){
   document.getElementById('btn-confirmar-baja').disabled=true;
   document.getElementById('btn-confirmar-baja').textContent='Procesando...';
   await saveNota(gid,'__GESTION__','baja',motivo,userName);
-  // También marcar el gid sin campo para que checkGestionesSinCambios lo filtre
-  const emptyGidBaja=[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');
-  if(emptyGidBaja!==gid)await saveNota(emptyGidBaja,'__GESTION__','baja',motivo,userName);
   // Notificar al comercial que cargó la solicitud
   if(solEmailBaja){
     try{
