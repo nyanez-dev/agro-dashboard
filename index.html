@@ -666,9 +666,20 @@ function onFilterG(){cascadeG();renderG();}
 // ── GESTIONES CRM — helpers ──
 function getGestionId(r){return[r['Productor']||'',r['Campo']||'',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');}
 function getGestionEstados(gid,r){
-  // También busca notas guardadas cuando el campo estaba vacío (migración automática)
+  // Estrategia 1: gid exacto O gid con campo vacío (migración automática)
   const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
-  return allNotas.filter(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');
+  const found=allNotas.filter(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');
+  if(found.length>0||!r)return found;
+  // Estrategia 2: fallback difuso — misma combinación Productor/Esquema/Exportador/Campaña,
+  // cualquier valor de campo. Cubre casos donde el campo cambió entre que se guardó la nota
+  // y el estado actual de la fila (ej: nota bajo campo "San Juan" pero fila todavía vacía).
+  const prod=r['Productor']||'';const esq=r['Esquema']||'';const exp=r['Exportador']||'';const camp=g(r,'Campa')||'';
+  if(!prod||!esq||!exp||!camp)return found;
+  return allNotas.filter(n=>{
+    if(n.CAMPO!=='__GESTION__'||n.TIPO!=='estado')return false;
+    const p=n.CUIT.split('||');
+    return p[0]===prod&&p[2]===esq&&p[3]===exp&&p[4]===camp;
+  });
 }
 function isGestionPasada(gid,r){
   return allNotas.some(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada'&&n.VALOR==='SI');
