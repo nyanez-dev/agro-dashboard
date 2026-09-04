@@ -867,6 +867,9 @@ async function confirmarPasarAHabilitaciones(){
         exportador:r['Exportador']||'',
         esquema:r['Esquema']||'',
         campo:r['Campo']||'',
+        has:has,
+        coef:coef,
+        ton:ton,
         pasadoPor:userName
       })});
     }catch(e){console.warn('Notificación de habilitaciones no enviada:',e);}
