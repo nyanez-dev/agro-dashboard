@@ -1199,8 +1199,15 @@ async function enviarSolicitud(){
     setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);
   }catch(e){
     msg.className='modal-msg err';
-    msg.textContent=e.message==='Failed to fetch'?'No se pudo conectar con el servidor. Verificá tu conexión o contactá a Compliance.':'Error al enviar: '+e.message;
-    btn.disabled=false;btn.textContent='Enviar solicitud';
+    // Si es error de red (Failed to fetch / timeout), NO re-habilitamos el botón:
+    // el servidor puede haber procesado la solicitud igual, y re-enviar generaría duplicados.
+    if(e.message==='Failed to fetch'){
+      msg.textContent='No se pudo confirmar el envío. Verificá en el panel de Gestiones si la solicitud aparece antes de intentar de nuevo.';
+      // No re-habilitamos btn — quedá como "Enviando..." para evitar doble submit
+    } else {
+      msg.textContent='Error al enviar: '+e.message;
+      btn.disabled=false;btn.textContent='Enviar solicitud';
+    }
   }
 }
 
