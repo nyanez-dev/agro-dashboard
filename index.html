@@ -1182,14 +1182,14 @@ async function enviarSolicitud(){
   const fecha=new Date().toLocaleDateString('es-AR');
   let totalFilas=0;
   try{
+    // Un solo POST con todos los exportadores — evita throttling de Apps Script con múltiples requests
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',selecciones:selecciones,productor:cliente,cuit:'',campo:'',estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error||'Error desconocido');
+    totalFilas=data.filasCreadas||selecciones.reduce(function(s,sel){return s+sel.esquemas.length;},0);
+    // Guardar notas de estado para todas las gestiones creadas
+    const session=loadSession();
     for(const {exportador,esquemas} of selecciones){
-      // Un POST por exportador (backend crea una fila por esquema y manda un solo mail)
-      const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',productor:cliente,cuit:'',campo:'',esquemas:esquemas,exportador:exportador,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
-      const data=await res.json();
-      if(!data.ok)throw new Error(data.error||'Error desconocido');
-      totalFilas+=(data.filasCreadas||esquemas.length);
-      // Crear notas de estado para cada gestión
-      const session=loadSession();
       for(const esquema of esquemas){
         const gid=[cliente,'',esquema,exportador,camp].join('||');
         await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);
