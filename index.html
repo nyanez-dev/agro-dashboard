@@ -293,7 +293,7 @@ tr.clickable{cursor:pointer}
     <button class="modal-close" onclick="closeNuevaSolicitud()">×</button>
     <h2>Nueva solicitud de gestión</h2>
     <p class="modal-sub">El equipo de Compliance recibirá tu solicitud por mail.</p>
-    <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A."></div>
+    <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A." oninput="checkClienteWarning(this.value)"></div>
     <div class="form-row">
       <label>Exportadores y esquemas <span style="color:#DC2626">*</span></label>
       <p style="font-size:12px;color:#6B7280;margin:4px 0 8px 0">Marcá el exportador y seleccioná sus esquemas.</p>
@@ -340,6 +340,7 @@ tr.clickable{cursor:pointer}
         </div>
       </div>
     </div>
+    <div id="sol-warning" style="display:none;background:#FEF3C7;border:1px solid #FCD34D;border-left:4px solid #F59E0B;border-radius:6px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:12px;line-height:1.6"></div>
     <div id="sol-msg" class="modal-msg"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeNuevaSolicitud()">Cancelar</button>
@@ -411,6 +412,7 @@ tr.clickable{cursor:pointer}
     <div class="filter-group"><label>Exportador</label><div class="multi-select-wrap" id="wrap-e-exp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('e-exp')"><span id="label-e-exp">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-e-exp"></div></div></div>
     <div class="filter-group"><label>Tipo</label><div class="multi-select-wrap" id="wrap-e-tipo"><button type="button" class="multi-select-btn" onclick="toggleDropdown('e-tipo')"><span id="label-e-tipo">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-e-tipo"></div></div></div>
     <button class="btn-clear" onclick="clearE()">Limpiar filtros</button>
+    <label class="edit-only" style="display:none;align-items:center;gap:6px;font-size:12px;color:#6B7280;cursor:pointer;white-space:nowrap"><input type="checkbox" id="e-show-borradas" onchange="renderE()"> Mostrar borradas</label>
   </div>
   <div id="e-table"><div class="loading">Cargando datos...</div></div>
   <div class="footer-row" id="e-footer"></div>
@@ -489,6 +491,9 @@ tr.clickable{cursor:pointer}
 const GOOGLE_CLIENT_ID = '754611299321-stq5blr6m17ft47t3l5geqaghshns3vm.apps.googleusercontent.com';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1xszuicGG3Qh__d71VcXltqjIgjbP9j1J8E9YjiEZIe29pggSUqZHO_v7NZmhsV_H1A/exec';
 const CAMP_DEFAULTS = ['2526','25/26'];
+// Campaña vigente — se actualiza desde la hoja "Config" del Sheet al cargar datos.
+// Para cambiarla: en el Sheet, pestaña "Config", celda A1="campana_vigente", B1="26/27" (ejemplo).
+let CAMPANA_VIGENTE = '2526'; // formato normalizado (sin barra)
 const BLOCKED_EMAILS = new Set([
   'agenciacordoba@allariaagro.com.ar',
   'agenciariocuarto@allariaagro.com.ar',
@@ -640,8 +645,18 @@ function getHasPorCampaña(cuit,campo){
 }
 function normCamp(c){return(c||'').replace('/','').replace('-','');}
 function getHasCampActual(cuit,campo,camp){const bc=getHasPorCampaña(cuit,campo);const nc=normCamp(camp);return bc[nc]?bc[nc].VALOR:getNotaValor(cuit,campo,'has_sustentables');}
-// Has de la campaña activa (25/26) para la columna de la tabla principal
-function getHasActivaCamp(cuit,campo){const bc=getHasPorCampaña(cuit,campo);const activa='2526';if(bc[activa])return bc[activa].VALOR;return getNotaValor(cuit,campo,'has_sustentables');}
+// Has sustentables de la campaña vigente (viene del Config sheet)
+function getHasActivaCamp(cuit,campo){const bc=getHasPorCampaña(cuit,campo);if(bc[CAMPANA_VIGENTE])return bc[CAMPANA_VIGENTE].VALOR;return getNotaValor(cuit,campo,'has_sustentables');}
+// Has productivas por campaña (tipo hasprod_{campNorm})
+function getHasProdPorCampaña(cuit,campo){
+  const prefix='hasprod_';
+  const ns=allNotas.filter(n=>String(n.CUIT)===String(cuit)&&String(n.CAMPO)===String(campo)&&n.TIPO&&n.TIPO.startsWith(prefix));
+  const byCamp={};
+  ns.forEach(n=>{const c=n.TIPO.slice(prefix.length);if(!byCamp[c]||new Date(n.FECHA)>new Date(byCamp[c].FECHA))byCamp[c]=n;});
+  Object.keys(byCamp).forEach(c=>{if(byCamp[c].VALOR==='__BORRADO__')delete byCamp[c];});
+  return byCamp;
+}
+function getHasProdActivaCamp(cuit,campo){const bc=getHasProdPorCampaña(cuit,campo);if(bc[CAMPANA_VIGENTE])return bc[CAMPANA_VIGENTE].VALOR;return '';}
 
 function fmtDate(v){if(!v)return'';const s=String(v);let d;if(s.includes('T'))d=new Date(s);else if(s.includes('-')&&s.indexOf('-')===4){const p=s.split('-');d=new Date(p[0],p[1]-1,p[2]);}else return s;if(!d||isNaN(d))return s;const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yyyy=d.getFullYear();return dd+'/'+mm+'/'+yyyy;}
 
@@ -969,23 +984,188 @@ function renderG(){
 function clearG(){document.getElementById('g-search').value='';const gProd=document.getElementById('g-prod');if(gProd)gProd.value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());const gDef=findCampDefault(allG);if(gDef)sel['g-camp'].add(gDef);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
 
 // ── HABILITACIONES ──
-function filterE(){const q=document.getElementById('e-search').value.toLowerCase();const camps=sel['e-camp'];const vends=sel['e-vend'];const exps=sel['e-exp'];const tipos=sel['e-tipo'];return allE.filter(r=>(!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q)))&&(!camps.size||camps.has(g(r,'Campa')))&&(!vends.size||vends.has(r['Vendedor']))&&(!exps.size||exps.has(r['Exportador']))&&(!tipos.size||tipos.has(r['Tipo'])));}
+function habKey(r){return[r['CUIT'],r['Campo'],r['Exportador'],r['Tipo'],g(r,'Campa')].join('||');}
+// El Apps Script guarda la clave compuesta en la columna CUIT de Notas.
+// isHabBorradaSimple busca la última nota con esa clave y ve si está borrada (no restaurada).
+function isHabBorradaSimple(r){
+  const key=habKey(r);
+  const relevant=allNotas.filter(n=>String(n.CUIT)===key&&n.CAMPO==='__HAB__'&&n.TIPO==='borrada');
+  if(!relevant.length)return false;
+  const last=relevant.sort((a,b)=>new Date(b.FECHA)-new Date(a.FECHA))[0];
+  return last.VALOR!=='__RESTAURADA__';
+}
+
+function filterE(){
+  const q=document.getElementById('e-search').value.toLowerCase();
+  const camps=sel['e-camp'];const vends=sel['e-vend'];const exps=sel['e-exp'];const tipos=sel['e-tipo'];
+  const showBorradas=document.getElementById('e-show-borradas')?.checked||false;
+  return allE.filter(r=>{
+    if(!showBorradas&&isHabBorradaSimple(r))return false;
+    return(!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q)))
+      &&(!camps.size||camps.has(g(r,'Campa')))
+      &&(!vends.size||vends.has(r['Vendedor']))
+      &&(!exps.size||exps.has(r['Exportador']))
+      &&(!tipos.size||tipos.has(r['Tipo']));
+  });
+}
 function onFilterE(){cascadeE();renderE();}
-function renderE(){const f=filterE();const has=f.reduce((s,r)=>s+parseNum(r['Has sustentables']),0);const ton=f.reduce((s,r)=>s+parseNum(r['Rendimiento en ton']),0);const exps=uniq(f.map(r=>r['Exportador'])).length;document.getElementById('stats-e').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}),'Has. sustentables','#1a5a9a')+statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}),'Toneladas','#1a4a2e')+statCard(exps,'Exportadores','#64748b');if(!f.length){document.getElementById('e-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('e-footer').innerHTML='';return;}const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exp.</th><th>Tipo</th><th>Camp.</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Ton. aprobadas al INICIO</th></tr></thead>`;const rows=f.map(r=>`<tr><td class="bold" style="max-width:200px;word-wrap:break-word;white-space:normal">${r['Vendedor']||'—'}</td><td class="mono">${r['CUIT']||'—'}</td><td>${r['Campo']||'—'}</td><td class="muted">${r['Localidad en exportador']||'—'}</td><td>${expBadge(r['Exportador'])}</td><td>${tipoBadge(r['Tipo'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="num">${fmt(r['Has sustentables'])}</td><td class="num muted">${fmt(r['Coef. rendimiento'])}</td><td class="num bold green">${fmt(r['Rendimiento en ton'])}</td></tr>`).join('');document.getElementById('e-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;document.getElementById('e-footer').innerHTML=`<span>Mostrando ${f.length} de ${allE.length} registros</span>`;}
+function renderE(){
+  const f=filterE();
+  const has=f.reduce((s,r)=>s+parseNum(r['Has sustentables']),0);
+  const ton=f.reduce((s,r)=>s+parseNum(r['Rendimiento en ton']),0);
+  const exps=uniq(f.map(r=>r['Exportador'])).length;
+  document.getElementById('stats-e').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(has.toLocaleString('es-AR',{maximumFractionDigits:0}),'Has. sustentables','#1a5a9a')+statCard(ton.toLocaleString('es-AR',{maximumFractionDigits:0}),'Toneladas','#1a4a2e')+statCard(exps,'Exportadores','#64748b');
+  if(!f.length){document.getElementById('e-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('e-footer').innerHTML='';return;}
+  const isEdit=document.body.classList.contains('edit-mode');
+  const thead=`<thead><tr><th>Vendedor</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Exp.</th><th>Tipo</th><th>Camp.</th><th style="text-align:right">Has.</th><th style="text-align:right">Coef.</th><th style="text-align:right">Ton. al INICIO</th>${isEdit?'<th style="min-width:90px">Acciones</th>':''}</tr></thead>`;
+  const rows=f.map((r,ri)=>{
+    const borrada=isHabBorradaSimple(r);
+    const style=borrada?'opacity:0.45;text-decoration:line-through;':'';
+    const acciones=isEdit?`<td style="white-space:nowrap;${style}">
+      ${borrada
+        ?`<button onclick="restaurarHab(${ri})" style="background:none;border:none;color:#059669;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Restaurar</button>`
+        :`<button onclick="abrirEditHab(${ri})" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button>
+         <button onclick="borrarHab(${ri})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button>`}
+    </td>`:'';
+    return`<tr style="${style}">
+      <td class="bold" style="max-width:200px;word-wrap:break-word;white-space:normal">${r['Vendedor']||'—'}</td>
+      <td class="mono">${r['CUIT']||'—'}</td>
+      <td>${r['Campo']||'—'}</td>
+      <td class="muted">${r['Localidad en exportador']||'—'}</td>
+      <td>${expBadge(r['Exportador'])}</td>
+      <td>${tipoBadge(r['Tipo'])}</td>
+      <td class="muted">${fmtCamp(g(r,'Campa'))}</td>
+      <td class="num">${fmt(r['Has sustentables'])}</td>
+      <td class="num muted">${fmt(r['Coef. rendimiento'])}</td>
+      <td class="num bold green">${fmt(r['Rendimiento en ton'])}</td>
+      ${acciones}
+    </tr>`;
+  }).join('');
+  document.getElementById('e-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
+  document.getElementById('e-footer').innerHTML=`<span>Mostrando ${f.length} de ${allE.length} registros${allNotas.filter(n=>n.CAMPO==='__HAB__'&&n.TIPO==='borrada').length?' · '+allNotas.filter(n=>n.CAMPO==='__HAB__'&&n.TIPO==='borrada').length+' borradas (ocultas)':''}</span>`;
+}
 function clearE(){document.getElementById('e-search').value='';Object.keys(sel).filter(k=>k.startsWith('e-')).forEach(k=>sel[k].clear());const eDef=findCampDefault(allE);if(eDef)sel['e-camp'].add(eDef);cascadeE();buildDropdown('e-camp',uniq(allE.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('e-camp');renderE();}
 
+// ── EDIT / SOFT-DELETE HABILITACIONES ──
+function abrirEditHab(ri){
+  const f=filterE();const r=f[ri];if(!r)return;
+  const campos=[
+    {key:'Vendedor',label:'Vendedor',type:'text'},
+    {key:'CUIT',label:'CUIT',type:'text'},
+    {key:'Campo',label:'Campo',type:'text'},
+    {key:'Localidad en exportador',label:'Localidad en exportador',type:'text'},
+    {key:'Exportador',label:'Exportador',type:'text'},
+    {key:'Tipo',label:'Tipo',type:'text'},
+    {key:'Campa',label:'Campaña',type:'text'},
+    {key:'Has sustentables',label:'Has. sustentables',type:'number'},
+    {key:'Coef. rendimiento',label:'Coef. rendimiento',type:'number'},
+    {key:'Rendimiento en ton',label:'Rendimiento en ton',type:'number'},
+  ];
+  const keyFields=new Set(['CUIT','Campo','Exportador','Tipo','Campa']);
+  const rows=campos.map(c=>{
+    const isKey=keyFields.has(c.key);
+    return`<div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:start;padding:8px 0;border-bottom:1px solid #F3F4F6">
+      <label style="font-size:12px;font-weight:600;color:${isKey?'#92400E':'#374151'};padding-top:8px">${c.label}${isKey?'<span title="Campo clave — editar con cuidado" style="margin-left:4px;font-size:10px">⚠️</span>':''}</label>
+      <div>
+        <input type="${c.type}" id="ehab-${ri}-${c.key.replace(/[\s.]/g,'_')}" value="${(r[c.key]||'').toString().replace(/"/g,'&quot;')}" style="padding:6px 10px;border:1px solid ${isKey?'#FCD34D':'#D1D5DB'};border-radius:6px;font-size:13px;font-family:Inter,sans-serif;width:100%;box-sizing:border-box;background:${isKey?'#FFFBEB':'#fff'}">
+        ${isKey?'<div style="font-size:10px;color:#92400E;margin-top:3px">Este campo forma parte de la clave de búsqueda — cambiarlo es válido pero irreversible vía tablero.</div>':''}
+      </div>
+    </div>`;
+  }).join('');
+  // Info de la hab
+  const info=`<div style="padding:10px 0 14px;margin-bottom:4px;border-bottom:1px solid #E5E7EB;font-size:12px;color:#6B7280">
+    <strong style="color:#1B2A4A">${r['Vendedor']}</strong> · ${r['Campo']} · ${expBadge(r['Exportador'])} · ${fmtCamp(g(r,'Campa'))}
+  </div>`;
+
+  let modal=document.getElementById('modal-edit-hab');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='modal-edit-hab';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML=`<div style="background:#fff;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,0.25);width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:#1B2A4A">Editar habilitación</h3>
+        <button onclick="cerrarEditHab()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9CA3AF;line-height:1">×</button>
+      </div>
+      <div id="modal-edit-hab-body" style="padding:16px 20px;overflow-y:auto;flex:1"></div>
+      <div style="padding:14px 20px;border-top:1px solid #E5E7EB;display:flex;justify-content:flex-end;gap:8px">
+        <button onclick="cerrarEditHab()" style="padding:8px 16px;border:1px solid #D1D5DB;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;font-family:Inter,sans-serif">Cancelar</button>
+        <button id="modal-edit-hab-save" style="padding:8px 16px;border:none;border-radius:6px;background:#1B2A4A;color:#fff;font-size:13px;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)cerrarEditHab();});
+  }
+  document.getElementById('modal-edit-hab-body').innerHTML=info+rows;
+  document.getElementById('modal-edit-hab-save').onclick=()=>guardarEditHab(ri,campos);
+  modal.style.display='flex';
+}
+function cerrarEditHab(){const modal=document.getElementById('modal-edit-hab');if(modal)modal.style.display='none';}
+async function guardarEditHab(ri,campos){
+  const f=filterE();const r=f[ri];if(!r)return;
+  const fields={};let changed=false;
+  campos.forEach(c=>{
+    const el=document.getElementById('ehab-'+ri+'-'+c.key.replace(/[\s.]/g,'_'));
+    if(!el)return;
+    const nv=el.value.trim();const ov=(r[c.key]||'').toString().trim();
+    if(nv!==ov){fields[c.key]=nv;changed=true;}
+  });
+  if(!changed){showToast('info','Sin cambios','No se modificó ningún campo.');cerrarEditHab();return;}
+  const autor=document.getElementById('auth-user').textContent||'Compliance';
+  const key=habKey(r);
+  const [key_cuit,key_campo,key_exportador,key_tipo,key_campana]=key.split('||');
+  const saveBtn=document.getElementById('modal-edit-hab-save');
+  saveBtn.disabled=true;saveBtn.textContent='Guardando...';
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'editHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,fields,autor})});
+    const j=await resp.json();
+    if(j.ok){showToast('ok','Habilitación actualizada','Los cambios se guardaron correctamente.');cerrarEditHab();await loadData();}
+    else{alert('Error al guardar: '+(j.error||'Respuesta inesperada'));}
+  }catch(e){alert('Error de conexión: '+e.message);}
+  finally{saveBtn.disabled=false;saveBtn.textContent='Guardar';}
+}
+async function borrarHab(ri){
+  const f=filterE();const r=f[ri];if(!r)return;
+  if(!confirm(`¿Borrar habilitación de ${r['Vendedor']} / ${r['Campo']} / ${r['Exportador']}?\nSe puede restaurar después.`))return;
+  const autor=document.getElementById('auth-user').textContent||'Compliance';
+  const [key_cuit,key_campo,key_exportador,key_tipo,key_campana]=habKey(r).split('||');
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,autor})});
+    const j=await resp.json();
+    if(j.ok){showToast('ok','Habilitación borrada','Se puede restaurar activando "Mostrar borradas".');await loadNotas();renderE();}
+    else{alert('Error al borrar: '+(j.error||'Respuesta inesperada'));}
+  }catch(e){alert('Error de conexión: '+e.message);}
+}
+async function restaurarHab(ri){
+  const f=filterE();const r=f[ri];if(!r)return;
+  const autor=document.getElementById('auth-user').textContent||'Compliance';
+  const [key_cuit,key_campo,key_exportador,key_tipo,key_campana]=habKey(r).split('||');
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'restoreHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,autor})});
+    const j=await resp.json();
+    if(j.ok){showToast('ok','Habilitación restaurada','');await loadNotas();renderE();}
+    else{alert('Error al restaurar: '+(j.error||'Respuesta inesperada'));}
+  }catch(e){alert('Error de conexión: '+e.message);}
+}
+
 // ── INFORMACIÓN DE CAMPOS ──
+function hasVigentes(cuit,campo){
+  // Tiene has sustentables registradas para la campaña vigente
+  const bc=getHasPorCampaña(cuit,campo);
+  return !!bc[CAMPANA_VIGENTE];
+}
 function getFieldStatus(r){
   const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
   const vto=getVtoRenspa(cuit,campo);
   const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
   const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
+  const hv=hasVigentes(cuit,campo);
   // Incompleto: algo revisado con resultado negativo
   if(vto){const rs=renspaStatus(cuit,campo);if(rs.status.includes('Vencida'))return'Incompleto';}
   if(estadoKmz&&estadoKmz!=='OK')return'Incompleto';
   if(estadoEvid&&estadoEvid!=='OK')return'Incompleto';
-  // Completo: los tres ítems explícitamente OK
-  if(vto&&!renspaStatus(cuit,campo).status.includes('Vencida')&&estadoKmz==='OK'&&estadoEvid==='OK')return'Completo';
+  // Completo: RENSPA vigente + KMZ OK + Evidencia OK + Has sustentables de campaña vigente
+  if(vto&&!renspaStatus(cuit,campo).status.includes('Vencida')&&estadoKmz==='OK'&&estadoEvid==='OK'&&hv)return'Completo';
   // Cualquier otra cosa: a verificar
   return'A verificar';
 }
@@ -1012,46 +1192,298 @@ function getFieldIssuesBadges(r){
   else if(estadoEvid==='OK'){/* ok */}
   else if(estadoEvid) issues.push('<span class="badge badge-warn" style="font-size:10px">Evidencia: obs.</span>');
   else issues.push('<span class="badge badge-na" style="font-size:10px">Evidencia: pendiente</span>');
+  // Has sustentables de campaña vigente
+  if(!hasVigentes(cuit,campo)) issues.push('<span class="badge badge-warn" style="font-size:10px">Verificar has vigentes</span>');
   if(!issues.length) return '<span class="badge badge-ok" style="font-size:10px">Completo</span>';
   return issues.join(' ');
 }
 function filterC(){const q=document.getElementById('c-search').value.toLowerCase();const qRS=(document.getElementById('c-razon')||{}).value?.toLowerCase()||'';const provs=sel['c-prov'];const estados=sel['c-estado'];return allC.filter(r=>{const status=getFieldStatus(r);return(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!qRS||(g(r,'RAZON SOCIAL')||'').toLowerCase().includes(qRS))&&(!provs.size||provs.has(r['PROVINCIA']))&&(!estados.size||estados.has(status));});}
 function renderC(){const f=filterC();const completos=f.filter(r=>getFieldStatus(r)==='Completo').length;const provs=uniq(f.map(r=>g(r,'PROVINCIA'))).length;document.getElementById('stats-c').innerHTML=statCard(f.length,'Campos','#1a4a2e')+statCard(completos,'Completos','#065f46')+statCard(f.length-completos,'Pendientes','#991b1b')+statCard(provs,'Provincias','#64748b');const allStatuses=uniq(allC.map(r=>getFieldStatus(r)));const allProvs=uniq(allC.map(r=>g(r,'PROVINCIA')));if(!document.getElementById('opts-c-prov'))buildDropdown('c-prov',allProvs);if(!document.getElementById('opts-c-estado'))buildDropdown('c-estado',allStatuses,s=>statusBadge(s));if(!f.length){document.getElementById('c-table').innerHTML='<div class="loading">Sin resultados.</div>';document.getElementById('c-footer').innerHTML='';return;}const thead=`<thead><tr><th>Razón social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. productivas</th><th>Has. verificadas</th><th>RENSPA</th><th>Estado</th></tr></thead>`;const rows=f.map((r,i)=>{const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const status=getFieldStatus(r);const rs=renspaStatus(cuit,campo);const hv=getHasActivaCamp(cuit,campo);const hp=g(r,'PRODUCTIVAS');let hasCell;if(!hv)hasCell='<span class="badge badge-na">-</span>';else{const diff=parseNum(hv)!==parseNum(hp);hasCell=diff?'<span style="color:#dc2626;font-weight:600">'+fmt(hv)+'</span>':'<span style="color:#065f46">'+fmt(hv)+'</span>';}const htot=parseNum(g(r,'TOTALES DEL CAMPO'));const hprod=parseNum(g(r,'PRODUCTIVAS'));const hasProdCell=(hprod>htot&&htot>0)?'<span style="color:#dc2626;font-weight:600" title="Productivas mayor a totales">'+fmt(g(r,'PRODUCTIVAS'))+'</span>':fmt(g(r,'PRODUCTIVAS'));return `<tr class="clickable" onclick="toggleFicha(${i})"><td class="bold" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${g(r,'RAZON SOCIAL')||'—'}</td><td class="mono" style="font-size:11px">${cuit}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${campo}</td><td class="muted" style="max-width:100px">${g(r,'LOCALIDAD')||'—'}</td><td class="muted" style="max-width:90px">${g(r,'PROVINCIA')||'—'}</td><td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td><td class="num">${hasProdCell}</td><td class="num">${hasCell}</td><td><span class="badge ${rs.cls}">${rs.status}</span></td><td style="white-space:normal;min-width:160px">${getFieldIssuesBadges(r)}</td></tr><tr><td colspan="10" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;}).join('');document.getElementById('c-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;document.getElementById('c-footer').innerHTML=`<span>Mostrando ${f.length} de ${allC.length} campos</span>`;}
 
-function buildFicha(r,idx){const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const cred=g(r,'CREDENCIAL RENSPA');const poly=g(r,'POLIGONO');const evid=g(r,'EVIDENCIA');const tipoEvid=g(r,'TIPO DE EVIDENCIA');const mail=g(r,'MAIL DE CONTACTO');const rs=renspaStatus(cuit,campo);const vto=getVtoRenspa(cuit,campo);const vtoFmt=vto&&String(vto).includes('T')?String(vto).split('T')[0]:vto;const comentarios=getNotas(cuit,campo,'comentario');const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');const hasSust=getHasCampActual(cuit,campo,'');
-const hasPorCamp=getHasPorCampaña(cuit,campo);function estadoBadge(val){if(!val)return'<span class="badge badge-na">A verificar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
-let html=`<div class="ficha-grid"><div class="ficha-field"><label>Razon social</label><div class="val bold">${g(r,'RAZON SOCIAL')}</div></div><div class="ficha-field"><label>Tipo sociedad</label><div class="val">${g(r,'TIPO SOCIEDAD')}</div></div><div class="ficha-field"><label>CUIT</label><div class="val mono">${cuit}</div></div><div class="ficha-field"><label>Mail contacto</label><div class="val" style="word-break:break-all">${mail?`<a href="mailto:${mail}" style="word-break:break-all">${mail}</a>`:'—'}</div></div><div class="ficha-field"><label>Departamento</label><div class="val">${g(r,'DEPARTAMENTO')}</div></div><div class="ficha-field"><label>Provincia</label><div class="val">${g(r,'PROVINCIA')}</div></div><div class="ficha-field"><label>Localidad</label><div class="val">${g(r,'LOCALIDAD')}</div></div><div class="ficha-field"><label>Cod. localidad ARCA</label><div class="val">${g(r,'LOCALIDAD ARCA')}</div></div></div>`;
-const campRows=Object.entries(hasPorCamp).sort((a,b)=>b[0].localeCompare(a[0])).map(([cn,n])=>`<tr><td style="padding:6px 10px;font-size:12px">${fmtCamp(cn)}</td><td style="padding:6px 10px;font-weight:600;font-size:13px">${fmt(n.VALOR)} has</td><td style="padding:6px 10px;font-size:11px;color:#6B7280">${n.AUTOR} · ${fmtDate(n.FECHA)||n.FECHA}</td><td class="edit-only" style="padding:6px 10px;display:none"><button onclick="editHas(${idx},'${cn}','${fmtCamp(cn)}','${n.VALOR}')" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button><button onclick="deleteHas(${idx},'${cuit}','${campo.replace(/'/g,"\\'")}','${cn}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button></td></tr>`).join('');
-const hasSustLegacy=getNotaValor(cuit,campo,'has_sustentables');
-const legacyRow=(!Object.keys(hasPorCamp).length&&hasSustLegacy)?`<tr><td style="padding:6px 10px;font-size:12px;color:#9CA3AF">Anterior</td><td style="padding:6px 10px;font-weight:600;font-size:13px">${fmt(hasSustLegacy)} has</td><td style="padding:6px 10px;font-size:11px;color:#6B7280">—</td></tr>`:'';
-html+=`<div class="ficha-section"><h3>Hectáreas sustentables</h3><div class="ficha-grid"><div class="ficha-field"><label>Has. totales (Sheet)</label><div class="val">${fmt(g(r,'TOTALES DEL CAMPO'))}</div></div><div class="ficha-field"><label>Has. productivas (Sheet)</label><div class="val">${fmt(g(r,'PRODUCTIVAS'))}</div></div></div>${campRows||legacyRow?`<table style="width:100%;border-collapse:collapse;margin:8px 0;border:1px solid #E5E7EB;border-radius:6px;overflow:hidden"><thead><tr><th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Campaña</th><th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Has. sustentables</th><th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Registrado por</th><th class="edit-only" style="padding:6px 10px;background:#F9FAFB;display:none"></th></tr></thead><tbody>${campRows}${legacyRow}</tbody></table>`:'<div class="muted" style="font-size:12px;margin:8px 0">Sin has. sustentables registradas aún.</div>'}<div class="vto-input edit-only" style="margin-top:8px;display:flex;gap:8px;align-items:center"><select id="has-camp-${idx}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif"><option value="">Campaña...</option><option value="24/25">24/25</option><option value="25/26" selected>25/26</option><option value="26/27">26/27</option><option value="27/28">27/28</option></select><input type="number" id="has-${idx}" placeholder="Has. sustentables" style="width:160px"><button onclick="saveHas(${idx})">Guardar</button></div></div>`;
-html+=`<div class="ficha-section"><h3>Documentacion</h3><div class="ficha-grid"><div class="ficha-field"><label>N° RENSPA</label><div class="val">${g(r,'RENSPA')||'—'}</div></div><div class="ficha-field"><label>Credencial RENSPA</label><div class="val">${cred?`<a href="${cred}" target="_blank">Ver documento</a>`:'No adjunto'}</div></div><div class="ficha-field"><label>Estado RENSPA</label><div class="val"><span class="badge ${rs.cls}">${rs.status}</span></div><div class="vto-input edit-only" style="margin-top:6px"><input type="date" id="vto-${idx}" value="${vtoFmt||''}"><button onclick="saveVto(${idx})">Guardar fecha</button></div></div><div class="ficha-field"><label>Poligono KMZ</label><div class="val">${poly?`<a href="${poly}" target="_blank">Descargar KMZ</a>`:'No adjunto'}</div><div class="val" style="margin-top:4px">${estadoBadge(estadoKmz)}</div><div class="vto-input edit-only" style="margin-top:6px"><select id="kmz-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoKmz==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoKmz==='Con observaciones'?'selected':''}>Con observaciones</option></select><button onclick="saveEstadoKmz(${idx})">Guardar</button></div></div><div class="ficha-field"><label>Tipo evidencia</label><div class="val">${tipoEvid||'—'}</div></div><div class="ficha-field"><label>Evidencia</label><div class="val">${evid?`<a href="${evid}" target="_blank">Ver evidencia</a>`:'No adjunto'}</div><div class="val" style="margin-top:4px">${estadoBadge(estadoEvid)}</div><div class="vto-input edit-only" style="margin-top:6px"><select id="evid-${idx}"><option value="">Seleccionar...</option><option value="OK" ${estadoEvid==='OK'?'selected':''}>OK</option><option value="Con observaciones" ${estadoEvid==='Con observaciones'?'selected':''}>Con observaciones</option></select><button onclick="saveEstadoEvid(${idx})">Guardar</button></div></div><div class="ficha-field"><label>PCUS 1</label><div class="val">${g(r,'PCUS 1')||'—'}</div></div></div></div>`;
-html+=`<div class="ficha-section"><h3>Comentarios del equipo</h3>`;
-comentarios.forEach((c,ci)=>{html+=`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${fmtDate(c.FECHA)||c.FECHA}</span><span class="edit-only" style="display:inline;margin-left:8px"><button onclick="editComment(${idx},${ci})" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button><button onclick="deleteComment(${idx},${ci})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button></span></div><div class="comment-text" id="cmtxt-${idx}-${ci}">${c.VALOR}</div></div>`;});
-html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
-return html;}
+// Helper: icono copiar al portapapeles
+function copyIcon(val){if(!val||val==='—')return'';return`<button onclick="copyVal(${JSON.stringify(val)})" title="Copiar" style="background:none;border:none;cursor:pointer;padding:0 2px 0 5px;color:#9CA3AF;font-size:12px;line-height:1;vertical-align:middle" onmouseenter="this.style.color='#1B2A4A'" onmouseleave="this.style.color='#9CA3AF'">⎘</button>`;}
+function copyVal(v){navigator.clipboard.writeText(v).then(()=>showToast('info','Copiado',v.length>40?v.slice(0,40)+'…':v)).catch(()=>{});}
+
+// Helper: celda de valor con icono copiar
+function fieldVal(val,opts){opts=opts||{};const display=opts.link?`<a href="${val}" target="_blank">${opts.linkText||val}</a>`:(`<span>${val||'—'}</span>`);return`<div class="val">${display}${copyIcon(val||'')}</div>`;}
+
+function buildFicha(r,idx){
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const cred=g(r,'CREDENCIAL RENSPA');const poly=g(r,'POLIGONO');const evid=g(r,'EVIDENCIA');
+  const tipoEvid=g(r,'TIPO DE EVIDENCIA');const mail=g(r,'MAIL DE CONTACTO');
+  const rs=renspaStatus(cuit,campo);const vto=getVtoRenspa(cuit,campo);
+  const vtoFmt=vto&&String(vto).includes('T')?String(vto).split('T')[0]:vto;
+  const comentarios=getNotas(cuit,campo,'comentario');
+  const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
+  const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
+  const hasPorCamp=getHasPorCampaña(cuit,campo);
+  const hasProdPorCamp=getHasProdPorCampaña(cuit,campo);
+  const campNorm=v=>normCamp(v||'');
+
+  function estadoBadge(val){if(!val)return'<span class="badge badge-na">A verificar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
+
+  // ── Sección datos generales ──
+  function df(label,val,opts){opts=opts||{};let display;if(opts.email&&val)display=`<a href="mailto:${val}" style="word-break:break-all">${val}</a>`;else display=val||'—';return`<div class="ficha-field"><label>${label}</label><div class="val" style="word-break:${opts.email?'break-all':'normal'}">${display}${copyIcon(val||'')}</div></div>`;}
+
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <span style="font-size:12px;color:#6B7280">CUIT: <strong>${cuit}</strong> ${copyIcon(cuit)}</span>
+    <button class="edit-only" onclick="abrirEditCampo(${idx})" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid #D1D5DB;border-radius:6px;background:#fff;font-size:12px;color:#374151;cursor:pointer;font-family:Inter,sans-serif" title="Editar datos del campo">✏️ Editar datos</button>
+  </div>
+  <div class="ficha-grid">
+    ${df('Razón social',g(r,'RAZON SOCIAL'))}
+    ${df('Tipo sociedad',g(r,'TIPO SOCIEDAD'))}
+    ${df('Mail contacto',mail,{email:true})}
+    ${df('Departamento',g(r,'DEPARTAMENTO'))}
+    ${df('Provincia',g(r,'PROVINCIA'))}
+    ${df('Localidad',g(r,'LOCALIDAD'))}
+    ${df('Cod. ARCA',g(r,'LOCALIDAD ARCA'))}
+  </div>`;
+
+  // ── Has sustentables + Has productivas por campaña ──
+  // Unir las campañas de ambas
+  const allCamps=[...new Set([...Object.keys(hasPorCamp),...Object.keys(hasProdPorCamp)])].sort((a,b)=>b.localeCompare(a));
+  const hasSustLegacy=getNotaValor(cuit,campo,'has_sustentables');
+  const campRowsHas=allCamps.map(cn=>{
+    const ns=hasPorCamp[cn];const np=hasProdPorCamp[cn];
+    const vs=ns?fmt(ns.VALOR)+' has':'—';const vp=np?fmt(np.VALOR)+' has':'—';
+    const autor=(ns||np)?(ns||np).AUTOR:'';const fecha=(ns||np)?fmtDate((ns||np).FECHA)||((ns||np).FECHA):'';
+    const esVigente=cn===CAMPANA_VIGENTE;
+    return`<tr${esVigente?' style="background:#F0FDF4"':''}>
+      <td style="padding:6px 10px;font-size:12px">${fmtCamp(cn)}${esVigente?' <span style="font-size:10px;color:#065F46;font-weight:600">(vigente)</span>':''}</td>
+      <td style="padding:6px 10px;font-weight:600;font-size:13px">${vs}</td>
+      <td style="padding:6px 10px;font-size:13px">${vp}</td>
+      <td style="padding:6px 10px;font-size:11px;color:#6B7280">${autor}${fecha?' · '+fecha:''}</td>
+      <td class="edit-only" style="padding:6px 4px;display:none;white-space:nowrap">
+        <button onclick="editHas(${idx},'${cn}','${fmtCamp(cn)}','${ns?ns.VALOR:''}')" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar sus.</button>
+        ${ns?`<button onclick="deleteHas(${idx},'${cuit}','${campo.replace(/'/g,"\\'")}','${cn}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar sus.</button>`:''}
+        <button onclick="editHasProd(${idx},'${cn}','${fmtCamp(cn)}','${np?np.VALOR:''}')" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar prod.</button>
+        ${np?`<button onclick="deleteHasProd(${idx},'${cuit}','${campo.replace(/'/g,"\\'")}','${cn}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar prod.</button>`:''}
+      </td></tr>`;
+  }).join('');
+  const legacyRow=(!allCamps.length&&hasSustLegacy)?`<tr><td style="padding:6px 10px;font-size:12px;color:#9CA3AF">Anterior</td><td style="padding:6px 10px;font-weight:600;font-size:13px">${fmt(hasSustLegacy)} has</td><td>—</td><td style="padding:6px 10px;font-size:11px;color:#6B7280">—</td><td></td></tr>`:'';
+  const hasTableContent=campRowsHas||legacyRow;
+
+  html+=`<div class="ficha-section"><h3>Hectáreas</h3>
+    <div style="font-size:11px;color:#6B7280;margin-bottom:8px">Has. totales declaradas: <strong>${fmt(g(r,'TOTALES DEL CAMPO'))}</strong></div>
+    ${hasTableContent?`<table style="width:100%;border-collapse:collapse;margin:4px 0 10px;border:1px solid #E5E7EB;border-radius:6px;overflow:hidden">
+      <thead><tr>
+        <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Campaña</th>
+        <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Has. sustentables</th>
+        <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Has. productivas</th>
+        <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Registrado por</th>
+        <th class="edit-only" style="padding:6px 10px;background:#F9FAFB;display:none"></th>
+      </tr></thead>
+      <tbody>${campRowsHas}${legacyRow}</tbody>
+    </table>`:`<div class="muted" style="font-size:12px;margin:8px 0 10px">Sin has registradas aún.</div>`}
+    <div class="edit-only" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;background:#F9FAFB;border-radius:6px;border:1px solid #E5E7EB">
+      <select id="has-camp-${idx}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif;background:#fff"><option value="">Campaña...</option><option value="23/24">23/24</option><option value="24/25">24/25</option><option value="25/26" selected>25/26</option><option value="26/27">26/27</option><option value="27/28">27/28</option></select>
+      <input type="number" id="has-${idx}" placeholder="Has. sustentables" style="width:150px;padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif">
+      <input type="number" id="hasprod-${idx}" placeholder="Has. productivas" style="width:150px;padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif">
+      <button onclick="saveHas(${idx})" style="padding:6px 12px;background:#1B2A4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
+    </div>
+  </div>`;
+
+  // ── Documentación — rediseñada ──
+  function docRow(label,content,editContent){
+    return`<div style="display:grid;grid-template-columns:140px 1fr;gap:0;border-bottom:1px solid #F3F4F6;padding:10px 0;align-items:start">
+      <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em;padding-top:2px">${label}</span>
+      <div>${content}${editContent?`<div class="edit-only" style="margin-top:8px">${editContent}</div>`:''}</div>
+    </div>`;}
+
+  const renspaContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span class="badge ${rs.cls}">${rs.status}</span>
+    ${cred?`<a href="${cred}" target="_blank" style="font-size:12px;color:#2563EB">Ver credencial</a>${copyIcon(cred)}`:'<span style="font-size:12px;color:#9CA3AF">Sin credencial adjunta</span>'}
+    <span style="font-size:12px;color:#6B7280">RENSPA: <strong>${g(r,'RENSPA')||'—'}</strong>${copyIcon(g(r,'RENSPA'))}</span>
+  </div>`;
+  const renspaEdit=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <label style="font-size:11px;color:#6B7280">Vencimiento:</label>
+    <input type="date" id="vto-${idx}" value="${vtoFmt||''}" style="padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif">
+    <button onclick="saveVto(${idx})" style="padding:5px 10px;background:#1B2A4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
+  </div>`;
+
+  const kmzContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    ${poly?`<a href="${poly}" target="_blank" style="font-size:12px;color:#2563EB">Descargar KMZ</a>${copyIcon(poly)}`:'<span style="font-size:12px;color:#9CA3AF">Sin archivo</span>'}
+    ${estadoBadge(estadoKmz)}
+  </div>`;
+  const kmzEdit=`<div style="display:flex;align-items:center;gap:6px">
+    <select id="kmz-${idx}" style="padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif;background:#fff">
+      <option value="">Sin cambio</option>
+      <option value="OK" ${estadoKmz==='OK'?'selected':''}>OK</option>
+      <option value="Con observaciones" ${estadoKmz==='Con observaciones'?'selected':''}>Con observaciones</option>
+    </select>
+    <button onclick="saveEstadoKmz(${idx})" style="padding:5px 10px;background:#1B2A4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">Guardar estado</button>
+  </div>`;
+
+  const evidContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    ${evid?`<a href="${evid}" target="_blank" style="font-size:12px;color:#2563EB">Ver evidencia</a>${copyIcon(evid)}`:'<span style="font-size:12px;color:#9CA3AF">Sin archivo</span>'}
+    <span style="font-size:12px;color:#6B7280">${tipoEvid||''}</span>
+    ${estadoBadge(estadoEvid)}
+  </div>`;
+  const evidEdit=`<div style="display:flex;align-items:center;gap:6px">
+    <select id="evid-${idx}" style="padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif;background:#fff">
+      <option value="">Sin cambio</option>
+      <option value="OK" ${estadoEvid==='OK'?'selected':''}>OK</option>
+      <option value="Con observaciones" ${estadoEvid==='Con observaciones'?'selected':''}>Con observaciones</option>
+    </select>
+    <button onclick="saveEstadoEvid(${idx})" style="padding:5px 10px;background:#1B2A4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">Guardar estado</button>
+  </div>`;
+
+  html+=`<div class="ficha-section"><h3>Documentación</h3>
+    <div style="border:1px solid #E5E7EB;border-radius:6px;padding:0 14px;background:#fff">
+      ${docRow('RENSPA',renspaContent,renspaEdit)}
+      ${docRow('Polígono KMZ',kmzContent,kmzEdit)}
+      ${docRow('Evidencia',evidContent,evidEdit)}
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:0;padding:10px 0;align-items:center">
+        <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em">PCUS 1</span>
+        <span style="font-size:13px">${g(r,'PCUS 1')||'—'}${copyIcon(g(r,'PCUS 1'))}</span>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Comentarios ──
+  html+=`<div class="ficha-section"><h3>Comentarios del equipo</h3>`;
+  if(!comentarios.length)html+=`<div class="muted" style="font-size:13px;margin-bottom:10px">Sin comentarios aún.</div>`;
+  comentarios.forEach((c,ci)=>{html+=`<div class="comment-box" style="border-left:3px solid #E5E7EB">
+    <div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${fmtDate(c.FECHA)||c.FECHA}</span>
+    <span class="edit-only" style="display:inline;margin-left:8px">
+      <button onclick="editComment(${idx},${ci})" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button>
+      <button onclick="deleteComment(${idx},${ci})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button>
+    </span></div>
+    <div class="comment-text" id="cmtxt-${idx}-${ci}">${c.VALOR}</div>
+  </div>`;});
+  html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
+  return html;
+}
 
 function toggleFicha(i){const el=document.getElementById('ficha-'+i);if(el)el.classList.toggle('open');}
 async function saveVto(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('vto-'+idx).value;if(!val){alert('Selecciona una fecha.');return;}await saveNota(cuit,campo,'vto_renspa',val,'Compliance');await loadNotas();renderC();}
 async function saveEstadoKmz(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('kmz-'+idx).value;if(!val){alert('Selecciona un estado.');return;}await saveNota(cuit,campo,'estado_kmz',val,'Compliance');await loadNotas();renderC();}
 async function saveEstadoEvid(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('evid-'+idx).value;if(!val){alert('Selecciona un estado.');return;}await saveNota(cuit,campo,'estado_evidencia',val,'Compliance');await loadNotas();renderC();}
-async function saveHas(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('has-'+idx).value.trim();const campInput=document.getElementById('has-camp-'+idx).value.trim();if(!val){alert('Ingresá las hectáreas.');return;}if(!campInput){alert('Ingresá la campaña (ej: 25/26).');return;}const autor=document.getElementById('auth-user').textContent||'Compliance';const tipo='hascmp_'+normCamp(campInput);await saveNota(cuit,campo,tipo,val,autor);document.getElementById('has-'+idx).value='';document.getElementById('has-camp-'+idx).value='';await loadNotas();renderC();}
+async function saveHas(idx){
+  const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const val=document.getElementById('has-'+idx).value.trim();
+  const valProd=document.getElementById('hasprod-'+idx).value.trim();
+  const campInput=document.getElementById('has-camp-'+idx).value.trim();
+  if(!campInput){alert('Seleccioná la campaña.');return;}
+  if(!val&&!valProd){alert('Ingresá al menos has. sustentables o productivas.');return;}
+  const autor=document.getElementById('auth-user').textContent||'Compliance';
+  const cn=normCamp(campInput);
+  if(val)await saveNota(cuit,campo,'hascmp_'+cn,val,autor);
+  if(valProd)await saveNota(cuit,campo,'hasprod_'+cn,valProd,autor);
+  document.getElementById('has-'+idx).value='';
+  document.getElementById('hasprod-'+idx).value='';
+  document.getElementById('has-camp-'+idx).value='';
+  await loadNotas();renderC();
+}
 function editHas(idx,campNorm,campDisplay,val){
-  // Fmtear campaña de vuelta al formato con barra: 2526 → 25/26
   const dispFmt=campDisplay||campNorm;
   const input=document.getElementById('has-camp-'+idx);
   const inputVal=document.getElementById('has-'+idx);
-  if(input)input.value=dispFmt.replace(/(\d{2})(\d{2})$/,'$1/$2');
+  if(input)input.value=dispFmt.includes('/')?dispFmt:dispFmt.replace(/(\d{2})(\d{2})$/,'$1/$2');
   if(inputVal)inputVal.value=val;
-  // Scroll hasta los inputs
-  if(inputVal)inputVal.scrollIntoView({behavior:'smooth',block:'nearest'});
-  if(inputVal)inputVal.focus();
+  if(inputVal){inputVal.scrollIntoView({behavior:'smooth',block:'nearest'});inputVal.focus();}
 }
 async function deleteHas(idx,cuit,campo,campNorm){
-  if(!confirm('¿Borrar las has. sustentables de campaña '+fmtCamp(campNorm)+'?'))return;
+  if(!confirm('¿Borrar has. sustentables de campaña '+fmtCamp(campNorm)+'?'))return;
   const autor=document.getElementById('auth-user').textContent||'Compliance';
   await saveNota(cuit,campo,'hascmp_'+campNorm,'__BORRADO__',autor);
   await loadNotas();renderC();
+}
+function editHasProd(idx,campNorm,campDisplay,val){
+  const dispFmt=campDisplay||campNorm;
+  const input=document.getElementById('has-camp-'+idx);
+  const inputProd=document.getElementById('hasprod-'+idx);
+  if(input)input.value=dispFmt.includes('/')?dispFmt:dispFmt.replace(/(\d{2})(\d{2})$/,'$1/$2');
+  if(inputProd)inputProd.value=val;
+  if(inputProd){inputProd.scrollIntoView({behavior:'smooth',block:'nearest'});inputProd.focus();}
+}
+async function deleteHasProd(idx,cuit,campo,campNorm){
+  if(!confirm('¿Borrar has. productivas de campaña '+fmtCamp(campNorm)+'?'))return;
+  const autor=document.getElementById('auth-user').textContent||'Compliance';
+  await saveNota(cuit,campo,'hasprod_'+campNorm,'__BORRADO__',autor);
+  await loadNotas();renderC();
+}
+
+// ── MODAL EDITAR INFORMACIÓN DE CAMPO ──
+function abrirEditCampo(idx){
+  const f=filterC();const r=f[idx];if(!r)return;
+  const campos=[
+    {key:'RAZON SOCIAL',label:'Razón social'},
+    {key:'TIPO SOCIEDAD',label:'Tipo sociedad'},
+    {key:'MAIL DE CONTACTO',label:'Mail de contacto'},
+    {key:'DEPARTAMENTO',label:'Departamento'},
+    {key:'PROVINCIA',label:'Provincia'},
+    {key:'LOCALIDAD',label:'Localidad'},
+    {key:'LOCALIDAD ARCA',label:'Cód. localidad ARCA'},
+    {key:'RENSPA',label:'N° RENSPA'},
+    {key:'CREDENCIAL RENSPA',label:'Credencial RENSPA (URL)'},
+    {key:'POLIGONO',label:'Polígono KMZ (URL)'},
+    {key:'TIPO DE EVIDENCIA',label:'Tipo de evidencia'},
+    {key:'EVIDENCIA',label:'Evidencia (URL)'},
+    {key:'PCUS 1',label:'PCUS 1'},
+  ];
+  const rows=campos.map(c=>`<div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #F3F4F6">
+    <label style="font-size:12px;font-weight:600;color:#374151">${c.label}</label>
+    <input type="text" id="ecf-${idx}-${c.key.replace(/\s/g,'_')}" value="${(g(r,c.key)||'').replace(/"/g,'&quot;')}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;width:100%;box-sizing:border-box">
+  </div>`).join('');
+
+  let modal=document.getElementById('modal-edit-campo');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='modal-edit-campo';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML=`<div style="background:#fff;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,0.25);width:100%;max-width:600px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid #E5E7EB;display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0;font-size:15px;font-weight:700;color:#1B2A4A">Editar datos del campo</h3>
+        <button onclick="cerrarEditCampo()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9CA3AF;line-height:1">×</button>
+      </div>
+      <div id="modal-edit-campo-body" style="padding:16px 20px;overflow-y:auto;flex:1"></div>
+      <div style="padding:14px 20px;border-top:1px solid #E5E7EB;display:flex;justify-content:flex-end;gap:8px">
+        <button onclick="cerrarEditCampo()" style="padding:8px 16px;border:1px solid #D1D5DB;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;font-family:Inter,sans-serif">Cancelar</button>
+        <button id="modal-edit-campo-save" style="padding:8px 16px;border:none;border-radius:6px;background:#1B2A4A;color:#fff;font-size:13px;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)cerrarEditCampo();});
+  }
+
+  document.getElementById('modal-edit-campo-body').innerHTML=rows;
+  document.getElementById('modal-edit-campo-save').onclick=()=>guardarEditCampo(idx,campos);
+  modal.style.display='flex';
+}
+
+function cerrarEditCampo(){
+  const modal=document.getElementById('modal-edit-campo');
+  if(modal)modal.style.display='none';
+}
+
+async function guardarEditCampo(idx,campos){
+  const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const fields={};let changed=false;
+  campos.forEach(c=>{
+    const el=document.getElementById('ecf-'+idx+'-'+c.key.replace(/\s/g,'_'));
+    if(!el)return;
+    const nv=el.value.trim();const ov=(g(r,c.key)||'').trim();
+    if(nv!==ov){fields[c.key]=nv;changed=true;}
+  });
+  if(!changed){showToast('info','Sin cambios','No se modificó ningún campo.');cerrarEditCampo();return;}
+  const autor=document.getElementById('auth-user').textContent||'Compliance';
+  const saveBtn=document.getElementById('modal-edit-campo-save');
+  saveBtn.disabled=true;saveBtn.textContent='Guardando...';
+  try{
+    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'editCampoRow',cuit,campo_nombre:campo,fields,autor})});
+    const j=await resp.json();
+    if(j.ok){
+      showToast('ok','Datos actualizados','Los cambios se guardaron correctamente.');
+      cerrarEditCampo();
+      await loadData();
+    } else {
+      alert('Error al guardar: '+(j.error||'Respuesta inesperada del servidor'));
+    }
+  }catch(e){alert('Error de conexión: '+e.message);}
+  finally{saveBtn.disabled=false;saveBtn.textContent='Guardar';}
 }
 async function saveComment(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const input=document.getElementById('cmt-'+idx);const val=input.value.trim();if(!val){alert('Escribi un comentario.');return;}const autor=document.getElementById('auth-user').textContent||'Compliance';await saveNota(cuit,campo,'comentario',val,autor);input.value='';await loadNotas();renderC();}
 async function editComment(idx,ci){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const comentarios=getNotas(cuit,campo,'comentario');const cmt=comentarios[ci];if(!cmt)return;const newVal=prompt('Editar comentario:',cmt.VALOR);if(newVal===null||!newVal.trim())return;await saveNota(cuit,campo,'comentario',newVal.trim(),cmt.AUTOR);await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');await loadNotas();renderC();}
@@ -1091,6 +1523,10 @@ async function loadData(){
     allG = data.gestiones || [];
     allE = data.exportadores || [];
     allC = data.campos || [];
+    // Campaña vigente desde Config sheet (ej. "25/26" → "2526")
+    if(data.config&&data.config.campana_vigente){CAMPANA_VIGENTE=normCamp(data.config.campana_vigente);}
+    // También actualizar CAMP_DEFAULTS si viene config
+    if(data.config&&data.config.campana_vigente){const cv=data.config.campana_vigente;CAMP_DEFAULTS[0]=normCamp(cv);CAMP_DEFAULTS[1]=cv;}
     if(!allG.length&&!allE.length&&!allC.length)showToast('warn','Sin datos cargados','El servidor respondió pero no devolvió registros. Probá con el botón <strong>Actualizar</strong>. Si sigue vacío, la planilla puede tener un problema — contactá a Compliance.');
     const gDefault=findCampDefault(allG);const eDefault=findCampDefault(allE);
     if(gDefault)sel['g-camp'].add(gDefault);
@@ -1154,13 +1590,36 @@ function toggleExpRow(cb){
   row.classList.toggle('active',cb.checked);
   if(!cb.checked)chips.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
 }
-function openNuevaSolicitud(){document.getElementById('modal-solicitud').classList.add('open');document.getElementById('sol-msg').className='modal-msg';document.getElementById('sol-msg').textContent='';document.getElementById('btn-enviar-sol').disabled=false;document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';}
+function openNuevaSolicitud(){document.getElementById('modal-solicitud').classList.add('open');document.getElementById('sol-msg').className='modal-msg';document.getElementById('sol-msg').textContent='';document.getElementById('btn-enviar-sol').disabled=false;document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';const sw=document.getElementById('sol-warning');if(sw)sw.style.display='none';}
 function closeNuevaSolicitud(){
   document.getElementById('modal-solicitud').classList.remove('open');
   document.getElementById('sol-cliente').value='';
   document.querySelectorAll('.exp-cb').forEach(cb=>{cb.checked=false;toggleExpRow(cb);});
 }
 function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
+function checkClienteWarning(clienteVal){
+  const warnEl=document.getElementById('sol-warning');if(!warnEl)return;
+  if(!clienteVal||clienteVal.trim().length<3){warnEl.style.display='none';return;}
+  const clienteNorm=clienteVal.trim().toLowerCase();
+  const camposCliente=allC.filter(r=>(g(r,'RAZON SOCIAL')||'').trim().toLowerCase()===clienteNorm);
+  if(!camposCliente.length){warnEl.style.display='none';return;}
+  const issuesList=[];
+  camposCliente.forEach(r=>{
+    const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+    const vto=getVtoRenspa(cuit,campo);const rs=vto?renspaStatus(cuit,campo):null;
+    const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
+    const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
+    const hv=hasVigentes(cuit,campo);
+    const faltantes=[];
+    if(!vto||rs.status.includes('Vencida'))faltantes.push('RENSPA');
+    if(estadoKmz!=='OK')faltantes.push('KMZ');
+    if(estadoEvid!=='OK')faltantes.push('Evidencia');
+    if(!hv)faltantes.push('Has. vigentes ('+fmtCamp(CAMPANA_VIGENTE)+')');
+    if(faltantes.length)issuesList.push('<strong>'+campo+'</strong>: falta '+faltantes.join(', '));
+  });
+  if(issuesList.length){warnEl.innerHTML='⚠️ Documentación incompleta:<br>'+issuesList.join('<br>');warnEl.style.display='';}
+  else warnEl.style.display='none';
+}
 async function enviarSolicitud(){
   const nombre=document.getElementById('auth-user').textContent||'Comercial';
   const cliente=document.getElementById('sol-cliente').value.trim();
@@ -1176,6 +1635,31 @@ async function enviarSolicitud(){
     if(esqs.length)selecciones.push({exportador:exp,esquemas:esqs});
   });
   if(!selecciones.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un exportador con esquema.';return;}
+  // Verificar si el cliente tiene campos con documentación incompleta y mostrar advertencia
+  const clienteNorm=cliente.trim().toLowerCase();
+  const camposCliente=allC.filter(r=>(g(r,'RAZON SOCIAL')||'').trim().toLowerCase()===clienteNorm);
+  if(camposCliente.length){
+    const issuesList=[];
+    camposCliente.forEach(r=>{
+      const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+      const vto=getVtoRenspa(cuit,campo);const rs=vto?renspaStatus(cuit,campo):null;
+      const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
+      const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
+      const hv=hasVigentes(cuit,campo);
+      const faltantes=[];
+      if(!vto||rs.status.includes('Vencida'))faltantes.push('RENSPA');
+      if(estadoKmz!=='OK')faltantes.push('KMZ');
+      if(estadoEvid!=='OK')faltantes.push('Evidencia');
+      if(!hv)faltantes.push('Has. vigentes ('+fmtCamp(CAMPANA_VIGENTE)+')');
+      if(faltantes.length)issuesList.push('<strong>'+campo+'</strong>: falta '+faltantes.join(', '));
+    });
+    if(issuesList.length){
+      const warnEl=document.getElementById('sol-warning');
+      if(warnEl){warnEl.innerHTML='⚠️ Documentación incompleta:<br>'+issuesList.join('<br>');warnEl.style.display='';}
+    } else {
+      const warnEl=document.getElementById('sol-warning');if(warnEl)warnEl.style.display='none';
+    }
+  }
   const btn=document.getElementById('btn-enviar-sol');
   btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
   const camp=findCampDefault(allG)||'25/26';
