@@ -428,6 +428,7 @@ tr.clickable{cursor:pointer}
     <div class="filter-group"><label>Provincia</label><div class="multi-select-wrap" id="wrap-c-prov"><button type="button" class="multi-select-btn" onclick="toggleDropdown('c-prov')"><span id="label-c-prov">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-c-prov"></div></div></div>
     <div class="filter-group"><label>Estado</label><div class="multi-select-wrap" id="wrap-c-estado"><button type="button" class="multi-select-btn" onclick="toggleDropdown('c-estado')"><span id="label-c-estado">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-c-estado"></div></div></div>
     <button class="btn-clear" onclick="clearC()">Limpiar filtros</button>
+    <button class="btn" onclick="exportVISEC()" style="margin-left:auto;background:#065F46;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap" title="Exportar en formato VISEC (Unidades Productivas)">↓ Exportar VISEC</button>
   </div>
   <div id="c-table"><div class="loading">Cargando datos...</div></div>
   <div class="footer-row" id="c-footer"></div>
@@ -1205,7 +1206,7 @@ function renderC(){
   if(!document.getElementById('opts-c-prov'))buildDropdown('c-prov',allProvs);
   if(!document.getElementById('opts-c-estado'))buildDropdown('c-estado',allStatuses,s=>statusBadge(s));
   if(!f.length){document.getElementById('c-table').innerHTML='<div class="loading">Sin resultados.</div>';document.getElementById('c-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Razón social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. vigentes</th><th>RENSPA</th><th>Estado</th></tr></thead>`;
+  const thead=`<thead><tr><th>Razón social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. sustentables</th><th>RENSPA</th><th>Estado</th></tr></thead>`;
   const rows=f.map((r,i)=>{
     const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const status=getFieldStatus(r);const rs=renspaStatus(cuit,campo);
     const hv=getHasActivaCamp(cuit,campo);
@@ -1282,7 +1283,7 @@ function buildFicha(r,idx){
       </div>
       <div style="width:1px;height:36px;background:#E5E7EB"></div>
       <div>
-        <div style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Has. vigentes (${fmtCamp(CAMPANA_VIGENTE)||CAMPANA_VIGENTE})</div>
+        <div style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Has. sustentables (${fmtCamp(CAMPANA_VIGENTE)||CAMPANA_VIGENTE})</div>
         <div style="font-size:22px;font-weight:700;color:${hasVigente?'#065F46':'#9CA3AF'};line-height:1">${hasVigente?fmt(hasVigente):'—'}</div>
       </div>
     </div>`;
@@ -1558,6 +1559,65 @@ function clearC(){document.getElementById('c-search').value='';const cRazon=docu
 function switchTab(t){currentTab=t;['g','e','c','s'].forEach(x=>{const tab=document.getElementById('tab-'+x);const cl=x===t?'tab active':'tab';if(tab)tab.className=cl;const panel=document.getElementById('panel-'+x);if(panel)panel.style.display=x===t?'':'none';});}
 
 // ── EXPORT ──
+function exportVISEC(){
+  const data=filterC();
+  if(!data.length){alert('No hay campos para exportar.');return;}
+  // Campaña vigente en formato display (ej: "25/26")
+  const campDisplay=fmtCamp(CAMPANA_VIGENTE)||CAMPANA_VIGENTE;
+  // Headers exactos de VISEC — Unidades Productivas
+  const headers=[
+    'Número RENSPA',           // A
+    'Descripción Unidad Productiva', // B
+    'Polígono',                // C — en blanco
+    'Punto Referencia',        // D — en blanco
+    'Código Localidad',        // E — en blanco
+    'Superficie',              // F — has totales
+    'Código Producto',         // G — en blanco
+    'Código Campaña',          // H — "25/26"
+    'Has Productivas',         // I — has sustentables campaña vigente
+    'PCUS1',                   // J
+    'PCUS2',                   // K — en blanco
+    'PCUS3',                   // L — en blanco
+    'CUIT Productor',          // M
+    'Razón Social Productor',  // N
+    'Código Tipo Sociedad Productor', // O — en blanco
+    'Mail Contacto Productor', // P
+  ];
+  const rows=data.map(r=>{
+    const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+    const hasSust=getHasActivaCamp(cuit,campo);
+    return[
+      g(r,'RENSPA')||'',               // A
+      campo||'',                        // B
+      '',                               // C
+      '',                               // D
+      '',                               // E
+      g(r,'TOTALES DEL CAMPO')||'',    // F
+      '',                               // G
+      campDisplay,                      // H
+      hasSust||'',                      // I
+      g(r,'PCUS 1')||'',               // J
+      '',                               // K
+      '',                               // L
+      cuit||'',                         // M
+      g(r,'RAZON SOCIAL')||'',         // N
+      '',                               // O
+      g(r,'MAIL DE CONTACTO')||'',     // P
+    ];
+  });
+  const wsData=[headers,...rows];
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+  // Ancho de columnas aproximado
+  ws['!cols']=[
+    {wch:18},{wch:30},{wch:10},{wch:14},{wch:14},{wch:12},{wch:14},
+    {wch:14},{wch:14},{wch:10},{wch:10},{wch:10},{wch:16},{wch:30},{wch:22},{wch:28}
+  ];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Unidades Productivas');
+  const date=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');
+  XLSX.writeFile(wb,`VISEC-UnidadesProductivas-${campDisplay.replace('/','')}-${date}.xlsx`);
+}
+
 function exportExcel(){let data,name;if(currentTab==='g'){data=filterG();name='Gestiones';}else if(currentTab==='e'){data=filterE();name='Habilitaciones';}else{data=filterC();name='Informacion_Campos';}if(!data.length){alert('No hay datos para exportar.');return;}const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,name);const date=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');XLSX.writeFile(wb,`${name}-${date}.xlsx`);}
 
 // ── FETCH DATOS VIA APPS SCRIPT (sin API key expuesta) ──
