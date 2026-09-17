@@ -1198,7 +1198,33 @@ function getFieldIssuesBadges(r){
   return issues.join(' ');
 }
 function filterC(){const q=document.getElementById('c-search').value.toLowerCase();const qRS=(document.getElementById('c-razon')||{}).value?.toLowerCase()||'';const provs=sel['c-prov'];const estados=sel['c-estado'];return allC.filter(r=>{const status=getFieldStatus(r);return(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!qRS||(g(r,'RAZON SOCIAL')||'').toLowerCase().includes(qRS))&&(!provs.size||provs.has(r['PROVINCIA']))&&(!estados.size||estados.has(status));});}
-function renderC(){const f=filterC();const completos=f.filter(r=>getFieldStatus(r)==='Completo').length;const provs=uniq(f.map(r=>g(r,'PROVINCIA'))).length;document.getElementById('stats-c').innerHTML=statCard(f.length,'Campos','#1a4a2e')+statCard(completos,'Completos','#065f46')+statCard(f.length-completos,'Pendientes','#991b1b')+statCard(provs,'Provincias','#64748b');const allStatuses=uniq(allC.map(r=>getFieldStatus(r)));const allProvs=uniq(allC.map(r=>g(r,'PROVINCIA')));if(!document.getElementById('opts-c-prov'))buildDropdown('c-prov',allProvs);if(!document.getElementById('opts-c-estado'))buildDropdown('c-estado',allStatuses,s=>statusBadge(s));if(!f.length){document.getElementById('c-table').innerHTML='<div class="loading">Sin resultados.</div>';document.getElementById('c-footer').innerHTML='';return;}const thead=`<thead><tr><th>Razón social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. productivas</th><th>Has. verificadas</th><th>RENSPA</th><th>Estado</th></tr></thead>`;const rows=f.map((r,i)=>{const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const status=getFieldStatus(r);const rs=renspaStatus(cuit,campo);const hv=getHasActivaCamp(cuit,campo);const hp=g(r,'PRODUCTIVAS');let hasCell;if(!hv)hasCell='<span class="badge badge-na">-</span>';else{const diff=parseNum(hv)!==parseNum(hp);hasCell=diff?'<span style="color:#dc2626;font-weight:600">'+fmt(hv)+'</span>':'<span style="color:#065f46">'+fmt(hv)+'</span>';}const htot=parseNum(g(r,'TOTALES DEL CAMPO'));const hprod=parseNum(g(r,'PRODUCTIVAS'));const hasProdCell=(hprod>htot&&htot>0)?'<span style="color:#dc2626;font-weight:600" title="Productivas mayor a totales">'+fmt(g(r,'PRODUCTIVAS'))+'</span>':fmt(g(r,'PRODUCTIVAS'));return `<tr class="clickable" onclick="toggleFicha(${i})"><td class="bold" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${g(r,'RAZON SOCIAL')||'—'}</td><td class="mono" style="font-size:11px">${cuit}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${campo}</td><td class="muted" style="max-width:100px">${g(r,'LOCALIDAD')||'—'}</td><td class="muted" style="max-width:90px">${g(r,'PROVINCIA')||'—'}</td><td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td><td class="num">${hasProdCell}</td><td class="num">${hasCell}</td><td><span class="badge ${rs.cls}">${rs.status}</span></td><td style="white-space:normal;min-width:160px">${getFieldIssuesBadges(r)}</td></tr><tr><td colspan="10" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;}).join('');document.getElementById('c-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;document.getElementById('c-footer').innerHTML=`<span>Mostrando ${f.length} de ${allC.length} campos</span>`;}
+function renderC(){
+  const f=filterC();const completos=f.filter(r=>getFieldStatus(r)==='Completo').length;const provs=uniq(f.map(r=>g(r,'PROVINCIA'))).length;
+  document.getElementById('stats-c').innerHTML=statCard(f.length,'Campos','#1a4a2e')+statCard(completos,'Completos','#065f46')+statCard(f.length-completos,'Pendientes','#991b1b')+statCard(provs,'Provincias','#64748b');
+  const allStatuses=uniq(allC.map(r=>getFieldStatus(r)));const allProvs=uniq(allC.map(r=>g(r,'PROVINCIA')));
+  if(!document.getElementById('opts-c-prov'))buildDropdown('c-prov',allProvs);
+  if(!document.getElementById('opts-c-estado'))buildDropdown('c-estado',allStatuses,s=>statusBadge(s));
+  if(!f.length){document.getElementById('c-table').innerHTML='<div class="loading">Sin resultados.</div>';document.getElementById('c-footer').innerHTML='';return;}
+  const thead=`<thead><tr><th>Razón social</th><th>CUIT</th><th>Campo</th><th>Localidad</th><th>Provincia</th><th>Has. totales</th><th>Has. vigentes</th><th>RENSPA</th><th>Estado</th></tr></thead>`;
+  const rows=f.map((r,i)=>{
+    const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const status=getFieldStatus(r);const rs=renspaStatus(cuit,campo);
+    const hv=getHasActivaCamp(cuit,campo);
+    const hasCell=hv?`<span style="color:#065f46;font-weight:600">${fmt(hv)}</span>`:'<span style="color:#9CA3AF">—</span>';
+    return`<tr class="clickable" onclick="toggleFicha(${i})">
+      <td class="bold" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${g(r,'RAZON SOCIAL')||'—'}</td>
+      <td class="mono" style="font-size:11px">${cuit}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${campo}</td>
+      <td class="muted" style="max-width:100px">${g(r,'LOCALIDAD')||'—'}</td>
+      <td class="muted" style="max-width:90px">${g(r,'PROVINCIA')||'—'}</td>
+      <td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td>
+      <td class="num">${hasCell}</td>
+      <td><span class="badge ${rs.cls}">${rs.status}</span></td>
+      <td style="white-space:normal;min-width:160px">${getFieldIssuesBadges(r)}</td>
+    </tr><tr><td colspan="9" style="padding:0;border:none;"><div class="ficha" id="ficha-${i}">${buildFicha(r,i)}</div></td></tr>`;
+  }).join('');
+  document.getElementById('c-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
+  document.getElementById('c-footer').innerHTML=`<span>Mostrando ${f.length} de ${allC.length} campos</span>`;
+}
 
 // Helper: icono copiar al portapapeles
 function copyIcon(val){if(!val||val==='—')return'';return`<button onclick="copyVal(${JSON.stringify(val)})" title="Copiar" style="background:none;border:none;cursor:pointer;padding:0 2px 0 5px;color:#9CA3AF;font-size:12px;line-height:1;vertical-align:middle" onmouseenter="this.style.color='#1B2A4A'" onmouseleave="this.style.color='#9CA3AF'">⎘</button>`;}
@@ -1217,17 +1243,18 @@ function buildFicha(r,idx){
   const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
   const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
   const hasPorCamp=getHasPorCampaña(cuit,campo);
-  const hasProdPorCamp=getHasProdPorCampaña(cuit,campo);
-  const campNorm=v=>normCamp(v||'');
+  // Comentarios por doc
+  const cmtRenspa=getNotaValor(cuit,campo,'cmt_renspa');
+  const cmtKmz=getNotaValor(cuit,campo,'cmt_kmz');
+  const cmtEvid=getNotaValor(cuit,campo,'cmt_evid');
 
   function estadoBadge(val){if(!val)return'<span class="badge badge-na">A verificar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
-
-  // ── Sección datos generales ──
   function df(label,val,opts){opts=opts||{};let display;if(opts.email&&val)display=`<a href="mailto:${val}" style="word-break:break-all">${val}</a>`;else display=val||'—';return`<div class="ficha-field"><label>${label}</label><div class="val" style="word-break:${opts.email?'break-all':'normal'}">${display}${copyIcon(val||'')}</div></div>`;}
 
+  // ── Header ──
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <span style="font-size:12px;color:#6B7280">CUIT: <strong>${cuit}</strong> ${copyIcon(cuit)}</span>
-    <button class="edit-only" onclick="abrirEditCampo(${idx})" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid #D1D5DB;border-radius:6px;background:#fff;font-size:12px;color:#374151;cursor:pointer;font-family:Inter,sans-serif" title="Editar datos del campo">✏️ Editar datos</button>
+    <button class="edit-only" onclick="abrirEditCampo(${idx})" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid #D1D5DB;border-radius:6px;background:#fff;font-size:12px;color:#374151;cursor:pointer;font-family:Inter,sans-serif">✏️ Editar datos</button>
   </div>
   <div class="ficha-grid">
     ${df('Razón social',g(r,'RAZON SOCIAL'))}
@@ -1239,62 +1266,88 @@ function buildFicha(r,idx){
     ${df('Cod. ARCA',g(r,'LOCALIDAD ARCA'))}
   </div>`;
 
-  // ── Has sustentables + Has productivas por campaña ──
-  // Unir las campañas de ambas
-  const allCamps=[...new Set([...Object.keys(hasPorCamp),...Object.keys(hasProdPorCamp)])].sort((a,b)=>b.localeCompare(a));
+  // ── Hectáreas (unificadas) ──
+  const hasTotales=g(r,'TOTALES DEL CAMPO');
+  // El valor del sheet (PRODUCTIVAS) es el registro inicial / legacy
+  const hasSheet=g(r,'PRODUCTIVAS');
+  const hasVigente=getHasActivaCamp(cuit,campo);
   const hasSustLegacy=getNotaValor(cuit,campo,'has_sustentables');
-  const campRowsHas=allCamps.map(cn=>{
-    const ns=hasPorCamp[cn];const np=hasProdPorCamp[cn];
-    const vs=ns?fmt(ns.VALOR)+' has':'—';const vp=np?fmt(np.VALOR)+' has':'—';
-    const autor=(ns||np)?(ns||np).AUTOR:'';const fecha=(ns||np)?fmtDate((ns||np).FECHA)||((ns||np).FECHA):'';
+
+  // Cabecera de datos grande
+  html+=`<div class="ficha-section"><h3>Hectáreas</h3>
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Has. totales declaradas</div>
+        <div style="font-size:22px;font-weight:700;color:#1B2A4A;line-height:1">${fmt(hasTotales)||'—'}</div>
+      </div>
+      <div style="width:1px;height:36px;background:#E5E7EB"></div>
+      <div>
+        <div style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Has. vigentes (${fmtCamp(CAMPANA_VIGENTE)||CAMPANA_VIGENTE})</div>
+        <div style="font-size:22px;font-weight:700;color:${hasVigente?'#065F46':'#9CA3AF'};line-height:1">${hasVigente?fmt(hasVigente):'—'}</div>
+      </div>
+    </div>`;
+
+  // Tabla de historial por campaña (sola columna: has.)
+  const allCamps=Object.keys(hasPorCamp).sort((a,b)=>b.localeCompare(a));
+  // Legacy: usar sheet PRODUCTIVAS si no hay ninguna entrada por campaña ni nota legacy
+  const hasLegacyVal=hasSustLegacy||hasSheet;
+  const campRows=allCamps.map(cn=>{
+    const ns=hasPorCamp[cn];
     const esVigente=cn===CAMPANA_VIGENTE;
+    const campoEsc=campo.replace(/'/g,"\\'");
     return`<tr${esVigente?' style="background:#F0FDF4"':''}>
       <td style="padding:6px 10px;font-size:12px">${fmtCamp(cn)}${esVigente?' <span style="font-size:10px;color:#065F46;font-weight:600">(vigente)</span>':''}</td>
-      <td style="padding:6px 10px;font-weight:600;font-size:13px">${vs}</td>
-      <td style="padding:6px 10px;font-size:13px">${vp}</td>
-      <td style="padding:6px 10px;font-size:11px;color:#6B7280">${autor}${fecha?' · '+fecha:''}</td>
+      <td style="padding:6px 10px;font-weight:600;font-size:13px">${fmt(ns.VALOR)} has</td>
+      <td style="padding:6px 10px;font-size:11px;color:#6B7280">${ns.AUTOR} · ${fmtDate(ns.FECHA)||ns.FECHA}</td>
       <td class="edit-only" style="padding:6px 4px;display:none;white-space:nowrap">
-        <button onclick="editHas(${idx},'${cn}','${fmtCamp(cn)}','${ns?ns.VALOR:''}')" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar sus.</button>
-        ${ns?`<button onclick="deleteHas(${idx},'${cuit}','${campo.replace(/'/g,"\\'")}','${cn}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar sus.</button>`:''}
-        <button onclick="editHasProd(${idx},'${cn}','${fmtCamp(cn)}','${np?np.VALOR:''}')" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar prod.</button>
-        ${np?`<button onclick="deleteHasProd(${idx},'${cuit}','${campo.replace(/'/g,"\\'")}','${cn}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar prod.</button>`:''}
-      </td></tr>`;
+        <button onclick="editHas(${idx},'${cn}','${fmtCamp(cn)}','${ns.VALOR}')" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button>
+        <button onclick="deleteHas(${idx},'${cuit}','${campoEsc}','${cn}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button>
+      </td>
+    </tr>`;
   }).join('');
-  const legacyRow=(!allCamps.length&&hasSustLegacy)?`<tr><td style="padding:6px 10px;font-size:12px;color:#9CA3AF">Anterior</td><td style="padding:6px 10px;font-weight:600;font-size:13px">${fmt(hasSustLegacy)} has</td><td>—</td><td style="padding:6px 10px;font-size:11px;color:#6B7280">—</td><td></td></tr>`:'';
-  const hasTableContent=campRowsHas||legacyRow;
+  const legacyRow=(!allCamps.length&&hasLegacyVal)?`<tr><td style="padding:6px 10px;font-size:12px;color:#9CA3AF">Inicial (sheet)</td><td style="padding:6px 10px;font-weight:600;font-size:13px;color:#6B7280">${fmt(hasLegacyVal)} has</td><td style="padding:6px 10px;font-size:11px;color:#9CA3AF">Dato original del archivo</td><td class="edit-only" style="display:none"></td></tr>`:'';
 
-  html+=`<div class="ficha-section"><h3>Hectáreas</h3>
-    <div style="font-size:11px;color:#6B7280;margin-bottom:8px">Has. totales declaradas: <strong>${fmt(g(r,'TOTALES DEL CAMPO'))}</strong></div>
-    ${hasTableContent?`<table style="width:100%;border-collapse:collapse;margin:4px 0 10px;border:1px solid #E5E7EB;border-radius:6px;overflow:hidden">
-      <thead><tr>
-        <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Campaña</th>
-        <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Has. sustentables</th>
-        <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Has. productivas</th>
-        <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Registrado por</th>
-        <th class="edit-only" style="padding:6px 10px;background:#F9FAFB;display:none"></th>
-      </tr></thead>
-      <tbody>${campRowsHas}${legacyRow}</tbody>
-    </table>`:`<div class="muted" style="font-size:12px;margin:8px 0 10px">Sin has registradas aún.</div>`}
-    <div class="edit-only" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;background:#F9FAFB;border-radius:6px;border:1px solid #E5E7EB">
-      <select id="has-camp-${idx}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif;background:#fff"><option value="">Campaña...</option><option value="23/24">23/24</option><option value="24/25">24/25</option><option value="25/26" selected>25/26</option><option value="26/27">26/27</option><option value="27/28">27/28</option></select>
-      <input type="number" id="has-${idx}" placeholder="Has. sustentables" style="width:150px;padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif">
-      <input type="number" id="hasprod-${idx}" placeholder="Has. productivas" style="width:150px;padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif">
-      <button onclick="saveHas(${idx})" style="padding:6px 12px;background:#1B2A4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
-    </div>
-  </div>`;
+  html+=(campRows||legacyRow)?`<table style="width:100%;border-collapse:collapse;margin:0 0 10px;border:1px solid #E5E7EB;border-radius:6px;overflow:hidden">
+    <thead><tr>
+      <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Campaña</th>
+      <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Has.</th>
+      <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Registrado por</th>
+      <th class="edit-only" style="padding:6px 10px;background:#F9FAFB;display:none"></th>
+    </tr></thead>
+    <tbody>${campRows}${legacyRow}</tbody>
+  </table>`:`<div class="muted" style="font-size:12px;margin:0 0 10px">Sin hectáreas registradas. Usá el formulario para agregar la campaña vigente.</div>`;
 
-  // ── Documentación — rediseñada ──
+  html+=`<div class="edit-only" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;background:#F9FAFB;border-radius:6px;border:1px solid #E5E7EB">
+    <select id="has-camp-${idx}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif;background:#fff">
+      <option value="">Campaña...</option><option value="23/24">23/24</option><option value="24/25">24/25</option>
+      <option value="25/26" ${CAMPANA_VIGENTE==='2526'?'selected':''}>25/26</option>
+      <option value="26/27">26/27</option><option value="27/28">27/28</option>
+    </select>
+    <input type="number" id="has-${idx}" placeholder="Hectáreas" style="width:140px;padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif">
+    <button onclick="saveHas(${idx})" style="padding:6px 12px;background:#1B2A4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
+  </div></div>`;
+
+  // ── Documentación ──
   function docRow(label,content,editContent){
     return`<div style="display:grid;grid-template-columns:140px 1fr;gap:0;border-bottom:1px solid #F3F4F6;padding:10px 0;align-items:start">
       <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em;padding-top:2px">${label}</span>
       <div>${content}${editContent?`<div class="edit-only" style="margin-top:8px">${editContent}</div>`:''}</div>
+    </div>`;}
+  // Helper: bloque de comentario por doc (visible + input edición)
+  function docCmt(tipo,valorActual,inputId){
+    const tiene=!!valorActual;
+    return`${tiene?`<div style="margin-top:6px;font-size:12px;color:#374151;background:#F9FAFB;border-left:3px solid #D1D5DB;padding:5px 10px;border-radius:0 4px 4px 0;font-style:italic">${valorActual}</div>`:''}
+    <div class="edit-only" style="display:flex;gap:6px;align-items:center;margin-top:6px">
+      <input type="text" id="${inputId}" value="${(valorActual||'').replace(/"/g,'&quot;')}" placeholder="Nota sobre este documento..." style="flex:1;padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif">
+      <button onclick="saveDocComment(${idx},'${tipo}')" style="padding:5px 10px;background:#6B7280;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">Guardar nota</button>
     </div>`;}
 
   const renspaContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span class="badge ${rs.cls}">${rs.status}</span>
     ${cred?`<a href="${cred}" target="_blank" style="font-size:12px;color:#2563EB">Ver credencial</a>${copyIcon(cred)}`:'<span style="font-size:12px;color:#9CA3AF">Sin credencial adjunta</span>'}
     <span style="font-size:12px;color:#6B7280">RENSPA: <strong>${g(r,'RENSPA')||'—'}</strong>${copyIcon(g(r,'RENSPA'))}</span>
-  </div>`;
+  </div>
+  ${docCmt('cmt_renspa',cmtRenspa,'doc-cmt-renspa-'+idx)}`;
   const renspaEdit=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
     <label style="font-size:11px;color:#6B7280">Vencimiento:</label>
     <input type="date" id="vto-${idx}" value="${vtoFmt||''}" style="padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif">
@@ -1304,7 +1357,8 @@ function buildFicha(r,idx){
   const kmzContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     ${poly?`<a href="${poly}" target="_blank" style="font-size:12px;color:#2563EB">Descargar KMZ</a>${copyIcon(poly)}`:'<span style="font-size:12px;color:#9CA3AF">Sin archivo</span>'}
     ${estadoBadge(estadoKmz)}
-  </div>`;
+  </div>
+  ${docCmt('cmt_kmz',cmtKmz,'doc-cmt-kmz-'+idx)}`;
   const kmzEdit=`<div style="display:flex;align-items:center;gap:6px">
     <select id="kmz-${idx}" style="padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif;background:#fff">
       <option value="">Sin cambio</option>
@@ -1318,7 +1372,8 @@ function buildFicha(r,idx){
     ${evid?`<a href="${evid}" target="_blank" style="font-size:12px;color:#2563EB">Ver evidencia</a>${copyIcon(evid)}`:'<span style="font-size:12px;color:#9CA3AF">Sin archivo</span>'}
     <span style="font-size:12px;color:#6B7280">${tipoEvid||''}</span>
     ${estadoBadge(estadoEvid)}
-  </div>`;
+  </div>
+  ${docCmt('cmt_evid',cmtEvid,'doc-cmt-evid-'+idx)}`;
   const evidEdit=`<div style="display:flex;align-items:center;gap:6px">
     <select id="evid-${idx}" style="padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif;background:#fff">
       <option value="">Sin cambio</option>
@@ -1340,8 +1395,8 @@ function buildFicha(r,idx){
     </div>
   </div>`;
 
-  // ── Comentarios ──
-  html+=`<div class="ficha-section"><h3>Comentarios del equipo</h3>`;
+  // ── Comentario general ──
+  html+=`<div class="ficha-section"><h3>Comentario general del campo</h3>`;
   if(!comentarios.length)html+=`<div class="muted" style="font-size:13px;margin-bottom:10px">Sin comentarios aún.</div>`;
   comentarios.forEach((c,ci)=>{html+=`<div class="comment-box" style="border-left:3px solid #E5E7EB">
     <div class="comment-meta"><span class="comment-author">${c.AUTOR}</span><span class="comment-date">${fmtDate(c.FECHA)||c.FECHA}</span>
@@ -1351,7 +1406,7 @@ function buildFicha(r,idx){
     </span></div>
     <div class="comment-text" id="cmtxt-${idx}-${ci}">${c.VALOR}</div>
   </div>`;});
-  html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
+  html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario general..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
   return html;
 }
 
@@ -1363,17 +1418,26 @@ async function saveHas(idx){
   const f=filterC();const r=f[idx];if(!r)return;
   const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
   const val=document.getElementById('has-'+idx).value.trim();
-  const valProd=document.getElementById('hasprod-'+idx).value.trim();
   const campInput=document.getElementById('has-camp-'+idx).value.trim();
   if(!campInput){alert('Seleccioná la campaña.');return;}
-  if(!val&&!valProd){alert('Ingresá al menos has. sustentables o productivas.');return;}
+  if(!val){alert('Ingresá las hectáreas.');return;}
   const autor=document.getElementById('auth-user').textContent||'Compliance';
   const cn=normCamp(campInput);
-  if(val)await saveNota(cuit,campo,'hascmp_'+cn,val,autor);
-  if(valProd)await saveNota(cuit,campo,'hasprod_'+cn,valProd,autor);
+  await saveNota(cuit,campo,'hascmp_'+cn,val,autor);
   document.getElementById('has-'+idx).value='';
-  document.getElementById('hasprod-'+idx).value='';
   document.getElementById('has-camp-'+idx).value='';
+  await loadNotas();renderC();
+}
+async function saveDocComment(idx,tipo){
+  const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+  const inputId='doc-cmt-'+tipo.replace('cmt_','')+'-'+idx;
+  const el=document.getElementById(inputId);
+  if(!el)return;
+  const val=el.value.trim();
+  if(!val){alert('Escribí una nota antes de guardar.');return;}
+  const autor=document.getElementById('auth-user').textContent||'Compliance';
+  await saveNota(cuit,campo,tipo,val,autor);
   await loadNotas();renderC();
 }
 function editHas(idx,campNorm,campDisplay,val){
