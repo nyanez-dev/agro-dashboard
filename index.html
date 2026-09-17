@@ -1559,55 +1559,90 @@ function clearC(){document.getElementById('c-search').value='';const cRazon=docu
 function switchTab(t){currentTab=t;['g','e','c','s'].forEach(x=>{const tab=document.getElementById('tab-'+x);const cl=x===t?'tab active':'tab';if(tab)tab.className=cl;const panel=document.getElementById('panel-'+x);if(panel)panel.style.display=x===t?'':'none';});}
 
 // ── EXPORT ──
+// Lookup directo: descripción VISEC → ID (el sheet ya usa las mismas descripciones)
+const VISEC_TIPO_SOCIEDAD_DESC=[
+  [1,'Sociedad Anónima'],
+  [2,'Sociedad de Responsabilidad Limitada'],
+  [3,'Sociedad Civil'],
+  [4,'Cooperativa'],
+  [5,'Persona Física/Unipersonal'],
+  [6,'Sociedad de Hecho'],
+  [7,'Capital e Industria'],
+  [8,'Colectiva'],
+  [9,'Comandita Acciones'],
+  [10,'Sociedad en Comandita Simple'],
+  [11,'Agrupacion de Colab.'],
+  [12,'U.T.E'],
+  [13,'Fideicomiso'],
+  [14,'Fundacion'],
+  [15,'Sucesion Indivisa'],
+  [16,'Mutual'],
+  [17,'Sociedad Extranjera Sucursal'],
+  [18,'Sociedad Informal'],
+  [19,'Sociedad Anónima Unipersonal'],
+  [20,'Empresa Mixta'],
+  [21,'SAS'],
+  [22,'Simple Asociación'],
+  [23,'Sociedad Simple'],
+];
+function visecTipoSociedad(rawVal){
+  if(!rawVal)return'';
+  // Normalizar solo para comparar: sin tildes, lowercase, espacios colapsados
+  const norm=v=>v.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+  const n=norm(rawVal);
+  const match=VISEC_TIPO_SOCIEDAD_DESC.find(([,desc])=>norm(desc)===n);
+  return match?match[0]:''; // vacío si no hay match (aviso al usuario al exportar)
+}
+
 function exportVISEC(){
   const data=filterC();
   if(!data.length){alert('No hay campos para exportar.');return;}
-  // Campaña vigente en formato display (ej: "25/26")
   const campDisplay=fmtCamp(CAMPANA_VIGENTE)||CAMPANA_VIGENTE;
-  // Headers exactos de VISEC — Unidades Productivas
   const headers=[
-    'Número RENSPA',           // A
-    'Descripción Unidad Productiva', // B
-    'Polígono',                // C — en blanco
-    'Punto Referencia',        // D — en blanco
-    'Código Localidad',        // E — en blanco
-    'Superficie',              // F — has totales
-    'Código Producto',         // G — en blanco
-    'Código Campaña',          // H — "25/26"
-    'Has Productivas',         // I — has sustentables campaña vigente
-    'PCUS1',                   // J
-    'PCUS2',                   // K — en blanco
-    'PCUS3',                   // L — en blanco
-    'CUIT Productor',          // M
-    'Razón Social Productor',  // N
-    'Código Tipo Sociedad Productor', // O — en blanco
-    'Mail Contacto Productor', // P
+    'Número RENSPA',
+    'Descripción Unidad Productiva',
+    'Polígono',
+    'Punto Referencia',
+    'Código Localidad',
+    'Superficie',
+    'Código Producto',
+    'Código Campaña',
+    'Has Productivas',
+    'PCUS1',
+    'PCUS2',
+    'PCUS3',
+    'CUIT Productor',
+    'Razón Social Productor',
+    'Código Tipo Sociedad Productor',
+    'Mail Contacto Productor',
   ];
+  let sinMatch=0;
   const rows=data.map(r=>{
     const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
     const hasSust=getHasActivaCamp(cuit,campo);
+    const tipoSoc=visecTipoSociedad(g(r,'TIPO SOCIEDAD'));
+    if(g(r,'TIPO SOCIEDAD')&&tipoSoc==='')sinMatch++;
     return[
-      g(r,'RENSPA')||'',               // A
-      campo||'',                        // B
-      '',                               // C
-      '',                               // D
-      '',                               // E
-      g(r,'TOTALES DEL CAMPO')||'',    // F
-      '',                               // G
-      campDisplay,                      // H
-      hasSust||'',                      // I
-      g(r,'PCUS 1')||'',               // J
-      '',                               // K
-      '',                               // L
-      cuit||'',                         // M
-      g(r,'RAZON SOCIAL')||'',         // N
-      '',                               // O
-      g(r,'MAIL DE CONTACTO')||'',     // P
+      g(r,'RENSPA')||'',               // A — Número RENSPA
+      campo||'',                        // B — Descripción UP
+      '',                               // C — Polígono (en blanco)
+      '',                               // D — Punto Referencia (en blanco)
+      g(r,'LOCALIDAD ARCA')||'',       // E — Código Localidad ARCA
+      g(r,'TOTALES DEL CAMPO')||'',    // F — Superficie
+      23,                               // G — Código Producto (23 = Soja)
+      campDisplay,                      // H — Código Campaña
+      hasSust||'',                      // I — Has Productivas (sus. campaña vigente)
+      g(r,'PCUS 1')||'',               // J — PCUS1
+      '',                               // K — PCUS2 (en blanco)
+      '',                               // L — PCUS3 (en blanco)
+      cuit||'',                         // M — CUIT Productor
+      g(r,'RAZON SOCIAL')||'',         // N — Razón Social
+      tipoSoc,                          // O — Código Tipo Sociedad
+      g(r,'MAIL DE CONTACTO')||'',     // P — Mail
     ];
   });
   const wsData=[headers,...rows];
   const ws=XLSX.utils.aoa_to_sheet(wsData);
-  // Ancho de columnas aproximado
   ws['!cols']=[
     {wch:18},{wch:30},{wch:10},{wch:14},{wch:14},{wch:12},{wch:14},
     {wch:14},{wch:14},{wch:10},{wch:10},{wch:10},{wch:16},{wch:30},{wch:22},{wch:28}
@@ -1616,6 +1651,7 @@ function exportVISEC(){
   XLSX.utils.book_append_sheet(wb,ws,'Unidades Productivas');
   const date=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');
   XLSX.writeFile(wb,`VISEC-UnidadesProductivas-${campDisplay.replace('/','')}-${date}.xlsx`);
+  if(sinMatch>0)showToast('warn','Tipos de sociedad sin match',`${sinMatch} registro${sinMatch>1?'s':''} con tipo de sociedad no reconocido — columna O quedó vacía en esos casos. Revisalos manualmente.`);
 }
 
 function exportExcel(){let data,name;if(currentTab==='g'){data=filterG();name='Gestiones';}else if(currentTab==='e'){data=filterE();name='Habilitaciones';}else{data=filterC();name='Informacion_Campos';}if(!data.length){alert('No hay datos para exportar.');return;}const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,name);const date=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');XLSX.writeFile(wb,`${name}-${date}.xlsx`);}
