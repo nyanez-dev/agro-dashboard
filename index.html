@@ -603,7 +603,16 @@ window.addEventListener('load', function(){
 
 // ── HELPERS ──
 function findCampDefault(data){const camps=data.map(r=>g(r,'Campa')).filter(Boolean);for(const cd of CAMP_DEFAULTS){if(camps.includes(cd))return cd;}return camps[camps.length-1]||'';}
-function g(r,partial){const keys=Object.keys(r);const k=keys.find(x=>x.toUpperCase().includes(partial.toUpperCase()));return k?r[k]:'';}
+function g(r,partial){
+  const keys=Object.keys(r);
+  const UP=partial.toUpperCase();
+  // 1. Match exacto (case-insensitive)
+  const exact=keys.find(x=>x.toUpperCase()===UP);
+  if(exact!==undefined)return r[exact]||'';
+  // 2. Fallback: substring (para columnas con nombres largos como POLIGONO del Perímetro...)
+  const partial_=keys.find(x=>x.toUpperCase().includes(UP));
+  return partial_?r[partial_]||'':'';
+}
 const sel = {'g-camp':new Set(),'g-exp':new Set(),'g-via':new Set(),'e-camp':new Set(),'e-vend':new Set(),'e-exp':new Set(),'e-tipo':new Set(),'c-prov':new Set(),'c-estado':new Set()};
 
 // ── COLORES ──
@@ -1481,6 +1490,7 @@ function abrirEditCampo(idx){
     {key:'PROVINCIA',label:'Provincia'},
     {key:'LOCALIDAD',label:'Localidad'},
     {key:'LOCALIDAD ARCA',label:'Cód. localidad ARCA'},
+    {key:'TOTALES DEL CAMPO',label:'Has. totales del campo',type:'number'},
     {key:'RENSPA',label:'N° RENSPA'},
     {key:'CREDENCIAL RENSPA',label:'Credencial RENSPA (URL)'},
     {key:'POLIGONO',label:'Polígono KMZ (URL)'},
@@ -1490,7 +1500,7 @@ function abrirEditCampo(idx){
   ];
   const rows=campos.map(c=>`<div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #F3F4F6">
     <label style="font-size:12px;font-weight:600;color:#374151">${c.label}</label>
-    <input type="text" id="ecf-${idx}-${c.key.replace(/\s/g,'_')}" value="${(g(r,c.key)||'').replace(/"/g,'&quot;')}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;width:100%;box-sizing:border-box">
+    <input type="${c.type||'text'}" id="ecf-${idx}-${c.key.replace(/\s/g,'_')}" value="${(g(r,c.key)||'').replace(/"/g,'&quot;')}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;width:100%;box-sizing:border-box">
   </div>`).join('');
 
   let modal=document.getElementById('modal-edit-campo');
