@@ -293,7 +293,7 @@ tr.clickable{cursor:pointer}
     <button class="modal-close" onclick="closeNuevaSolicitud()">×</button>
     <h2>Nueva solicitud de gestión</h2>
     <p class="modal-sub">El equipo de Compliance recibirá tu solicitud por mail.</p>
-    <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A." oninput="checkClienteWarning(this.value)"></div>
+    <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A."></div>
     <div class="form-row">
       <label>Exportadores y esquemas <span style="color:#DC2626">*</span></label>
       <p style="font-size:12px;color:#6B7280;margin:4px 0 8px 0">Marcá el exportador y seleccioná sus esquemas.</p>
@@ -1767,29 +1767,6 @@ function closeNuevaSolicitud(){
   document.querySelectorAll('.exp-cb').forEach(cb=>{cb.checked=false;toggleExpRow(cb);});
 }
 function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
-function checkClienteWarning(clienteVal){
-  const warnEl=document.getElementById('sol-warning');if(!warnEl)return;
-  if(!clienteVal||clienteVal.trim().length<3){warnEl.style.display='none';return;}
-  const clienteNorm=clienteVal.trim().toLowerCase();
-  const camposCliente=allC.filter(r=>(g(r,'RAZON SOCIAL')||'').trim().toLowerCase()===clienteNorm);
-  if(!camposCliente.length){warnEl.style.display='none';return;}
-  const issuesList=[];
-  camposCliente.forEach(r=>{
-    const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-    const vto=getVtoRenspa(cuit,campo);const rs=vto?renspaStatus(cuit,campo):null;
-    const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
-    const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
-    const hv=hasVigentes(cuit,campo);
-    const faltantes=[];
-    if(!vto||rs.status.includes('Vencida'))faltantes.push('RENSPA');
-    if(estadoKmz!=='OK')faltantes.push('KMZ');
-    if(estadoEvid!=='OK')faltantes.push('Evidencia');
-    if(!hv)faltantes.push('Has. vigentes ('+fmtCamp(CAMPANA_VIGENTE)+')');
-    if(faltantes.length)issuesList.push('<strong>'+campo+'</strong>: falta '+faltantes.join(', '));
-  });
-  if(issuesList.length){warnEl.innerHTML='⚠️ Documentación incompleta:<br>'+issuesList.join('<br>');warnEl.style.display='';}
-  else warnEl.style.display='none';
-}
 async function enviarSolicitud(){
   const nombre=document.getElementById('auth-user').textContent||'Comercial';
   const cliente=document.getElementById('sol-cliente').value.trim();
@@ -1805,31 +1782,6 @@ async function enviarSolicitud(){
     if(esqs.length)selecciones.push({exportador:exp,esquemas:esqs});
   });
   if(!selecciones.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un exportador con esquema.';return;}
-  // Verificar si el cliente tiene campos con documentación incompleta y mostrar advertencia
-  const clienteNorm=cliente.trim().toLowerCase();
-  const camposCliente=allC.filter(r=>(g(r,'RAZON SOCIAL')||'').trim().toLowerCase()===clienteNorm);
-  if(camposCliente.length){
-    const issuesList=[];
-    camposCliente.forEach(r=>{
-      const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-      const vto=getVtoRenspa(cuit,campo);const rs=vto?renspaStatus(cuit,campo):null;
-      const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
-      const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
-      const hv=hasVigentes(cuit,campo);
-      const faltantes=[];
-      if(!vto||rs.status.includes('Vencida'))faltantes.push('RENSPA');
-      if(estadoKmz!=='OK')faltantes.push('KMZ');
-      if(estadoEvid!=='OK')faltantes.push('Evidencia');
-      if(!hv)faltantes.push('Has. vigentes ('+fmtCamp(CAMPANA_VIGENTE)+')');
-      if(faltantes.length)issuesList.push('<strong>'+campo+'</strong>: falta '+faltantes.join(', '));
-    });
-    if(issuesList.length){
-      const warnEl=document.getElementById('sol-warning');
-      if(warnEl){warnEl.innerHTML='⚠️ Documentación incompleta:<br>'+issuesList.join('<br>');warnEl.style.display='';}
-    } else {
-      const warnEl=document.getElementById('sol-warning');if(warnEl)warnEl.style.display='none';
-    }
-  }
   const btn=document.getElementById('btn-enviar-sol');
   btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
   const camp=findCampDefault(allG)||'25/26';
