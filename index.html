@@ -112,15 +112,15 @@ tr.clickable{cursor:pointer}
 .badge-mail{background:#FFFBEB;color:#B45309}
 
 /* Ficha expandida */
-.ficha{background:#fff;border:1px solid #C7D2FE;border-left:4px solid #1B2A4A;border-radius:4px;margin:2px 8px 10px;padding:20px;display:none;box-shadow:0 3px 10px rgba(27,42,74,0.08)}
+.ficha{background:#fff;border:1px solid #C7D2FE;border-left:4px solid #1B2A4A;border-radius:4px;margin:2px 8px 10px;padding:14px 20px;display:none;box-shadow:0 3px 10px rgba(27,42,74,0.08)}
 .ficha.open{display:block}
-.ficha-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px}
-.ficha-field label{font-size:10px;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:3px}
-.ficha-field .val{font-size:14px;color:#1B2A4A}
+.ficha-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 16px;margin-bottom:12px}
+.ficha-field label{font-size:10px;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px}
+.ficha-field .val{font-size:13px;color:#1B2A4A}
 .ficha-field a{color:#2563EB;text-decoration:none;font-size:13px}
 .ficha-field a:hover{text-decoration:underline}
-.ficha-section{border-top:1px solid #E5E7EB;padding-top:14px;margin-top:14px}
-.ficha-section h3{font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:10px}
+.ficha-section{border-top:1px solid #E5E7EB;padding-top:10px;margin-top:10px}
+.ficha-section h3{font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
 .comment-box{background:#fff;border:1px solid #E5E7EB;border-radius:8px;padding:10px;margin-bottom:8px}
 .comment-meta{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
 .comment-author{color:#2563EB;font-weight:600}
@@ -1287,15 +1287,16 @@ function buildFicha(r,idx){
   const cmtKmz=getNotaValor(cuit,campo,'cmt_kmz');
   const cmtEvid=getNotaValor(cuit,campo,'cmt_evid');
 
-  function estadoBadge(val){if(!val)return'<span class="badge badge-na">A verificar</span>';if(val==='OK')return'<span class="badge badge-ok">OK</span>';return'<span class="badge badge-warn">'+val+'</span>';}
-  function df(label,val,opts){opts=opts||{};let display;if(opts.email&&val)display=`<a href="mailto:${val}" style="word-break:break-all">${val}</a>`;else display=val||'—';return`<div class="ficha-field"><label>${label}</label><div class="val" style="word-break:${opts.email?'break-all':'normal'}">${display}${copyIcon(val||'')}</div></div>`;}
+  function estadoBadge(val){if(!val)return'<span class="badge badge-na">🔍 A verificar</span>';if(val==='OK')return'<span class="badge badge-ok">✅ OK</span>';return'<span class="badge badge-warn">⚠️ '+val+'</span>';}
+  function df(label,val,opts){opts=opts||{};let display;if(opts.email&&val)display=`<a href="mailto:${val}" style="word-break:break-all">${val}</a>`;else display=val||'—';return`<div class="ficha-field"><label>${label}</label><div class="val" style="word-break:${opts.email?'break-all':'normal'}">${display}</div></div>`;}
 
   // ── Header ──
-  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <span style="font-size:12px;color:#6B7280">CUIT: <strong>${cuit}</strong> ${copyIcon(cuit)}</span>
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span style="font-size:12px;color:#6B7280">CUIT: <strong>${cuit}</strong></span>
     <button class="edit-only" onclick="abrirEditCampo(${idx})" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid #D1D5DB;border-radius:6px;background:#fff;font-size:12px;color:#374151;cursor:pointer;font-family:Inter,sans-serif">✏️ Editar datos</button>
   </div>
   <div class="ficha-grid">
+    ${df('Nombre del campo',campo)}
     ${df('Razón social',g(r,'RAZON SOCIAL'))}
     ${df('Tipo sociedad',g(r,'TIPO SOCIEDAD'))}
     ${df('Mail contacto',mail,{email:true})}
@@ -1307,54 +1308,61 @@ function buildFicha(r,idx){
 
   // ── Hectáreas (unificadas) ──
   const hasTotales=g(r,'TOTALES DEL CAMPO');
-  // El valor del sheet (PRODUCTIVAS) es el registro inicial / legacy
   const hasSheet=g(r,'PRODUCTIVAS');
   const hasVigente=getHasActivaCamp(cuit,campo);
   const hasSustLegacy=getNotaValor(cuit,campo,'has_sustentables');
 
-  // Cabecera de datos grande
+  // Stat box compacto
   html+=`<div class="ficha-section"><h3>Hectáreas</h3>
-    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:12px">
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:10px">
       <div>
-        <div style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Has. totales declaradas</div>
-        <div style="font-size:22px;font-weight:700;color:#1B2A4A;line-height:1">${fmt(hasTotales)||'—'}</div>
+        <div style="font-size:10px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Has. totales declaradas</div>
+        <div style="font-size:20px;font-weight:700;color:#1B2A4A;line-height:1">${fmt(hasTotales)||'—'}</div>
       </div>
-      <div style="width:1px;height:36px;background:#E5E7EB"></div>
+      <div style="width:1px;height:30px;background:#E5E7EB"></div>
       <div>
-        <div style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Has. sustentables (${fmtCamp(CAMPANA_VIGENTE)||CAMPANA_VIGENTE})</div>
-        <div style="font-size:22px;font-weight:700;color:${hasVigente?'#065F46':'#9CA3AF'};line-height:1">${hasVigente?fmt(hasVigente):'—'}</div>
+        <div style="font-size:10px;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Has. sustentables ${fmtCamp(CAMPANA_VIGENTE)||CAMPANA_VIGENTE}</div>
+        <div style="font-size:20px;font-weight:700;color:${hasVigente?'#065F46':'#9CA3AF'};line-height:1">${hasVigente?fmt(hasVigente):'—'}</div>
       </div>
     </div>`;
 
-  // Tabla de historial por campaña (sola columna: has.)
+  // Historial colapsable
   const allCamps=Object.keys(hasPorCamp).sort((a,b)=>b.localeCompare(a));
-  // Legacy: usar sheet PRODUCTIVAS si no hay ninguna entrada por campaña ni nota legacy
   const hasLegacyVal=hasSustLegacy||hasSheet;
+  const histId='has-hist-'+idx;
   const campRows=allCamps.map(cn=>{
     const ns=hasPorCamp[cn];
     const esVigente=cn===CAMPANA_VIGENTE;
     const campoEsc=campo.replace(/'/g,"\\'");
     return`<tr${esVigente?' style="background:#F0FDF4"':''}>
-      <td style="padding:6px 10px;font-size:12px">${fmtCamp(cn)}${esVigente?' <span style="font-size:10px;color:#065F46;font-weight:600">(vigente)</span>':''}</td>
-      <td style="padding:6px 10px;font-weight:600;font-size:13px">${fmt(ns.VALOR)} has</td>
-      <td style="padding:6px 10px;font-size:11px;color:#6B7280">${ns.AUTOR} · ${fmtDate(ns.FECHA)||ns.FECHA}</td>
-      <td class="edit-only" style="padding:6px 4px;display:none;white-space:nowrap">
+      <td style="padding:5px 10px;font-size:12px">${fmtCamp(cn)}${esVigente?' <span style="font-size:10px;color:#065F46;font-weight:600">(vigente)</span>':''}</td>
+      <td style="padding:5px 10px;font-weight:600;font-size:12px">${fmt(ns.VALOR)} has</td>
+      <td style="padding:5px 10px;font-size:11px;color:#6B7280">${ns.AUTOR} · ${fmtDate(ns.FECHA)||ns.FECHA}</td>
+      <td class="edit-only" style="padding:5px 4px;display:none;white-space:nowrap">
         <button onclick="editHas(${idx},'${cn}','${fmtCamp(cn)}','${ns.VALOR}')" style="background:none;border:none;color:#1a5a9a;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Editar</button>
         <button onclick="deleteHas(${idx},'${cuit}','${campoEsc}','${cn}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-family:Inter,sans-serif">Borrar</button>
       </td>
     </tr>`;
   }).join('');
-  const legacyRow=(!allCamps.length&&hasLegacyVal)?`<tr><td style="padding:6px 10px;font-size:12px;color:#9CA3AF">Inicial (sheet)</td><td style="padding:6px 10px;font-weight:600;font-size:13px;color:#6B7280">${fmt(hasLegacyVal)} has</td><td style="padding:6px 10px;font-size:11px;color:#9CA3AF">Dato original del archivo</td><td class="edit-only" style="display:none"></td></tr>`:'';
+  const legacyRow=(!allCamps.length&&hasLegacyVal)?`<tr><td style="padding:5px 10px;font-size:12px;color:#9CA3AF">Inicial</td><td style="padding:5px 10px;font-weight:600;font-size:12px;color:#6B7280">${fmt(hasLegacyVal)} has</td><td style="padding:5px 10px;font-size:11px;color:#9CA3AF">Dato original del archivo</td><td class="edit-only" style="display:none"></td></tr>`:'';
+  const totalCamps=allCamps.length+(legacyRow?1:0);
 
-  html+=(campRows||legacyRow)?`<table style="width:100%;border-collapse:collapse;margin:0 0 10px;border:1px solid #E5E7EB;border-radius:6px;overflow:hidden">
-    <thead><tr>
-      <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Campaña</th>
-      <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Has.</th>
-      <th style="padding:6px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Registrado por</th>
-      <th class="edit-only" style="padding:6px 10px;background:#F9FAFB;display:none"></th>
-    </tr></thead>
-    <tbody>${campRows}${legacyRow}</tbody>
-  </table>`:`<div class="muted" style="font-size:12px;margin:0 0 10px">Sin hectáreas registradas. Usá el formulario para agregar la campaña vigente.</div>`;
+  if(campRows||legacyRow){
+    html+=`<button onclick="(function(b,d){d.style.display=d.style.display==='none'?'block':'none';b.textContent=d.style.display==='none'?'▼ Ver historial (${totalCamps} campaña${totalCamps!==1?'s':''})':'▲ Ocultar historial';})(this,document.getElementById('${histId}'))" style="background:none;border:none;color:#6B7280;font-size:12px;cursor:pointer;padding:0 0 6px;font-family:Inter,sans-serif">▼ Ver historial (${totalCamps} campaña${totalCamps!==1?'s':''})</button>
+    <div id="${histId}" style="display:none;margin-bottom:8px">
+      <table style="width:100%;border-collapse:collapse;border:1px solid #E5E7EB;border-radius:6px;overflow:hidden">
+        <thead><tr>
+          <th style="padding:5px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Campaña</th>
+          <th style="padding:5px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Has.</th>
+          <th style="padding:5px 10px;background:#F9FAFB;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:left">Registrado por</th>
+          <th class="edit-only" style="padding:5px 10px;background:#F9FAFB;display:none"></th>
+        </tr></thead>
+        <tbody>${campRows}${legacyRow}</tbody>
+      </table>
+    </div>`;
+  } else {
+    html+=`<div class="muted" style="font-size:12px;margin:0 0 8px">Sin hectáreas registradas. Usá el formulario para agregar la campaña vigente.</div>`;
+  }
 
   html+=`<div class="edit-only" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px;background:#F9FAFB;border-radius:6px;border:1px solid #E5E7EB">
     <select id="has-camp-${idx}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:'Inter',sans-serif;background:#fff">
@@ -1368,23 +1376,24 @@ function buildFicha(r,idx){
 
   // ── Documentación ──
   function docRow(label,content,editContent){
-    return`<div style="display:grid;grid-template-columns:140px 1fr;gap:0;border-bottom:1px solid #F3F4F6;padding:10px 0;align-items:start">
-      <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em;padding-top:2px">${label}</span>
-      <div>${content}${editContent?`<div class="edit-only" style="margin-top:8px">${editContent}</div>`:''}</div>
+    return`<div style="background:#fff;border:1px solid #E5E7EB;border-radius:8px;padding:11px 14px;margin-bottom:8px">
+      <div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">${label}</div>
+      <div>${content}</div>
+      ${editContent?`<div class="edit-only" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid #F3F4F6">${editContent}</div>`:''}
     </div>`;}
   // Helper: bloque de comentario por doc (visible + input edición)
   function docCmt(tipo,valorActual,inputId){
     const tiene=!!valorActual;
-    return`${tiene?`<div style="margin-top:6px;font-size:12px;color:#374151;background:#F9FAFB;border-left:3px solid #D1D5DB;padding:5px 10px;border-radius:0 4px 4px 0;font-style:italic">${valorActual}</div>`:''}
-    <div class="edit-only" style="display:flex;gap:6px;align-items:center;margin-top:6px">
-      <input type="text" id="${inputId}" value="${(valorActual||'').replace(/"/g,'&quot;')}" placeholder="Nota sobre este documento..." style="flex:1;padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif">
+    return`${tiene?`<div style="margin-top:8px;font-size:12px;color:#374151;background:#F9FAFB;border-left:3px solid #D1D5DB;padding:5px 10px;border-radius:0 4px 4px 0;font-style:italic">${valorActual}</div>`:''}
+    <div class="edit-only" style="display:flex;gap:6px;align-items:center;margin-top:8px">
+      <input type="text" id="${inputId}" value="" placeholder="Nota sobre este documento..." style="flex:1;padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;font-family:Inter,sans-serif">
       <button onclick="saveDocComment(${idx},'${tipo}')" style="padding:5px 10px;background:#6B7280;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">Guardar nota</button>
     </div>`;}
 
   const renspaContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span class="badge ${rs.cls}">${rs.status}</span>
-    ${cred?`<a href="${cred}" target="_blank" style="font-size:12px;color:#2563EB">Ver credencial</a>${copyIcon(cred)}`:'<span style="font-size:12px;color:#9CA3AF">Sin credencial adjunta</span>'}
-    <span style="font-size:12px;color:#6B7280">RENSPA: <strong>${g(r,'RENSPA')||'—'}</strong>${copyIcon(g(r,'RENSPA'))}</span>
+    ${cred?`<a href="${cred}" target="_blank" style="font-size:12px;color:#2563EB">Ver credencial</a>`:'<span style="font-size:12px;color:#9CA3AF">Sin credencial adjunta</span>'}
+    ${g(r,'RENSPA')?`<span style="font-size:12px;color:#6B7280">N°: <strong>${g(r,'RENSPA')}</strong></span>`:''}
   </div>
   ${docCmt('cmt_renspa',cmtRenspa,'doc-cmt-renspa-'+idx)}`;
   const renspaEdit=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1394,7 +1403,7 @@ function buildFicha(r,idx){
   </div>`;
 
   const kmzContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    ${poly?`<a href="${poly}" target="_blank" style="font-size:12px;color:#2563EB">Descargar KMZ</a>${copyIcon(poly)}`:'<span style="font-size:12px;color:#9CA3AF">Sin archivo</span>'}
+    ${poly?`<a href="${poly}" target="_blank" style="font-size:12px;color:#2563EB">Descargar KMZ</a>`:'<span style="font-size:12px;color:#9CA3AF">Sin archivo</span>'}
     ${estadoBadge(estadoKmz)}
   </div>
   ${docCmt('cmt_kmz',cmtKmz,'doc-cmt-kmz-'+idx)}`;
@@ -1408,8 +1417,8 @@ function buildFicha(r,idx){
   </div>`;
 
   const evidContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    ${evid?`<a href="${evid}" target="_blank" style="font-size:12px;color:#2563EB">Ver evidencia</a>${copyIcon(evid)}`:'<span style="font-size:12px;color:#9CA3AF">Sin archivo</span>'}
-    <span style="font-size:12px;color:#6B7280">${tipoEvid||''}</span>
+    ${evid?`<a href="${evid}" target="_blank" style="font-size:12px;color:#2563EB">Ver evidencia</a>`:'<span style="font-size:12px;color:#9CA3AF">Sin archivo</span>'}
+    ${tipoEvid?`<span style="font-size:12px;color:#6B7280">${tipoEvid}</span>`:''}
     ${estadoBadge(estadoEvid)}
   </div>
   ${docCmt('cmt_evid',cmtEvid,'doc-cmt-evid-'+idx)}`;
@@ -1422,16 +1431,12 @@ function buildFicha(r,idx){
     <button onclick="saveEstadoEvid(${idx})" style="padding:5px 10px;background:#1B2A4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">Guardar estado</button>
   </div>`;
 
+  const pcus1Val=g(r,'PCUS 1');
   html+=`<div class="ficha-section"><h3>Documentación</h3>
-    <div style="border:1px solid #E5E7EB;border-radius:6px;padding:0 14px;background:#fff">
-      ${docRow('RENSPA',renspaContent,renspaEdit)}
-      ${docRow('Polígono KMZ',kmzContent,kmzEdit)}
-      ${docRow('Evidencia',evidContent,evidEdit)}
-      <div style="display:grid;grid-template-columns:140px 1fr;gap:0;padding:10px 0;align-items:center">
-        <span style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.05em">PCUS 1</span>
-        <span style="font-size:13px">${g(r,'PCUS 1')||'—'}${copyIcon(g(r,'PCUS 1'))}</span>
-      </div>
-    </div>
+    ${docRow('RENSPA',renspaContent,renspaEdit)}
+    ${docRow('Polígono KMZ',kmzContent,kmzEdit)}
+    ${docRow('Evidencia',evidContent,evidEdit)}
+    ${pcus1Val?`<div style="background:#fff;border:1px solid #E5E7EB;border-radius:8px;padding:11px 14px;margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">PCUS 1</div><span style="font-size:13px;color:#1B2A4A">${pcus1Val}</span></div>`:''}
   </div>`;
 
   // ── Comentario general ──
@@ -1445,7 +1450,7 @@ function buildFicha(r,idx){
     </span></div>
     <div class="comment-text" id="cmtxt-${idx}-${ci}">${c.VALOR}</div>
   </div>`;});
-  html+=`<div class="comment-input edit-only"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario general..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
+  html+=`<div class="comment-input"><input type="text" id="cmt-${idx}" placeholder="Escribir comentario general..."><button onclick="saveComment(${idx})">Guardar</button></div></div>`;
   return html;
 }
 
