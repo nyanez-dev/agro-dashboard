@@ -1265,8 +1265,15 @@ function renderC(){
 }
 
 // Helper: icono copiar al portapapeles
-function copyIcon(val){if(!val||val==='—')return'';return`<button onclick="copyVal(${JSON.stringify(val)})" title="Copiar" style="background:none;border:none;cursor:pointer;padding:0 2px 0 5px;color:#9CA3AF;font-size:12px;line-height:1;vertical-align:middle" onmouseenter="this.style.color='#1B2A4A'" onmouseleave="this.style.color='#9CA3AF'">⎘</button>`;}
-function copyVal(v){navigator.clipboard.writeText(v).then(()=>showToast('info','Copiado',v.length>40?v.slice(0,40)+'…':v)).catch(()=>{});}
+function copyIcon(val){if(!val||val==='—')return'';return`<button onclick="copyVal(${JSON.stringify(val)})" title="Copiar" style="background:none;border:none;cursor:pointer;padding:0 2px 0 5px;color:#9CA3AF;font-size:12px;line-height:1;vertical-align:middle;user-select:none;-webkit-user-select:none;flex-shrink:0" onmouseenter="this.style.color='#1B2A4A'" onmouseleave="this.style.color='#9CA3AF'">⎘</button>`;}
+function copyVal(v){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(()=>showToast('info','Copiado',v.length>40?v.slice(0,40)+'…':v)).catch(()=>copyValFallback(v));
+  } else { copyValFallback(v); }
+}
+function copyValFallback(v){
+  try{var ta=document.createElement('textarea');ta.value=v;ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('info','Copiado',v.length>40?v.slice(0,40)+'…':v);}catch(e){}
+}
 
 // Helper: celda de valor con icono copiar
 function fieldVal(val,opts){opts=opts||{};const display=opts.link?`<a href="${val}" target="_blank">${opts.linkText||val}</a>`:(`<span>${val||'—'}</span>`);return`<div class="val">${display}${copyIcon(val||'')}</div>`;}
