@@ -289,57 +289,85 @@ tr.clickable{cursor:pointer}
 
 <!-- MODAL NUEVA SOLICITUD -->
 <div class="modal-overlay" id="modal-solicitud" onclick="closeModalIfOverlay(event)">
-  <div class="modal">
+  <div class="modal" style="max-width:640px;max-height:88vh;overflow-y:auto">
     <button class="modal-close" onclick="closeNuevaSolicitud()">×</button>
     <h2>Nueva solicitud de gestión</h2>
     <p class="modal-sub">El equipo de Compliance recibirá tu solicitud por mail.</p>
-    <div class="form-row"><label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label><input type="text" id="sol-cliente" placeholder="Ej: Agropecuaria San Antonio S.A."></div>
+
+    <!-- 1. CLIENTE -->
+    <div class="form-row">
+      <label>Cliente (Razón Social) <span style="color:#DC2626">*</span></label>
+      <div style="position:relative">
+        <input type="text" id="sol-cliente" placeholder="Buscá por razón social..." oninput="onSolClientSearch(this.value)" onblur="setTimeout(function(){var d=document.getElementById('sol-cliente-dd');if(d)d.style.display='none';},160)" autocomplete="off" style="width:100%;padding:8px 12px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;box-sizing:border-box">
+        <div id="sol-cliente-dd" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid #D1D5DB;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.13);z-index:2000;max-height:220px;overflow-y:auto"></div>
+      </div>
+      <div id="sol-cliente-chip" style="display:none;margin-top:8px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:8px 12px;font-size:13px;color:#1E40AF;justify-content:space-between;align-items:center;gap:8px">
+        <span id="sol-cliente-chip-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        <button onclick="clearSolCliente()" title="Cambiar cliente" style="background:none;border:none;cursor:pointer;color:#93C5FD;font-size:20px;line-height:1;padding:0;flex-shrink:0">×</button>
+      </div>
+      <div id="sol-cliente-notfound" style="display:none;margin-top:8px;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:10px 14px;font-size:12px;color:#DC2626;line-height:1.6">
+        ⚠️ Este cliente no está en <b>Información de campos</b>. Primero cargá su documentación en la hoja.
+      </div>
+    </div>
+
+    <!-- 2. CAMPOS (aparece al seleccionar cliente) -->
+    <div id="sol-campos-wrap" style="display:none">
+      <div class="form-row" style="margin-top:0">
+        <label>Campos <span style="color:#DC2626">*</span></label>
+        <div id="sol-campos-list" style="border:1px solid #E5E7EB;border-radius:6px;max-height:210px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+    <!-- 3. EXPORTADORES Y ESQUEMAS -->
     <div class="form-row">
       <label>Exportadores y esquemas <span style="color:#DC2626">*</span></label>
       <p style="font-size:12px;color:#6B7280;margin:4px 0 8px 0">Marcá el exportador y seleccioná sus esquemas.</p>
       <div class="exp-esq-list">
         <div class="exp-row" id="exprow-LDC">
-          <label class="exp-check"><input type="checkbox" class="exp-cb" value="LDC" onchange="toggleExpRow(this)"> LDC</label>
+          <label class="exp-check"><input type="checkbox" class="exp-cb" value="LDC" onchange="toggleExpRow(this);checkSolHabWarning()"> LDC</label>
           <div class="exp-chips" id="chips-LDC" style="display:none">
-            <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
-            <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
-            <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
-            <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
-            <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+            <label class="esq-chip"><input type="checkbox" value="EPA" onchange="checkSolHabWarning()"> EPA</label>
+            <label class="esq-chip"><input type="checkbox" value="2BSvs" onchange="checkSolHabWarning()"> 2BSvs</label>
+            <label class="esq-chip"><input type="checkbox" value="EUDR" onchange="checkSolHabWarning()"> EUDR</label>
+            <label class="esq-chip"><input type="checkbox" value="RTRS" onchange="checkSolHabWarning()"> RTRS</label>
+            <label class="esq-chip"><input type="checkbox" value="CFR" onchange="checkSolHabWarning()"> CFR</label>
           </div>
         </div>
         <div class="exp-row" id="exprow-MOA">
-          <label class="exp-check"><input type="checkbox" class="exp-cb" value="MOA" onchange="toggleExpRow(this)"> MOA</label>
+          <label class="exp-check"><input type="checkbox" class="exp-cb" value="MOA" onchange="toggleExpRow(this);checkSolHabWarning()"> MOA</label>
           <div class="exp-chips" id="chips-MOA" style="display:none">
-            <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
-            <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
-            <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
-            <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
-            <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+            <label class="esq-chip"><input type="checkbox" value="EPA" onchange="checkSolHabWarning()"> EPA</label>
+            <label class="esq-chip"><input type="checkbox" value="2BSvs" onchange="checkSolHabWarning()"> 2BSvs</label>
+            <label class="esq-chip"><input type="checkbox" value="EUDR" onchange="checkSolHabWarning()"> EUDR</label>
+            <label class="esq-chip"><input type="checkbox" value="RTRS" onchange="checkSolHabWarning()"> RTRS</label>
+            <label class="esq-chip"><input type="checkbox" value="CFR" onchange="checkSolHabWarning()"> CFR</label>
           </div>
         </div>
         <div class="exp-row" id="exprow-COFCO">
-          <label class="exp-check"><input type="checkbox" class="exp-cb" value="COFCO" onchange="toggleExpRow(this)"> COFCO</label>
+          <label class="exp-check"><input type="checkbox" class="exp-cb" value="COFCO" onchange="toggleExpRow(this);checkSolHabWarning()"> COFCO</label>
           <div class="exp-chips" id="chips-COFCO" style="display:none">
-            <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
-            <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
-            <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
-            <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
-            <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+            <label class="esq-chip"><input type="checkbox" value="EPA" onchange="checkSolHabWarning()"> EPA</label>
+            <label class="esq-chip"><input type="checkbox" value="2BSvs" onchange="checkSolHabWarning()"> 2BSvs</label>
+            <label class="esq-chip"><input type="checkbox" value="EUDR" onchange="checkSolHabWarning()"> EUDR</label>
+            <label class="esq-chip"><input type="checkbox" value="RTRS" onchange="checkSolHabWarning()"> RTRS</label>
+            <label class="esq-chip"><input type="checkbox" value="CFR" onchange="checkSolHabWarning()"> CFR</label>
           </div>
         </div>
         <div class="exp-row" id="exprow-Bunge">
-          <label class="exp-check"><input type="checkbox" class="exp-cb" value="Bunge" onchange="toggleExpRow(this)"> Bunge</label>
+          <label class="exp-check"><input type="checkbox" class="exp-cb" value="Bunge" onchange="toggleExpRow(this);checkSolHabWarning()"> Bunge</label>
           <div class="exp-chips" id="chips-Bunge" style="display:none">
-            <label class="esq-chip"><input type="checkbox" value="EPA"> EPA</label>
-            <label class="esq-chip"><input type="checkbox" value="2BSvs"> 2BSvs</label>
-            <label class="esq-chip"><input type="checkbox" value="EUDR"> EUDR</label>
-            <label class="esq-chip"><input type="checkbox" value="RTRS"> RTRS</label>
-            <label class="esq-chip"><input type="checkbox" value="CFR"> CFR</label>
+            <label class="esq-chip"><input type="checkbox" value="EPA" onchange="checkSolHabWarning()"> EPA</label>
+            <label class="esq-chip"><input type="checkbox" value="2BSvs" onchange="checkSolHabWarning()"> 2BSvs</label>
+            <label class="esq-chip"><input type="checkbox" value="EUDR" onchange="checkSolHabWarning()"> EUDR</label>
+            <label class="esq-chip"><input type="checkbox" value="RTRS" onchange="checkSolHabWarning()"> RTRS</label>
+            <label class="esq-chip"><input type="checkbox" value="CFR" onchange="checkSolHabWarning()"> CFR</label>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- AVISOS -->
+    <div id="sol-hab-warning" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid #3B82F6;border-radius:6px;padding:10px 14px;font-size:12px;color:#1E40AF;margin-bottom:12px;line-height:1.6"></div>
     <div id="sol-warning" style="display:none;background:#FEF3C7;border:1px solid #FCD34D;border-left:4px solid #F59E0B;border-radius:6px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:12px;line-height:1.6"></div>
     <div id="sol-msg" class="modal-msg"></div>
     <div class="modal-actions">
@@ -1761,24 +1789,136 @@ function toggleExpRow(cb){
   row.classList.toggle('active',cb.checked);
   if(!cb.checked)chips.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
 }
-function openNuevaSolicitud(){document.getElementById('modal-solicitud').classList.add('open');document.getElementById('sol-msg').className='modal-msg';document.getElementById('sol-msg').textContent='';document.getElementById('btn-enviar-sol').disabled=false;document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';const sw=document.getElementById('sol-warning');if(sw)sw.style.display='none';}
+// ── NUEVA SOLICITUD: estado del cliente seleccionado ──
+var _solClient=null; // {name, cuit, camposData:[allC records]}
+
+function openNuevaSolicitud(){
+  _solClient=null;
+  document.getElementById('sol-cliente').value='';
+  document.getElementById('sol-cliente-dd').style.display='none';
+  document.getElementById('sol-cliente-chip').style.display='none';
+  document.getElementById('sol-cliente-notfound').style.display='none';
+  document.getElementById('sol-campos-wrap').style.display='none';
+  document.getElementById('sol-campos-list').innerHTML='';
+  document.getElementById('sol-hab-warning').style.display='none';
+  document.getElementById('sol-msg').className='modal-msg';
+  document.getElementById('sol-msg').textContent='';
+  document.getElementById('btn-enviar-sol').disabled=false;
+  document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';
+  const sw=document.getElementById('sol-warning');if(sw)sw.style.display='none';
+  document.querySelectorAll('.exp-cb').forEach(cb=>{cb.checked=false;toggleExpRow(cb);});
+  document.getElementById('modal-solicitud').classList.add('open');
+}
 function closeNuevaSolicitud(){
   document.getElementById('modal-solicitud').classList.remove('open');
-  document.getElementById('sol-cliente').value='';
-  document.querySelectorAll('.exp-cb').forEach(cb=>{cb.checked=false;toggleExpRow(cb);});
+  _solClient=null;
 }
 function closeModalIfOverlay(e){if(e.target===document.getElementById('modal-solicitud'))closeNuevaSolicitud();}
+
+function onSolClientSearch(val){
+  const dd=document.getElementById('sol-cliente-dd');
+  const nf=document.getElementById('sol-cliente-notfound');
+  nf.style.display='none';
+  if(!val||val.trim().length<2){dd.style.display='none';return;}
+  const q=val.trim().toLowerCase();
+  const seen=new Set();const matches=[];
+  allC.forEach(r=>{
+    const cuit=g(r,'CUIT');const name=g(r,'RAZON SOCIAL')||'';
+    if(seen.has(cuit))return;
+    if(name.toLowerCase().includes(q)||cuit.includes(q)){seen.add(cuit);matches.push({name,cuit});}
+  });
+  if(!matches.length){
+    dd.style.display='none';
+    if(val.trim().length>4)nf.style.display='block';
+    return;
+  }
+  window._solDdMatches=matches;
+  dd.innerHTML=matches.slice(0,10).map((m,i)=>`<div onmousedown="selectSolClientByIdx(${i})" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #F3F4F6" onmouseenter="this.style.background='#F9FAFB'" onmouseleave="this.style.background=''"><span style="font-weight:600;color:#1B2A4A">${m.name}</span><span style="color:#9CA3AF;font-size:11px;margin-left:8px">${m.cuit}</span></div>`).join('');
+  dd.style.display='block';
+}
+function selectSolClientByIdx(i){
+  const m=(window._solDdMatches||[])[i];if(!m)return;
+  selectSolClient(m.cuit,m.name);
+}
+function selectSolClient(cuit,name){
+  document.getElementById('sol-cliente-dd').style.display='none';
+  document.getElementById('sol-cliente').value='';
+  document.getElementById('sol-cliente-notfound').style.display='none';
+  document.getElementById('sol-cliente-chip-label').textContent=name+' — '+cuit;
+  document.getElementById('sol-cliente-chip').style.display='flex';
+  const camposData=allC.filter(r=>g(r,'CUIT')===cuit);
+  _solClient={name,cuit,camposData};
+  renderSolCampos();
+  document.getElementById('sol-campos-wrap').style.display='block';
+  checkSolHabWarning();
+}
+function clearSolCliente(){
+  _solClient=null;
+  document.getElementById('sol-cliente').value='';
+  document.getElementById('sol-cliente-chip').style.display='none';
+  document.getElementById('sol-campos-wrap').style.display='none';
+  document.getElementById('sol-hab-warning').style.display='none';
+  document.getElementById('sol-cliente').focus();
+}
+function renderSolCampos(){
+  if(!_solClient)return;
+  const list=document.getElementById('sol-campos-list');
+  if(!_solClient.camposData.length){
+    list.innerHTML='<div style="padding:12px;color:#9CA3AF;font-size:13px;text-align:center">Este cliente no tiene campos registrados en Información de campos.</div>';
+    return;
+  }
+  list.innerHTML=_solClient.camposData.map(r=>{
+    const campo=g(r,'NOMBRE DEL CAMPO');
+    const issues=getFieldIssuesBadges(r);
+    const safeVal=campo.replace(/"/g,'&quot;');
+    return`<label style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;cursor:pointer;border-bottom:1px solid #F3F4F6" onmouseenter="this.style.background='#F9FAFB'" onmouseleave="this.style.background=''">
+      <input type="checkbox" class="sol-campo-cb" value="${safeVal}" onchange="checkSolHabWarning()" style="margin-top:3px;flex-shrink:0">
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;color:#1B2A4A">${campo}</div><div style="margin-top:3px">${issues}</div></div>
+    </label>`;
+  }).join('');
+}
+function checkSolHabWarning(){
+  const warn=document.getElementById('sol-hab-warning');
+  if(!_solClient){warn.style.display='none';return;}
+  const cuit=_solClient.cuit;
+  const campVig=findCampDefault(allE)||findCampDefault(allG)||'25/26';
+  const warnings=[];
+  document.querySelectorAll('.exp-cb:checked').forEach(cb=>{
+    const exportador=cb.value;
+    const esqs=[...document.querySelectorAll('#chips-'+exportador+' input:checked')].map(c=>c.value);
+    esqs.forEach(esq=>{
+      const matches=allE.filter(r=>{
+        if((r['CUIT']||'').toString().trim()!==cuit)return false;
+        if((r['Exportador']||'').toUpperCase()!==exportador.toUpperCase())return false;
+        if((r['Tipo']||'')!==esq)return false;
+        if(g(r,'Campa')!==campVig)return false;
+        return!isHabBorradaSimple(r);
+      });
+      if(matches.length){
+        const campos=[...new Set(matches.map(r=>r['Campo']).filter(Boolean))];
+        const camposStr=campos.length?' en: <b>'+campos.join(', ')+'</b>':'';
+        warnings.push('<b>'+esq+'</b> con <b>'+exportador+'</b>'+camposStr);
+      }
+    });
+  });
+  if(warnings.length){
+    warn.innerHTML='ℹ️ Este productor ya tiene habilitación vigente para: '+warnings.join(' &nbsp;·&nbsp; ')+'. Solo informativo — podés continuar igual.';
+    warn.style.display='block';
+  } else {
+    warn.style.display='none';
+  }
+}
+
 async function enviarSolicitud(){
   const nombre=document.getElementById('auth-user').textContent||'Comercial';
-  const cliente=document.getElementById('sol-cliente').value.trim();
   const msg=document.getElementById('sol-msg');
-  if(!cliente){msg.className='modal-msg err';msg.textContent='Completá el nombre del cliente antes de continuar.';document.getElementById('sol-cliente').focus();return;}
-  // Recopilar exportadores seleccionados con sus esquemas
+  if(!_solClient){msg.className='modal-msg err';msg.textContent='Seleccioná un cliente antes de continuar.';document.getElementById('sol-cliente').focus();return;}
+  const selectedCampos=[...document.querySelectorAll('.sol-campo-cb:checked')].map(cb=>cb.value);
+  if(!selectedCampos.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un campo.';return;}
   const selecciones=[];
   document.querySelectorAll('.exp-cb:checked').forEach(cb=>{
     const exp=cb.value;
     const esqs=[...document.querySelectorAll('#chips-'+exp+' input:checked')].map(c=>c.value);
-    // Regla: LDC + EPA → agregar 2BSvs automáticamente
     if(exp==='LDC'&&esqs.includes('EPA')&&!esqs.includes('2BSvs'))esqs.push('2BSvs');
     if(esqs.length)selecciones.push({exportador:exp,esquemas:esqs});
   });
@@ -1787,34 +1927,58 @@ async function enviarSolicitud(){
   btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
   const camp=findCampDefault(allG)||'25/26';
   const fecha=new Date().toLocaleDateString('es-AR');
+  // Armar campos con estado para el email
+  const camposConStatus=selectedCampos.map(nomCampo=>{
+    const r=(_solClient.camposData||[]).find(r=>g(r,'NOMBRE DEL CAMPO')===nomCampo);
+    const status=r?getFieldStatus(r):'A verificar';
+    const issues=[];
+    if(r){
+      const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
+      const renspa=g(r,'RENSPA');const cred=g(r,'CREDENCIAL RENSPA');
+      const poly=g(r,'POLIGONO');const evid=g(r,'EVIDENCIA');
+      const vto=getVtoRenspa(cuit,campo);const rs=renspaStatus(cuit,campo);
+      const estadoKmz=getNotaValor(cuit,campo,'estado_kmz');
+      const estadoEvid=getNotaValor(cuit,campo,'estado_evidencia');
+      const hv=hasVigentes(cuit,campo);
+      if(!renspa&&!cred)issues.push('Sin RENSPA');
+      else if(!vto)issues.push('Sin fecha RENSPA');
+      else if(rs.status.includes('Vencida'))issues.push('RENSPA vencida');
+      if(!poly)issues.push('Sin KMZ');
+      else if(estadoKmz&&estadoKmz!=='OK')issues.push('KMZ: obs.');
+      else if(!estadoKmz)issues.push('KMZ pendiente verificación');
+      if(!evid)issues.push('Sin evidencia');
+      else if(estadoEvid&&estadoEvid!=='OK')issues.push('Evidencia: obs.');
+      else if(!estadoEvid)issues.push('Evidencia pendiente verificación');
+      if(!hv)issues.push('Has vigentes: pendiente');
+    }
+    return{nombre:nomCampo,status,issues};
+  });
   let totalFilas=0;
   try{
-    // Un solo POST con todos los exportadores — evita throttling de Apps Script con múltiples requests
-    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'nuevaSolicitud',selecciones:selecciones,productor:cliente,cuit:'',campo:'',estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha:fecha})});
+    const res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'nuevaSolicitud',selecciones,campos:camposConStatus,productor:_solClient.name,cuit:_solClient.cuit,estado:'Solicitud enviada',via:'Tablero',campana:camp,solicitante:nombre,fecha})});
     const data=await res.json();
     if(!data.ok)throw new Error(data.error||'Error desconocido');
-    totalFilas=data.filasCreadas||selecciones.reduce(function(s,sel){return s+sel.esquemas.length;},0);
-    // Guardar notas de estado para todas las gestiones creadas
+    totalFilas=data.filasCreadas||0;
+    // Guardar notas: una por cada campo × exportador × esquema
     const session=loadSession();
-    for(const {exportador,esquemas} of selecciones){
-      for(const esquema of esquemas){
-        const gid=[cliente,'',esquema,exportador,camp].join('||');
-        await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);
-        if(session&&session.email)await saveNota(gid,'__GESTION__','sol_email',session.email,nombre);
+    for(const nomCampo of selectedCampos){
+      for(const {exportador,esquemas} of selecciones){
+        for(const esquema of esquemas){
+          const gid=[_solClient.name,nomCampo,esquema,exportador,camp].join('||');
+          await saveNota(gid,'__GESTION__','estado','Solicitud enviada',nombre);
+          if(session&&session.email)await saveNota(gid,'__GESTION__','sol_email',session.email,nombre);
+        }
       }
     }
     msg.className='modal-msg ok';
-    msg.textContent=`${totalFilas} gestión${totalFilas>1?'es':''} creada${totalFilas>1?'s':''} para ${selecciones.length} exportador${selecciones.length>1?'es':''}.`;
+    msg.textContent=`${totalFilas} gestión${totalFilas!==1?'es':''} creada${totalFilas!==1?'s':''} para ${selecciones.length} exportador${selecciones.length!==1?'es':''}.`;
     btn.textContent='Enviado ✓';
     setTimeout(()=>{closeNuevaSolicitud();loadData();},2000);
   }catch(e){
     msg.className='modal-msg err';
-    // Si es error de red (Failed to fetch / timeout), NO re-habilitamos el botón:
-    // el servidor puede haber procesado la solicitud igual, y re-enviar generaría duplicados.
     if(e.message==='Failed to fetch'){
-      msg.textContent='No se pudo confirmar el envío. Verificá en el panel de Gestiones si la solicitud aparece antes de intentar de nuevo.';
-      // No re-habilitamos btn — quedá como "Enviando..." para evitar doble submit
-    } else {
+      msg.textContent='No se pudo confirmar el envío. Verificá en Gestiones si la solicitud aparece antes de intentar de nuevo.';
+    }else{
       msg.textContent='Error al enviar: '+e.message;
       btn.disabled=false;btn.textContent='Enviar solicitud';
     }
