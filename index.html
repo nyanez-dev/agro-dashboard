@@ -1127,7 +1127,7 @@ async function guardarEditHab(ri,campos){
   const saveBtn=document.getElementById('modal-edit-hab-save');
   saveBtn.disabled=true;saveBtn.textContent='Guardando...';
   try{
-    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'editHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,fields,autor})});
+    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'editHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,fields,autor})});
     const j=await resp.json();
     if(j.ok){showToast('ok','Habilitación actualizada','Los cambios se guardaron correctamente.');cerrarEditHab();await loadData();}
     else{alert('Error al guardar: '+(j.error||'Respuesta inesperada'));}
@@ -1140,7 +1140,7 @@ async function borrarHab(ri){
   const autor=document.getElementById('auth-user').textContent||'Compliance';
   const [key_cuit,key_campo,key_exportador,key_tipo,key_campana]=habKey(r).split('||');
   try{
-    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,autor})});
+    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'deleteHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,autor})});
     const j=await resp.json();
     if(j.ok){showToast('ok','Habilitación borrada','Se puede restaurar activando "Mostrar borradas".');await loadNotas();renderE();}
     else{alert('Error al borrar: '+(j.error||'Respuesta inesperada'));}
@@ -1151,7 +1151,7 @@ async function restaurarHab(ri){
   const autor=document.getElementById('auth-user').textContent||'Compliance';
   const [key_cuit,key_campo,key_exportador,key_tipo,key_campana]=habKey(r).split('||');
   try{
-    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'restoreHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,autor})});
+    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'restoreHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,autor})});
     const j=await resp.json();
     if(j.ok){showToast('ok','Habilitación restaurada','');await loadNotas();renderE();}
     else{alert('Error al restaurar: '+(j.error||'Respuesta inesperada'));}
@@ -1548,8 +1548,9 @@ async function guardarEditCampo(idx,campos){
   const saveBtn=document.getElementById('modal-edit-campo-save');
   saveBtn.disabled=true;saveBtn.textContent='Guardando...';
   try{
-    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'editCampoRow',cuit,campo_nombre:campo,fields,autor})});
-    const j=await resp.json();
+    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'editCampoRow',cuit,campo,fields,autor})});
+    let j;
+    try{j=await resp.json();}catch(parseErr){throw new Error('Respuesta inválida del servidor (no es JSON). Verificá que el Apps Script esté publicado con la versión más reciente.');}
     if(j.ok){
       showToast('ok','Datos actualizados','Los cambios se guardaron correctamente.');
       cerrarEditCampo();
