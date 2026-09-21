@@ -136,6 +136,8 @@ tr.clickable{cursor:pointer}
 .edit-only{display:none !important}
 .edit-mode .edit-only{display:flex !important}
 .edit-mode span.edit-only{display:inline !important}
+.g-sel-col{display:none}
+.edit-mode .g-sel-col{display:table-cell}
 
 .footer-row{font-size:11px;color:#9CA3AF;margin-top:10px;text-align:right}
 .loading{text-align:center;padding:50px;color:#6B7280;font-size:14px}
@@ -656,7 +658,7 @@ function statCard(val,lbl,color){return `<div class="stat"><div class="stat-val"
 function toggleEditMode(){
   if(!editMode){editMode=true;document.body.classList.add('edit-mode');document.getElementById('btn-edit').textContent='Salir de edición';document.getElementById('btn-edit').classList.add('active');}
   else{editMode=false;selectedGids.clear();document.body.classList.remove('edit-mode');document.getElementById('btn-edit').textContent='Modo edición';document.getElementById('btn-edit').classList.remove('active');}
-  updateBulkBajaBar();renderG();
+  updateBulkBajaBar();
 }
 
 // ── NOTAS ──
@@ -1047,7 +1049,6 @@ async function confirmarBulkBaja(){
 
 function renderG(){
   const showBajas=document.getElementById('g-show-bajas')?.checked;
-  const isEdit=document.body.classList.contains('edit-mode');
   const f=filterG().filter(r=>{const gid=getGestionId(r);if(isGestionPasada(gid,r))return false;if(!showBajas&&isGestionDadaDeBaja(gid,r))return false;return true;});
   const web=f.filter(r=>(g(r,'web o mail')||'').toLowerCase()==='web').length;
   const exps=uniq(f.map(r=>r['Exportador'])).length;
@@ -1056,15 +1057,15 @@ function renderG(){
     const orphansEmpty=getOrphanedGids();
     let emptyHtml='<div class="loading">Sin resultados para los filtros seleccionados.</div>';
     if(orphansEmpty.length){
-      const oRowsE=orphansEmpty.map(gid=>{const parts=gid.split('||');const prod=parts[0]||'—';const campo=parts[1]||'Sin campo';const esq=parts[2]||'—';const exp=parts[3]||'—';const camp=parts[4]||'—';const estados2=allNotas.filter(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');const lastE=estados2.length?estados2[estados2.length-1].VALOR:'—';const cb=isEdit?`<td onclick="event.stopPropagation()" style="text-align:center"><input type="checkbox" data-gid="${gid.replace(/"/g,'&quot;')}" onchange="toggleSelectG(this)" ${selectedGids.has(gid)?'checked':''}></td>`:'';return`<tr>${cb}<td class="bold">${prod}</td><td>${campo}</td><td class="muted">${esq}</td><td class="muted">${lastE}</td><td>${expBadge(exp)}</td><td class="muted">${fmtCamp(camp)||camp}</td></tr>`;}).join('');
-      emptyHtml+=`<div style="margin-top:20px"><div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px 8px 0 0;padding:10px 14px;font-size:13px;font-weight:600;color:#92400E;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>⚠️ ${orphansEmpty.length} gestión${orphansEmpty.length>1?'es':''} con alertas activas sin fila en el Sheet</span><span style="font-size:11px;font-weight:400;color:#78350F">— Fueron borradas del Sheet sin dar de baja en el tablero. ${isEdit?'Seleccionálas y usá "Dar de baja".':''}</span></div><div class="table-wrap" style="border-radius:0 0 8px 8px;border:1px solid #F59E0B;border-top:none"><table><thead><tr>${isEdit?'<th style="width:32px"></th>':''}<th>Productor</th><th>Campo</th><th>Esquema</th><th>Último estado</th><th>Exportador</th><th>Campaña</th></tr></thead><tbody>${oRowsE}</tbody></table></div></div>`;
+      const oRowsE=orphansEmpty.map(gid=>{const parts=gid.split('||');const prod=parts[0]||'—';const campo=parts[1]||'Sin campo';const esq=parts[2]||'—';const exp=parts[3]||'—';const camp=parts[4]||'—';const estados2=allNotas.filter(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');const lastE=estados2.length?estados2[estados2.length-1].VALOR:'—';return`<tr><td class="g-sel-col" onclick="event.stopPropagation()" style="text-align:center"><input type="checkbox" data-gid="${gid.replace(/"/g,'&quot;')}" onchange="toggleSelectG(this)" ${selectedGids.has(gid)?'checked':''}></td><td class="bold">${prod}</td><td>${campo}</td><td class="muted">${esq}</td><td class="muted">${lastE}</td><td>${expBadge(exp)}</td><td class="muted">${fmtCamp(camp)||camp}</td></tr>`;}).join('');
+      emptyHtml+=`<div style="margin-top:20px"><div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px 8px 0 0;padding:10px 14px;font-size:13px;font-weight:600;color:#92400E;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>⚠️ ${orphansEmpty.length} gestión${orphansEmpty.length>1?'es':''} con alertas activas sin fila en el Sheet</span><span style="font-size:11px;font-weight:400;color:#78350F">— Fueron borradas del Sheet sin dar de baja en el tablero. Activá modo edición, seleccionálas y usá "Dar de baja".</span></div><div class="table-wrap" style="border-radius:0 0 8px 8px;border:1px solid #F59E0B;border-top:none"><table><thead><tr><th class="g-sel-col" style="width:32px"><input class="g-sel-col" type="checkbox" onchange="selectAllGFilter(this.checked)" title="Seleccionar todas"></th><th>Productor</th><th>Campo</th><th>Esquema</th><th>Último estado</th><th>Exportador</th><th>Campaña</th></tr></thead><tbody>${oRowsE}</tbody></table></div></div>`;
     }
     document.getElementById('g-table').innerHTML=emptyHtml;
     document.getElementById('g-footer').innerHTML='';
     updateBulkBajaBar();return;
   }
-  const cols=isEdit?7:6;
-  const thead=`<thead><tr>${isEdit?'<th style="width:32px"><input type="checkbox" id="g-select-all" onchange="selectAllGFilter(this.checked)" title="Seleccionar todas"></th>':''}<th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
+  // Checkbox siempre en DOM, visible/oculta via CSS (.g-sel-col)
+  const thead=`<thead><tr><th class="g-sel-col" style="width:32px"><input type="checkbox" id="g-select-all" onchange="selectAllGFilter(this.checked)" title="Seleccionar todas"></th><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
   const rows=f.map((r,i)=>{
     const gid=getGestionId(r);
     const esBaja=isGestionDadaDeBaja(gid,r);
@@ -1074,9 +1075,8 @@ function renderG(){
     const ultimo=estados.length?estados[estados.length-1].VALOR:(estadoSheet||'—');
     const rowStyle=esBaja?'opacity:0.5;background:#FEF2F2':'';
     const bajaBadge=esBaja?`<span class="badge badge-err" style="font-size:10px;margin-left:4px" title="${bajaInfo?bajaInfo.VALOR:''}">Baja</span>`:'';
-    const cbCell=isEdit?`<td onclick="event.stopPropagation()" style="text-align:center"><input type="checkbox" data-gid="${gid.replace(/"/g,'&quot;')}" onchange="toggleSelectG(this)" ${selectedGids.has(gid)?'checked':''}></td>`:'';
-    return `<tr class="clickable" onclick="toggleFichaG(${i})" style="${rowStyle}">${cbCell}<td class="bold">${r['Productor']||'—'}${bajaBadge}</td><td>${r['Campo']||'<span style="color:#9CA3AF">Sin campo</span>'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${esBaja?`<em style="color:#DC2626">Baja: ${bajaInfo?bajaInfo.VALOR:'—'}</em>`:ultimo}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
-    <tr><td colspan="${cols}" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
+    return `<tr class="clickable" onclick="toggleFichaG(${i})" style="${rowStyle}"><td class="g-sel-col" onclick="event.stopPropagation()" style="text-align:center"><input type="checkbox" data-gid="${gid.replace(/"/g,'&quot;')}" onchange="toggleSelectG(this)" ${selectedGids.has(gid)?'checked':''}></td><td class="bold">${r['Productor']||'—'}${bajaBadge}</td><td>${r['Campo']||'<span style="color:#9CA3AF">Sin campo</span>'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${esBaja?`<em style="color:#DC2626">Baja: ${bajaInfo?bajaInfo.VALOR:'—'}</em>`:ultimo}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
+    <tr><td colspan="7" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
   }).join('');
   const nBajas=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&isGestionDadaDeBaja(gid,r);}).length;
   // Panel de huérfanas (gids en Notas sin fila en el Sheet)
@@ -1088,16 +1088,15 @@ function renderG(){
       const prod=parts[0]||'—';const campo=parts[1]||'Sin campo';const esq=parts[2]||'—';const exp=parts[3]||'—';const camp=parts[4]||'—';
       const estados2=allNotas.filter(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');
       const lastE=estados2.length?estados2[estados2.length-1].VALOR:'—';
-      const cb=isEdit?`<td onclick="event.stopPropagation()" style="text-align:center"><input type="checkbox" data-gid="${gid.replace(/"/g,'&quot;')}" onchange="toggleSelectG(this)" ${selectedGids.has(gid)?'checked':''}></td>`:'';
-      return`<tr>${cb}<td class="bold">${prod}</td><td>${campo}</td><td class="muted">${esq}</td><td class="muted">${lastE}</td><td>${expBadge(exp)}</td><td class="muted">${fmtCamp(camp)||camp}</td></tr>`;
+      return`<tr><td class="g-sel-col" onclick="event.stopPropagation()" style="text-align:center"><input type="checkbox" data-gid="${gid.replace(/"/g,'&quot;')}" onchange="toggleSelectG(this)" ${selectedGids.has(gid)?'checked':''}></td><td class="bold">${prod}</td><td>${campo}</td><td class="muted">${esq}</td><td class="muted">${lastE}</td><td>${expBadge(exp)}</td><td class="muted">${fmtCamp(camp)||camp}</td></tr>`;
     }).join('');
     orphanHtml=`<div style="margin-top:20px">
       <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px 8px 0 0;padding:10px 14px;font-size:13px;font-weight:600;color:#92400E;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span>⚠️ ${orphans.length} gestión${orphans.length>1?'es':''} con alertas activas sin fila en el Sheet</span>
-        <span style="font-size:11px;font-weight:400;color:#78350F">— Fueron borradas del Sheet sin dar de baja en el tablero. ${isEdit?'Seleccionálas y usá "Dar de baja" para silenciar las alertas.':''}</span>
+        <span style="font-size:11px;font-weight:400;color:#78350F">— Fueron borradas del Sheet sin dar de baja en el tablero. Activá modo edición, seleccionálas y usá "Dar de baja".</span>
       </div>
       <div class="table-wrap" style="border-radius:0 0 8px 8px;border:1px solid #F59E0B;border-top:none">
-        <table><thead><tr>${isEdit?'<th style="width:32px"></th>':''}<th>Productor</th><th>Campo</th><th>Esquema</th><th>Último estado</th><th>Exportador</th><th>Campaña</th></tr></thead>
+        <table><thead><tr><th class="g-sel-col" style="width:32px"><input type="checkbox" onchange="selectAllGFilter(this.checked)" title="Seleccionar todas"></th><th>Productor</th><th>Campo</th><th>Esquema</th><th>Último estado</th><th>Exportador</th><th>Campaña</th></tr></thead>
         <tbody>${oRows}</tbody></table>
       </div>
     </div>`;
