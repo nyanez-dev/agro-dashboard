@@ -1613,7 +1613,16 @@ async function guardarEditCampo(idx,campos){
   try{
     const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'editCampoRow',cuit,campo,fields,autor})});
     let j;
-    try{j=await resp.json();}catch(parseErr){throw new Error('Respuesta inválida del servidor (no es JSON). Verificá que el Apps Script esté publicado con la versión más reciente.');}
+    try{j=await resp.json();}catch(parseErr){
+      let raw='(sin cuerpo)';
+      try{raw=await resp.text();}catch(e2){}
+      // Si es HTML, probablemente es una página de error de Google
+      const isHtml=raw.trim().startsWith('<');
+      const msg=isHtml
+        ?'El servidor devolvió una página de error de Google (HTTP '+resp.status+'). Esto suele pasar si el script tardó demasiado o si hay un error de autorización. Intentá de nuevo o republicá el Apps Script.'
+        :'Respuesta inesperada del servidor: '+raw.substring(0,200);
+      throw new Error(msg);
+    }
     if(j.ok){
       // Actualización inmediata en memoria: no esperamos que el servidor devuelva el dato fresco
       // (Google Sheets puede demorar unos segundos en reflejar la escritura en lecturas subsiguientes)
