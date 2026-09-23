@@ -1301,8 +1301,11 @@ function fieldVal(val,opts){opts=opts||{};const display=opts.link?`<a href="${va
 
 function buildFicha(r,idx){
   const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const cred=g(r,'CREDENCIAL RENSPA');const poly=g(r,'POLIGONO');const evid=g(r,'EVIDENCIA');
-  const tipoEvid=g(r,'TIPO DE EVIDENCIA');const mail=g(r,'MAIL DE CONTACTO');
+  const cred=getNotaValor(cuit,campo,'edit_CREDENCIAL RENSPA')||g(r,'CREDENCIAL RENSPA');
+  const poly=getNotaValor(cuit,campo,'edit_POLIGONO')||g(r,'POLIGONO');
+  const evid=getNotaValor(cuit,campo,'edit_EVIDENCIA')||g(r,'EVIDENCIA');
+  const tipoEvid=getNotaValor(cuit,campo,'edit_TIPO DE EVIDENCIA')||g(r,'TIPO DE EVIDENCIA');
+  const mail=getNotaValor(cuit,campo,'edit_MAIL DE CONTACTO')||g(r,'MAIL DE CONTACTO');
   const rs=renspaStatus(cuit,campo);const vto=getVtoRenspa(cuit,campo);
   const vtoFmt=vto&&String(vto).includes('T')?String(vto).split('T')[0]:vto;
   const comentarios=getNotas(cuit,campo,'comentario');
@@ -1324,17 +1327,17 @@ function buildFicha(r,idx){
   </div>
   <div class="ficha-grid">
     ${df('Nombre del campo',campo)}
-    ${df('Razón social',g(r,'RAZON SOCIAL'))}
-    ${df('Tipo sociedad',g(r,'TIPO SOCIEDAD'))}
+    ${df('Razón social',getNotaValor(cuit,campo,'edit_RAZON SOCIAL')||g(r,'RAZON SOCIAL'))}
+    ${df('Tipo sociedad',getNotaValor(cuit,campo,'edit_TIPO SOCIEDAD')||g(r,'TIPO SOCIEDAD'))}
     ${df('Mail contacto',mail,{email:true})}
-    ${df('Departamento',g(r,'DEPARTAMENTO'))}
-    ${df('Provincia',g(r,'PROVINCIA'))}
-    ${df('Localidad',g(r,'LOCALIDAD'))}
-    ${df('Cod. ARCA',g(r,'LOCALIDAD ARCA'))}
+    ${df('Departamento',getNotaValor(cuit,campo,'edit_DEPARTAMENTO')||g(r,'DEPARTAMENTO'))}
+    ${df('Provincia',getNotaValor(cuit,campo,'edit_PROVINCIA')||g(r,'PROVINCIA'))}
+    ${df('Localidad',getNotaValor(cuit,campo,'edit_LOCALIDAD')||g(r,'LOCALIDAD'))}
+    ${df('Cod. ARCA',getNotaValor(cuit,campo,'edit_LOCALIDAD ARCA')||g(r,'LOCALIDAD ARCA'))}
   </div>`;
 
   // ── Hectáreas (unificadas) ──
-  const hasTotales=g(r,'TOTALES DEL CAMPO');
+  const hasTotales=getNotaValor(cuit,campo,'edit_TOTALES DEL CAMPO')||g(r,'TOTALES DEL CAMPO');
   const hasSheet=g(r,'PRODUCTIVAS');
   const hasVigente=getHasActivaCamp(cuit,campo);
   const hasSustLegacy=getNotaValor(cuit,campo,'has_sustentables');
@@ -1420,7 +1423,7 @@ function buildFicha(r,idx){
   const renspaContent=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span class="badge ${rs.cls}">${rs.status}</span>
     ${cred?`<a href="${cred}" target="_blank" style="font-size:12px;color:#2563EB">Ver credencial</a>`:'<span style="font-size:12px;color:#9CA3AF">Sin credencial adjunta</span>'}
-    ${g(r,'RENSPA')?`<span style="font-size:12px;color:#6B7280">N°: <strong>${g(r,'RENSPA')}</strong></span>`:''}
+    ${(getNotaValor(cuit,campo,'edit_RENSPA')||g(r,'RENSPA'))?`<span style="font-size:12px;color:#6B7280">N°: <strong>${getNotaValor(cuit,campo,'edit_RENSPA')||g(r,'RENSPA')}</strong></span>`:''}
   </div>
   ${docCmt('cmt_renspa',cmtRenspa,'doc-cmt-renspa-'+idx)}`;
   const renspaEdit=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
@@ -1458,7 +1461,7 @@ function buildFicha(r,idx){
     <button onclick="saveEstadoEvid(${idx})" style="padding:5px 10px;background:#1B2A4A;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif">Guardar estado</button>
   </div>`;
 
-  const pcus1Val=g(r,'PCUS 1');
+  const pcus1Val=getNotaValor(cuit,campo,'edit_PCUS 1')||g(r,'PCUS 1');
   html+=`<div class="ficha-section"><h3>Documentación</h3>
     ${docRow('RENSPA',renspaContent,renspaEdit)}
     ${docRow('Polígono KMZ',kmzContent,kmzEdit)}
@@ -1543,6 +1546,7 @@ async function deleteHasProd(idx,cuit,campo,campNorm){
 // ── MODAL EDITAR INFORMACIÓN DE CAMPO ──
 function abrirEditCampo(idx){
   const f=filterC();const r=f[idx];if(!r)return;
+  const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
   const campos=[
     {key:'RAZON SOCIAL',label:'Razón social'},
     {key:'TIPO SOCIEDAD',label:'Tipo sociedad'},
@@ -1561,7 +1565,7 @@ function abrirEditCampo(idx){
   ];
   const rows=campos.map(c=>`<div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #F3F4F6">
     <label style="font-size:12px;font-weight:600;color:#374151">${c.label}</label>
-    <input type="${c.type||'text'}" id="ecf-${idx}-${c.key.replace(/\s/g,'_')}" value="${(g(r,c.key)||'').replace(/"/g,'&quot;')}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;width:100%;box-sizing:border-box">
+    <input type="${c.type||'text'}" id="ecf-${idx}-${c.key.replace(/\s/g,'_')}" value="${((getNotaValor(cuit,campo,'edit_'+c.key)||g(r,c.key))||'').replace(/"/g,'&quot;')}" style="padding:6px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;width:100%;box-sizing:border-box">
   </div>`).join('');
 
   let modal=document.getElementById('modal-edit-campo');
@@ -1597,52 +1601,33 @@ function cerrarEditCampo(){
 async function guardarEditCampo(idx,campos){
   const f=filterC();const r=f[idx];if(!r)return;
   const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
-  const fields={};let changed=false;
+  const toSave={};let changed=false;
   campos.forEach(c=>{
     const el=document.getElementById('ecf-'+idx+'-'+c.key.replace(/\s/g,'_'));
     if(!el)return;
-    const nv=el.value.trim();const ov=(g(r,c.key)||'').trim();
-    if(nv!==ov){fields[c.key]=nv;changed=true;}
+    const nv=el.value.trim();
+    // Compara contra el valor que se muestra actualmente: nota override > sheet
+    const ov=(getNotaValor(cuit,campo,'edit_'+c.key)||g(r,c.key)||'').trim();
+    if(nv!==ov){toSave[c.key]=nv;changed=true;}
   });
   if(!changed){showToast('info','Sin cambios','No se modificó ningún campo.');cerrarEditCampo();return;}
   const autor=document.getElementById('auth-user').textContent||'Compliance';
   const saveBtn=document.getElementById('modal-edit-campo-save');
   saveBtn.disabled=true;saveBtn.textContent='Guardando...';
   try{
-    const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'editCampoRow',cuit,campo,fields,autor})});
-    let j;
-    try{j=await resp.json();}catch(parseErr){
-      let raw='(sin cuerpo)';
-      try{raw=await resp.text();}catch(e2){}
-      // Si es HTML, probablemente es una página de error de Google
-      const isHtml=raw.trim().startsWith('<');
-      const msg=isHtml
-        ?'El servidor devolvió una página de error de Google (HTTP '+resp.status+'). Esto suele pasar si el script tardó demasiado o si hay un error de autorización. Intentá de nuevo o republicá el Apps Script.'
-        :'Respuesta inesperada del servidor: '+raw.substring(0,200);
-      throw new Error(msg);
+    // Guardamos cada campo editado como una nota override (JSONP, sin POST)
+    // El tablero lee estas notas y las prioriza sobre los datos del sheet
+    for(const key of Object.keys(toSave)){
+      await saveNota(cuit,campo,'edit_'+key,toSave[key],autor);
     }
-    if(j.ok){
-      // Actualización inmediata en memoria: no esperamos que el servidor devuelva el dato fresco
-      // (Google Sheets puede demorar unos segundos en reflejar la escritura en lecturas subsiguientes)
-      Object.keys(fields).forEach(function(fn){
-        const rKeys=Object.keys(r);const fnUp=fn.toUpperCase();
-        const exactK=rKeys.find(k=>k.toUpperCase()===fnUp);
-        const foundK=exactK||rKeys.find(k=>k.toUpperCase().includes(fnUp));
-        if(foundK)r[foundK]=fields[fn];
-      });
-      cerrarEditCampo();
-      renderC(); // muestra el cambio de inmediato con el dato en memoria actualizado
-      // NO llamamos loadData() acá — traería datos viejos del server y sobreescribiría el cambio
-      if(j.notFound&&j.notFound.length>0){
-        showToast('warn','Algunos campos no se guardaron','Las siguientes columnas no se encontraron en la planilla: '+j.notFound.join(', ')+'. Verificá que los encabezados del sheet coincidan.');
-      } else {
-        showToast('ok','Datos actualizados','Los cambios se guardaron en la planilla. Presioná Actualizar en unos segundos para ver todos los datos sincronizados.');
-      }
-    } else {
-      alert('Error al guardar: '+(j.error||'Respuesta inesperada del servidor'));
-    }
-  }catch(e){alert('Error de conexión: '+e.message);}
-  finally{saveBtn.disabled=false;saveBtn.textContent='Guardar';}
+    cerrarEditCampo();
+    renderC();
+    showToast('ok','Datos actualizados','Los cambios se guardaron correctamente.');
+  }catch(e){
+    alert('Error al guardar: '+e.message);
+  }finally{
+    saveBtn.disabled=false;saveBtn.textContent='Guardar';
+  }
 }
 async function saveComment(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const input=document.getElementById('cmt-'+idx);const val=input.value.trim();if(!val){alert('Escribi un comentario.');return;}const autor=document.getElementById('auth-user').textContent||'Compliance';await saveNota(cuit,campo,'comentario',val,autor);input.value='';renderC();}
 async function editComment(idx,ci){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const comentarios=getNotas(cuit,campo,'comentario');const cmt=comentarios[ci];if(!cmt)return;const newVal=prompt('Editar comentario:',cmt.VALOR);if(newVal===null||!newVal.trim())return;await saveNota(cuit,campo,'comentario',newVal.trim(),cmt.AUTOR);await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');renderC();}
