@@ -140,6 +140,12 @@ tr.clickable{cursor:pointer}
 .footer-row{font-size:11px;color:#9CA3AF;margin-top:10px;text-align:right}
 .loading{text-align:center;padding:50px;color:#6B7280;font-size:14px}
 .error{text-align:center;padding:40px;color:#DC2626;font-size:13px;line-height:1.6}
+/* Refresh overlay: atenúa sin destruir */
+.refreshing-overlay{position:relative;pointer-events:none;user-select:none;}
+.refreshing-overlay::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0.45);border-radius:8px;z-index:10;}
+.refreshing-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#1B2A4A;background:#E8EDF5;border-radius:20px;padding:2px 9px;margin-left:8px;animation:pulse-opacity 1.2s ease-in-out infinite;}
+@keyframes pulse-opacity{0%,100%{opacity:1;}50%{opacity:0.45;}}
+#last-update.stale{color:#B45309;}
 .num{text-align:right;font-variant-numeric:tabular-nums}
 .bold{font-weight:500}
 .mono{font-family:monospace;font-size:12px;color:#6B7280}
@@ -263,7 +269,7 @@ tr.clickable{cursor:pointer}
     </div>
     <div class="hdr-meta">
       <span id="auth-user" class="hdr-user"></span>
-      <span id="last-update">Cargando...</span>
+      <span id="last-update">Cargando...</span><span id="refresh-badge" class="refreshing-badge" style="display:none">⟳ actualizando</span>
     </div>
   </div>
   <div class="hdr-tabs">
@@ -719,29 +725,52 @@ function onFilterG(){cascadeG();renderG();}
 // ── GESTIONES CRM — helpers ──
 function getGestionId(r){return[r['Productor']||'',r['Campo']||'',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');}
 function getGestionEstados(gid,r){
+  // Normaliza para comparación robusta
+  const t=s=>String(s||'').trim();
+  const tgid=t(gid);
   // Estrategia 1: gid exacto O gid con campo vacío (migración automática)
-  const emptyGid=r?[r['Productor']||'','',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||'):'';
-  const found=allNotas.filter(n=>(n.CUIT===gid||(emptyGid&&n.CUIT===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');
+  const emptyGid=r?[t(r['Productor']),'',t(r['Esquema']),t(r['Exportador']),t(g(r,'Campa'))].join('||'):'';
+  const found=allNotas.filter(n=>(t(n.CUIT)===tgid||(emptyGid&&t(n.CUIT)===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='estado');
   if(found.length>0||!r)return found;
   // Estrategia 2: fallback difuso — misma combinación Productor/Esquema/Exportador/Campaña,
-  // cualquier valor de campo. Cubre casos donde el campo cambió entre que se guardó la nota
-  // y el estado actual de la fila (ej: nota bajo campo "San Juan" pero fila todavía vacía).
-  const prod=r['Productor']||'';const esq=r['Esquema']||'';const exp=r['Exportador']||'';const camp=g(r,'Campa')||'';
+  // cualquier valor de campo. Soporta tanto el formato de 5 partes (Productor||Campo||Esquema||Exportador||Campaña)
+  // como el formato legado de 4 partes (Productor||Esquema||Exportador||Campaña) previo a la introducción del campo.
+  const prod=t(r['Productor']);const esq=t(r['Esquema']);const exp=t(r['Exportador']);const camp=t(g(r,'Campa'));
   if(!prod||!esq||!exp||!camp)return found;
   return allNotas.filter(n=>{
     if(n.CAMPO!=='__GESTION__'||n.TIPO!=='estado')return false;
-    const p=n.CUIT.split('||');
-    return p[0]===prod&&p[2]===esq&&p[3]===exp&&p[4]===camp;
+    const p=t(n.CUIT).split('||');
+    if(p.length>=5){
+      // Formato 5 partes: Productor||Campo||Esquema||Exportador||Campaña
+      return p[0]===prod&&p[2]===esq&&p[3]===exp&&p[4]===camp;
+    } else if(p.length===4){
+      // Formato legado 4 partes: Productor||Esquema||Exportador||Campaña
+      return p[0]===prod&&p[1]===esq&&p[2]===exp&&p[3]===camp;
+    }
+    return false;
   });
 }
 function isGestionPasada(gid,r){
-  return allNotas.some(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada'&&n.VALOR==='SI');
+  const t=s=>String(s||'').trim();
+  const tgid=t(gid);
+  // Estrategia 1: gid exacto o con campo vacío
+  const emptyGid=r?[t(r['Productor']),'',t(r['Esquema']),t(r['Exportador']),t(g(r,'Campa'))].join('||'):'';
+  if(allNotas.some(n=>(t(n.CUIT)===tgid||(emptyGid&&t(n.CUIT)===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada'&&n.VALOR==='SI'))return true;
+  // Estrategia 2: formato legado 4 partes (Productor||Esquema||Exportador||Campaña)
+  if(r){const legacy=[t(r['Productor']),t(r['Esquema']),t(r['Exportador']),t(g(r,'Campa'))].join('||');if(allNotas.some(n=>t(n.CUIT)===legacy&&n.CAMPO==='__GESTION__'&&n.TIPO==='pasada'&&n.VALOR==='SI'))return true;}
+  return false;
 }
 function isGestionDadaDeBaja(gid,r){
-  return allNotas.some(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='baja');
+  const t=s=>String(s||'').trim();
+  const tgid=t(gid);
+  const emptyGid=r?[t(r['Productor']),'',t(r['Esquema']),t(r['Exportador']),t(g(r,'Campa'))].join('||'):'';
+  return allNotas.some(n=>(t(n.CUIT)===tgid||(emptyGid&&t(n.CUIT)===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='baja');
 }
 function getGestionBaja(gid,r){
-  return allNotas.find(n=>n.CUIT===gid&&n.CAMPO==='__GESTION__'&&n.TIPO==='baja');
+  const t=s=>String(s||'').trim();
+  const tgid=t(gid);
+  const emptyGid=r?[t(r['Productor']),'',t(r['Esquema']),t(r['Exportador']),t(g(r,'Campa'))].join('||'):'';
+  return allNotas.find(n=>(t(n.CUIT)===tgid||(emptyGid&&t(n.CUIT)===emptyGid))&&n.CAMPO==='__GESTION__'&&n.TIPO==='baja');
 }
 
 function buildFichaG(r,idx,gid,estados){
@@ -1586,9 +1615,15 @@ async function guardarEditCampo(idx,campos){
     let j;
     try{j=await resp.json();}catch(parseErr){throw new Error('Respuesta inválida del servidor (no es JSON). Verificá que el Apps Script esté publicado con la versión más reciente.');}
     if(j.ok){
-      showToast('ok','Datos actualizados','Los cambios se guardaron correctamente.');
       cerrarEditCampo();
       await loadData();
+      if(j.notFound&&j.notFound.length>0){
+        showToast('warn','Algunos campos no se guardaron','Las siguientes columnas no se encontraron en la planilla: '+j.notFound.join(', ')+'. Verificá que los encabezados del sheet coincidan.');
+      } else if(j.updated&&j.updated.length===0){
+        showToast('warn','Sin cambios aplicados','No se encontraron columnas que actualizar en la planilla.');
+      } else {
+        showToast('ok','Datos actualizados','Los cambios se guardaron correctamente.');
+      }
     } else {
       alert('Error al guardar: '+(j.error||'Respuesta inesperada del servidor'));
     }
@@ -1715,24 +1750,57 @@ async function fetchAllData(){
 }
 
 // ── CARGA ──
-async function loadData(){
-  document.getElementById('last-update').textContent='Actualizando...';
-  document.getElementById('g-table').innerHTML='<div class="loading">Cargando...</div>';
-  document.getElementById('e-table').innerHTML='<div class="loading">Cargando...</div>';
-  document.getElementById('c-table').innerHTML='<div class="loading">Cargando...</div>';
+let _lastLoadTime=null;   // Date de la última carga exitosa
+let _hasData=false;       // ¿Ya hay datos en pantalla?
+
+function _setRefreshing(on){
+  const badge=document.getElementById('refresh-badge');
+  if(badge)badge.style.display=on?'':'none';
+  ['g-table','e-table','c-table'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){if(on)el.classList.add('refreshing-overlay');else el.classList.remove('refreshing-overlay');}
+  });
+}
+function _updateLastUpdateText(){
+  if(!_lastLoadTime)return;
+  const el=document.getElementById('last-update');
+  if(!el)return;
+  const mins=Math.round((Date.now()-_lastLoadTime)/60000);
+  const timeStr=_lastLoadTime.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  if(mins<=1){el.textContent='Actualizado '+timeStr;el.classList.remove('stale');}
+  else if(mins<15){el.textContent='Actualizado '+timeStr+' (hace '+mins+' min)';el.classList.remove('stale');}
+  else{el.textContent='Actualizado '+timeStr+' (hace '+mins+' min)';el.classList.add('stale');}
+}
+setInterval(_updateLastUpdateText,60000);
+
+async function loadData(isRetry){
+  const isFirst=!_hasData;
+  if(isFirst){
+    // Primera carga: mostrar placeholders
+    document.getElementById('g-table').innerHTML='<div class="loading">Cargando...</div>';
+    document.getElementById('e-table').innerHTML='<div class="loading">Cargando...</div>';
+    document.getElementById('c-table').innerHTML='<div class="loading">Cargando...</div>';
+    document.getElementById('last-update').textContent='Cargando...';
+    document.getElementById('last-update').classList.remove('stale');
+  } else {
+    // Actualización: overlay no bloqueante sobre datos existentes
+    _setRefreshing(true);
+    document.getElementById('last-update').textContent='Actualizando...';
+  }
   try{
     const [data] = await Promise.all([
       fetchAllData(),
       loadNotas().catch(e => console.warn('Notas no disponibles:', e))
     ]);
+    _setRefreshing(false);
     allG = data.gestiones || [];
     allE = data.exportadores || [];
     allC = data.campos || [];
-    // Campaña vigente desde Config sheet (ej. "25/26" → "2526")
     if(data.config&&data.config.campana_vigente){CAMPANA_VIGENTE=normCamp(data.config.campana_vigente);}
-    // También actualizar CAMP_DEFAULTS si viene config
     if(data.config&&data.config.campana_vigente){const cv=data.config.campana_vigente;CAMP_DEFAULTS[0]=normCamp(cv);CAMP_DEFAULTS[1]=cv;}
     if(!allG.length&&!allE.length&&!allC.length)showToast('warn','Sin datos cargados','El servidor respondió pero no devolvió registros. Probá con el botón <strong>Actualizar</strong>. Si sigue vacío, la planilla puede tener un problema — contactá a Compliance.');
+    _hasData=true;
+    _lastLoadTime=new Date();
     const gDefault=findCampDefault(allG);const eDefault=findCampDefault(allE);
     if(gDefault)sel['g-camp'].add(gDefault);
     if(eDefault)sel['e-camp'].add(eDefault);
@@ -1743,22 +1811,36 @@ async function loadData(){
     buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));
     buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));
     renderG();renderE();renderC();
-    const now=new Date();
-    document.getElementById('last-update').textContent='Actualizado '+now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    _updateLastUpdateText();
   }catch(e){
-    const msg=`<div class="error">No se pudieron cargar los datos.<br><small>${e.message}</small></div>`;
-    document.getElementById('g-table').innerHTML=msg;
-    document.getElementById('e-table').innerHTML=msg;
-    document.getElementById('c-table').innerHTML=msg;
-    document.getElementById('last-update').textContent='Error al cargar';
+    _setRefreshing(false);
     const isTimeout=e.message&&e.message.toLowerCase().includes('timeout');
     const isNet=e.message&&(e.message.toLowerCase().includes('fetch')||e.message.toLowerCase().includes('conexion')||e.message.toLowerCase().includes('conexión'));
+    // Retry automático en timeout (una sola vez)
+    if(isTimeout&&!isRetry){
+      showToast('warn','Reintentando automáticamente','El servidor tardó en responder. Reintentando...');
+      setTimeout(()=>loadData(true),3000);
+      return;
+    }
+    if(isFirst){
+      // Sin datos previos: mostrar error en tablas
+      const msg=`<div class="error">No se pudieron cargar los datos.<br><small>${e.message}</small></div>`;
+      document.getElementById('g-table').innerHTML=msg;
+      document.getElementById('e-table').innerHTML=msg;
+      document.getElementById('c-table').innerHTML=msg;
+      document.getElementById('last-update').textContent='Error al cargar';
+    } else {
+      // Hay datos previos: preservarlos, solo avisar
+      document.getElementById('last-update').textContent=
+        (_lastLoadTime?'Actualizado '+_lastLoadTime.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+' (error al actualizar)':'Error al actualizar');
+      document.getElementById('last-update').classList.add('stale');
+    }
     const toastMsg=isTimeout
-      ?'El servidor tardó demasiado en responder. Esperá unos segundos y presioná <strong>Actualizar</strong>.'
+      ?'El servidor tardó demasiado en responder.'+(isFirst?' Presioná <strong>Actualizar</strong> para reintentar.':' Los datos mostrados pueden estar desactualizados.')
       :isNet
-        ?'No se pudo conectar al servidor. Verificá tu conexión a internet y presioná <strong>Actualizar</strong>.'
-        :'Ocurrió un error inesperado: '+e.message+'. Intentá actualizar. Si persiste, contactá a Compliance.';
-    showToast('err',isTimeout?'Timeout al cargar':'Error de conexión',toastMsg);
+        ?'No se pudo conectar al servidor. Verificá tu conexión a internet.'
+        :'Error inesperado: '+e.message+'. Si persiste, contactá a Compliance.';
+    showToast('err',isTimeout?'Error de conexión':'Error de conexión',toastMsg);
   }
 }
 
