@@ -1615,12 +1615,19 @@ async function guardarEditCampo(idx,campos){
     let j;
     try{j=await resp.json();}catch(parseErr){throw new Error('Respuesta inválida del servidor (no es JSON). Verificá que el Apps Script esté publicado con la versión más reciente.');}
     if(j.ok){
+      // Actualización inmediata en memoria: no esperamos que el servidor devuelva el dato fresco
+      // (Google Sheets puede demorar unos segundos en reflejar la escritura en lecturas subsiguientes)
+      Object.keys(fields).forEach(function(fn){
+        const rKeys=Object.keys(r);const fnUp=fn.toUpperCase();
+        const exactK=rKeys.find(k=>k.toUpperCase()===fnUp);
+        const foundK=exactK||rKeys.find(k=>k.toUpperCase().includes(fnUp));
+        if(foundK)r[foundK]=fields[fn];
+      });
       cerrarEditCampo();
-      await loadData();
+      renderC(); // muestra el cambio de inmediato
+      loadData(); // recarga en background para sincronizar todo (sin await)
       if(j.notFound&&j.notFound.length>0){
         showToast('warn','Algunos campos no se guardaron','Las siguientes columnas no se encontraron en la planilla: '+j.notFound.join(', ')+'. Verificá que los encabezados del sheet coincidan.');
-      } else if(j.updated&&j.updated.length===0){
-        showToast('warn','Sin cambios aplicados','No se encontraron columnas que actualizar en la planilla.');
       } else {
         showToast('ok','Datos actualizados','Los cambios se guardaron correctamente.');
       }
