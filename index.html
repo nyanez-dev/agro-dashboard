@@ -672,8 +672,8 @@ function toggleEditMode(){
 }
 
 // ── NOTAS ──
-async function loadNotas(){return new Promise((resolve)=>{const cb='_notasCb'+Date.now();window[cb]=function(d){allNotas=d.notas||[];delete window[cb];resolve();};const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?callback='+cb;s.onerror=function(){console.warn('No se pudieron cargar notas');allNotas=[];resolve();};document.body.appendChild(s);setTimeout(()=>{if(window[cb]){allNotas=[];delete window[cb];resolve();}},5000);});}
-async function saveNota(cuit,campo,tipo,valor,autor){return new Promise((resolve)=>{const cb='_saveCb'+Date.now();window[cb]=function(d){delete window[cb];resolve(d);};const params=`action=save&cuit=${encodeURIComponent(cuit)}&campo=${encodeURIComponent(campo)}&tipo=${encodeURIComponent(tipo)}&valor=${encodeURIComponent(valor)}&autor=${encodeURIComponent(autor)}&callback=${cb}`;const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?'+params;s.onerror=function(){delete window[cb];showToast('err','Error al guardar','No se pudo guardar el cambio. Verificá tu conexión e intentá de nuevo. Si el error persiste, contactá a Compliance.');resolve();};document.body.appendChild(s);});}
+async function loadNotas(){return new Promise((resolve)=>{const cb='_notasCb'+Date.now();window[cb]=function(d){allNotas=d.notas||[];delete window[cb];resolve();};const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?callback='+cb;s.onerror=function(){console.warn('loadNotas: error de red — conservando notas anteriores');delete window[cb];resolve();};document.body.appendChild(s);setTimeout(()=>{if(window[cb]){console.warn('loadNotas: timeout — conservando notas anteriores');delete window[cb];/* NO reseteamos allNotas — conservamos los datos anteriores */resolve();}},25000);});}
+async function saveNota(cuit,campo,tipo,valor,autor){return new Promise((resolve)=>{const cb='_saveCb'+Date.now();window[cb]=function(d){delete window[cb];if(d&&d.ok){/* Actualización optimista: agregar inmediatamente a allNotas en memoria */allNotas.push({CUIT:String(cuit),CAMPO:String(campo),TIPO:String(tipo),VALOR:String(valor),AUTOR:String(autor),FECHA:new Date().toISOString()});}resolve(d);};const params=`action=save&cuit=${encodeURIComponent(cuit)}&campo=${encodeURIComponent(campo)}&tipo=${encodeURIComponent(tipo)}&valor=${encodeURIComponent(valor)}&autor=${encodeURIComponent(autor)}&callback=${cb}`;const s=document.createElement('script');s.src=APPS_SCRIPT_URL+'?'+params;s.onerror=function(){delete window[cb];showToast('err','Error al guardar','No se pudo guardar el cambio. Verificá tu conexión e intentá de nuevo. Si el error persiste, contactá a Compliance.');resolve();};document.body.appendChild(s);});}
 function getNotas(cuit,campo,tipo){const deleted=allNotas.filter(n=>String(n.CUIT)==String(cuit)&&String(n.CAMPO)==String(campo)&&n.TIPO==='borrar_comentario').map(n=>n.VALOR);return allNotas.filter(n=>{if(String(n.CUIT)!=String(cuit)||String(n.CAMPO)!=String(campo))return false;if(tipo&&n.TIPO!=tipo)return false;if(n.TIPO==='comentario'&&deleted.includes(n.VALOR+'|||'+n.FECHA))return false;if(n.TIPO==='borrar_comentario')return false;return true;});}
 function getVtoRenspa(cuit,campo){const n=getNotas(cuit,campo,'vto_renspa');return n.length?n[n.length-1].VALOR:'';}
 function getNotaValor(cuit,campo,tipo){const n=getNotas(cuit,campo,tipo);return n.length?n[n.length-1].VALOR:'';}
@@ -843,7 +843,6 @@ async function guardarEstadoGestion(idx){
       })});
     }catch(e){console.warn('Notificación de estado no enviada:',e);}
   }
-  await loadNotas();
   renderG();
 }
 
@@ -957,7 +956,6 @@ async function confirmarPasarAHabilitaciones(){
     }catch(e){console.warn('Notificación de habilitaciones no enviada:',e);}
   }
   cerrarModalHab();
-  await loadNotas();
   renderG();
 }
 
@@ -1007,7 +1005,7 @@ async function confirmarBaja(){
     }catch(e){console.warn('Notificación de baja no enviada:',e);}
   }
   cerrarModalBaja();
-  await loadNotas();renderG();
+  renderG();
 }
 
 async function darDeBajaGestion(idx){
@@ -1021,7 +1019,7 @@ async function darDeBajaGestion(idx){
   const gid=getGestionId(r);
   const userName=document.getElementById('auth-user').textContent||'Compliance';
   await saveNota(gid,'__GESTION__','baja',motivo,userName);
-  await loadNotas();renderG();
+  renderG();
 }
 
 function renderG(){
@@ -1199,7 +1197,7 @@ async function borrarHab(ri){
   try{
     const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'deleteHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,autor})});
     const j=await resp.json();
-    if(j.ok){showToast('ok','Habilitación borrada','Se puede restaurar activando "Mostrar borradas".');await loadNotas();renderE();}
+    if(j.ok){showToast('ok','Habilitación borrada','Se puede restaurar activando "Mostrar borradas".');renderE();loadNotas().then(()=>renderE());}
     else{alert('Error al borrar: '+(j.error||'Respuesta inesperada'));}
   }catch(e){alert('Error de conexión: '+e.message);}
 }
@@ -1210,7 +1208,7 @@ async function restaurarHab(ri){
   try{
     const resp=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'restoreHabRow',key_cuit,key_campo,key_exportador,key_tipo,key_campana,autor})});
     const j=await resp.json();
-    if(j.ok){showToast('ok','Habilitación restaurada','');await loadNotas();renderE();}
+    if(j.ok){showToast('ok','Habilitación restaurada','');renderE();loadNotas().then(()=>renderE());}
     else{alert('Error al restaurar: '+(j.error||'Respuesta inesperada'));}
   }catch(e){alert('Error de conexión: '+e.message);}
 }
@@ -1484,9 +1482,9 @@ function buildFicha(r,idx){
 }
 
 function toggleFicha(i){const el=document.getElementById('ficha-'+i);if(el)el.classList.toggle('open');}
-async function saveVto(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('vto-'+idx).value;if(!val){alert('Selecciona una fecha.');return;}await saveNota(cuit,campo,'vto_renspa',val,'Compliance');await loadNotas();renderC();}
-async function saveEstadoKmz(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('kmz-'+idx).value;if(!val){alert('Selecciona un estado.');return;}await saveNota(cuit,campo,'estado_kmz',val,'Compliance');await loadNotas();renderC();}
-async function saveEstadoEvid(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('evid-'+idx).value;if(!val){alert('Selecciona un estado.');return;}await saveNota(cuit,campo,'estado_evidencia',val,'Compliance');await loadNotas();renderC();}
+async function saveVto(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('vto-'+idx).value;if(!val){alert('Selecciona una fecha.');return;}await saveNota(cuit,campo,'vto_renspa',val,'Compliance');renderC();}
+async function saveEstadoKmz(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('kmz-'+idx).value;if(!val){alert('Selecciona un estado.');return;}await saveNota(cuit,campo,'estado_kmz',val,'Compliance');renderC();}
+async function saveEstadoEvid(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const val=document.getElementById('evid-'+idx).value;if(!val){alert('Selecciona un estado.');return;}await saveNota(cuit,campo,'estado_evidencia',val,'Compliance');renderC();}
 async function saveHas(idx){
   const f=filterC();const r=f[idx];if(!r)return;
   const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
@@ -1499,7 +1497,7 @@ async function saveHas(idx){
   await saveNota(cuit,campo,'hascmp_'+cn,val,autor);
   document.getElementById('has-'+idx).value='';
   document.getElementById('has-camp-'+idx).value='';
-  await loadNotas();renderC();
+  renderC();
 }
 async function saveDocComment(idx,tipo){
   const f=filterC();const r=f[idx];if(!r)return;
@@ -1511,7 +1509,7 @@ async function saveDocComment(idx,tipo){
   if(!val){alert('Escribí una nota antes de guardar.');return;}
   const autor=document.getElementById('auth-user').textContent||'Compliance';
   await saveNota(cuit,campo,tipo,val,autor);
-  await loadNotas();renderC();
+  renderC();
 }
 function editHas(idx,campNorm,campDisplay,val){
   const dispFmt=campDisplay||campNorm;
@@ -1525,7 +1523,7 @@ async function deleteHas(idx,cuit,campo,campNorm){
   if(!confirm('¿Borrar has. sustentables de campaña '+fmtCamp(campNorm)+'?'))return;
   const autor=document.getElementById('auth-user').textContent||'Compliance';
   await saveNota(cuit,campo,'hascmp_'+campNorm,'__BORRADO__',autor);
-  await loadNotas();renderC();
+  renderC();
 }
 function editHasProd(idx,campNorm,campDisplay,val){
   const dispFmt=campDisplay||campNorm;
@@ -1539,7 +1537,7 @@ async function deleteHasProd(idx,cuit,campo,campNorm){
   if(!confirm('¿Borrar has. productivas de campaña '+fmtCamp(campNorm)+'?'))return;
   const autor=document.getElementById('auth-user').textContent||'Compliance';
   await saveNota(cuit,campo,'hasprod_'+campNorm,'__BORRADO__',autor);
-  await loadNotas();renderC();
+  renderC();
 }
 
 // ── MODAL EDITAR INFORMACIÓN DE CAMPO ──
@@ -1633,12 +1631,12 @@ async function guardarEditCampo(idx,campos){
         if(foundK)r[foundK]=fields[fn];
       });
       cerrarEditCampo();
-      renderC(); // muestra el cambio de inmediato
-      loadData(); // recarga en background para sincronizar todo (sin await)
+      renderC(); // muestra el cambio de inmediato con el dato en memoria actualizado
+      // NO llamamos loadData() acá — traería datos viejos del server y sobreescribiría el cambio
       if(j.notFound&&j.notFound.length>0){
         showToast('warn','Algunos campos no se guardaron','Las siguientes columnas no se encontraron en la planilla: '+j.notFound.join(', ')+'. Verificá que los encabezados del sheet coincidan.');
       } else {
-        showToast('ok','Datos actualizados','Los cambios se guardaron correctamente.');
+        showToast('ok','Datos actualizados','Los cambios se guardaron en la planilla. Presioná Actualizar en unos segundos para ver todos los datos sincronizados.');
       }
     } else {
       alert('Error al guardar: '+(j.error||'Respuesta inesperada del servidor'));
@@ -1646,9 +1644,9 @@ async function guardarEditCampo(idx,campos){
   }catch(e){alert('Error de conexión: '+e.message);}
   finally{saveBtn.disabled=false;saveBtn.textContent='Guardar';}
 }
-async function saveComment(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const input=document.getElementById('cmt-'+idx);const val=input.value.trim();if(!val){alert('Escribi un comentario.');return;}const autor=document.getElementById('auth-user').textContent||'Compliance';await saveNota(cuit,campo,'comentario',val,autor);input.value='';await loadNotas();renderC();}
-async function editComment(idx,ci){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const comentarios=getNotas(cuit,campo,'comentario');const cmt=comentarios[ci];if(!cmt)return;const newVal=prompt('Editar comentario:',cmt.VALOR);if(newVal===null||!newVal.trim())return;await saveNota(cuit,campo,'comentario',newVal.trim(),cmt.AUTOR);await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');await loadNotas();renderC();}
-async function deleteComment(idx,ci){if(!confirm('Seguro que queres borrar este comentario?'))return;const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const comentarios=getNotas(cuit,campo,'comentario');const cmt=comentarios[ci];if(!cmt)return;await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');await loadNotas();renderC();}
+async function saveComment(idx){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const input=document.getElementById('cmt-'+idx);const val=input.value.trim();if(!val){alert('Escribi un comentario.');return;}const autor=document.getElementById('auth-user').textContent||'Compliance';await saveNota(cuit,campo,'comentario',val,autor);input.value='';renderC();}
+async function editComment(idx,ci){const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const comentarios=getNotas(cuit,campo,'comentario');const cmt=comentarios[ci];if(!cmt)return;const newVal=prompt('Editar comentario:',cmt.VALOR);if(newVal===null||!newVal.trim())return;await saveNota(cuit,campo,'comentario',newVal.trim(),cmt.AUTOR);await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');renderC();}
+async function deleteComment(idx,ci){if(!confirm('Seguro que queres borrar este comentario?'))return;const f=filterC();const r=f[idx];if(!r)return;const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');const comentarios=getNotas(cuit,campo,'comentario');const cmt=comentarios[ci];if(!cmt)return;await saveNota(cuit,campo,'borrar_comentario',cmt.VALOR+'|||'+cmt.FECHA,'Sistema');renderC();}
 function clearC(){document.getElementById('c-search').value='';const cRazon=document.getElementById('c-razon');if(cRazon)cRazon.value='';Object.keys(sel).filter(k=>k.startsWith('c-')).forEach(k=>sel[k].clear());buildDropdown('c-prov',uniq(allC.map(r=>g(r,'PROVINCIA'))));buildDropdown('c-estado',uniq(allC.map(r=>getFieldStatus(r))),s=>statusBadge(s));renderC();}
 
 // ── TABS ──
