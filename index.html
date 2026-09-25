@@ -1281,7 +1281,7 @@ function renderC(){
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${campo}</td>
       <td class="muted" style="max-width:100px">${g(r,'LOCALIDAD')||'—'}</td>
       <td class="muted" style="max-width:90px">${g(r,'PROVINCIA')||'—'}</td>
-      <td class="num">${fmt(g(r,'TOTALES DEL CAMPO'))}</td>
+      <td class="num">${fmt(getNotaValor(cuit,campo,'edit_TOTALES DEL CAMPO')||g(r,'TOTALES DEL CAMPO'))}</td>
       <td class="num">${hasCell}</td>
       <td><span class="badge ${rs.cls}">${rs.status}</span></td>
       <td style="white-space:normal;min-width:160px">${getFieldIssuesBadges(r)}</td>
@@ -1699,25 +1699,26 @@ function exportVISEC(){
   const rows=data.map(r=>{
     const cuit=g(r,'CUIT');const campo=g(r,'NOMBRE DEL CAMPO');
     const hasSust=getHasActivaCamp(cuit,campo);
-    const tipoSoc=visecTipoSociedad(g(r,'TIPO SOCIEDAD'));
-    if(g(r,'TIPO SOCIEDAD')&&tipoSoc==='')sinMatch++;
+    const tipoSocRaw=getNotaValor(cuit,campo,'edit_TIPO SOCIEDAD')||g(r,'TIPO SOCIEDAD');
+    const tipoSoc=visecTipoSociedad(tipoSocRaw);
+    if(tipoSocRaw&&tipoSoc==='')sinMatch++;
     return[
-      g(r,'RENSPA')||'',               // A — Número RENSPA
-      campo||'',                        // B — Descripción UP
-      '',                               // C — Polígono (en blanco)
-      '',                               // D — Punto Referencia (en blanco)
-      g(r,'LOCALIDAD ARCA')||'',       // E — Código Localidad ARCA
-      g(r,'TOTALES DEL CAMPO')||'',    // F — Superficie
-      23,                               // G — Código Producto (23 = Soja)
-      campDisplay,                      // H — Código Campaña
-      hasSust||'',                      // I — Has Productivas (sus. campaña vigente)
-      g(r,'PCUS 1')||'',               // J — PCUS1
-      '',                               // K — PCUS2 (en blanco)
-      '',                               // L — PCUS3 (en blanco)
-      cuit||'',                         // M — CUIT Productor
-      g(r,'RAZON SOCIAL')||'',         // N — Razón Social
-      tipoSoc,                          // O — Código Tipo Sociedad
-      g(r,'MAIL DE CONTACTO')||'',     // P — Mail
+      (getNotaValor(cuit,campo,'edit_RENSPA')||g(r,'RENSPA'))||'',               // A — Número RENSPA
+      campo||'',                                                                   // B — Descripción UP
+      '',                                                                          // C — Polígono (en blanco)
+      '',                                                                          // D — Punto Referencia (en blanco)
+      (getNotaValor(cuit,campo,'edit_LOCALIDAD ARCA')||g(r,'LOCALIDAD ARCA'))||'', // E — Código Localidad ARCA
+      (getNotaValor(cuit,campo,'edit_TOTALES DEL CAMPO')||g(r,'TOTALES DEL CAMPO'))||'', // F — Superficie
+      23,                                                                          // G — Código Producto (23 = Soja)
+      campDisplay,                                                                 // H — Código Campaña
+      hasSust||'',                                                                 // I — Has Productivas (sus. campaña vigente)
+      (getNotaValor(cuit,campo,'edit_PCUS 1')||g(r,'PCUS 1'))||'',               // J — PCUS1
+      '',                                                                          // K — PCUS2 (en blanco)
+      '',                                                                          // L — PCUS3 (en blanco)
+      cuit||'',                                                                    // M — CUIT Productor
+      (getNotaValor(cuit,campo,'edit_RAZON SOCIAL')||g(r,'RAZON SOCIAL'))||'',   // N — Razón Social
+      tipoSoc,                                                                     // O — Código Tipo Sociedad
+      (getNotaValor(cuit,campo,'edit_MAIL DE CONTACTO')||g(r,'MAIL DE CONTACTO'))||'', // P — Mail
     ];
   });
   const wsData=[headers,...rows];
