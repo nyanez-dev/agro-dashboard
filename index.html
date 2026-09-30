@@ -372,6 +372,16 @@ tr.clickable{cursor:pointer}
       </div>
     </div>
 
+    <!-- VISEC STANDALONE -->
+    <div class="form-row" style="border-top:1px solid #E5E7EB;padding-top:12px;margin-top:0">
+      <label>Habilitación VISEC <span style="font-size:11px;font-weight:400;color:#6B7280">(esquema independiente)</span></label>
+      <p style="font-size:12px;color:#6B7280;margin:4px 0 6px 0">Carga en el sistema VISEC de AFIP. No está asociada a un exportador en particular. Una vez aprobada, se puede pasar a Habilitaciones.</p>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#1B2A4A;padding:6px 0">
+        <input type="checkbox" id="sol-visec-cb" style="width:15px;height:15px;cursor:pointer">
+        Solicitar habilitación VISEC
+      </label>
+    </div>
+
     <!-- AVISOS -->
     <div id="sol-hab-warning" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid #3B82F6;border-radius:6px;padding:10px 14px;font-size:12px;color:#1E40AF;margin-bottom:12px;line-height:1.6"></div>
     <div id="sol-warning" style="display:none;background:#FEF3C7;border:1px solid #FCD34D;border-left:4px solid #F59E0B;border-radius:6px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:12px;line-height:1.6"></div>
@@ -650,8 +660,8 @@ function g(r,partial){
 const sel = {'g-camp':new Set(),'g-exp':new Set(),'g-via':new Set(),'e-camp':new Set(),'e-vend':new Set(),'e-exp':new Set(),'e-tipo':new Set(),'c-prov':new Set(),'c-estado':new Set()};
 
 // ── COLORES ──
-const TIPO_COLORS = {'EPA':{bg:'#d1fae5',color:'#065f46'},'2BSvs':{bg:'#fee2e2',color:'#991b1b'},'RTRS':{bg:'#ede9fe',color:'#5b21b6'},'ISCC':{bg:'#fef3c7',color:'#92400e'}};
-const EXP_COLORS = {'LDC':{bg:'#dbeafe',color:'#1e3a8a'},'MOA':{bg:'#fce7f3',color:'#9d174d'},'COFCO':{bg:'#fef3c7',color:'#78350f'},'Bunge':{bg:'#d1fae5',color:'#064e3b'},'AGD':{bg:'#ede9fe',color:'#4c1d95'},'Dreyfus':{bg:'#ffedd5',color:'#7c2d12'}};
+const TIPO_COLORS = {'EPA':{bg:'#d1fae5',color:'#065f46'},'2BSvs':{bg:'#fee2e2',color:'#991b1b'},'RTRS':{bg:'#ede9fe',color:'#5b21b6'},'ISCC':{bg:'#fef3c7',color:'#92400e'},'VISEC':{bg:'#CFFAFE',color:'#0E7490'}};
+const EXP_COLORS = {'LDC':{bg:'#dbeafe',color:'#1e3a8a'},'MOA':{bg:'#fce7f3',color:'#9d174d'},'COFCO':{bg:'#fef3c7',color:'#78350f'},'Bunge':{bg:'#d1fae5',color:'#064e3b'},'AGD':{bg:'#ede9fe',color:'#4c1d95'},'Dreyfus':{bg:'#ffedd5',color:'#7c2d12'},'VISEC':{bg:'#F0F9FF',color:'#075985'}};
 
 function tipoBadge(t){if(!t)return'—';const c=TIPO_COLORS[t]||{bg:'#f1f5f9',color:'#475569'};return `<span class="badge" style="background:${c.bg};color:${c.color}">${t}</span>`;}
 function expBadge(e){if(!e)return'—';const c=EXP_COLORS[e]||{bg:'#f1f5f9',color:'#334155'};return `<span class="badge" style="background:${c.bg};color:${c.color}">${e}</span>`;}
@@ -1895,6 +1905,7 @@ function openNuevaSolicitud(){
   document.getElementById('btn-enviar-sol').textContent='Enviar solicitud';
   const sw=document.getElementById('sol-warning');if(sw)sw.style.display='none';
   document.querySelectorAll('.exp-cb').forEach(cb=>{cb.checked=false;toggleExpRow(cb);});
+  const vcb=document.getElementById('sol-visec-cb');if(vcb)vcb.checked=false;
   document.getElementById('modal-solicitud').classList.add('open');
 }
 function closeNuevaSolicitud(){
@@ -2010,7 +2021,9 @@ async function enviarSolicitud(){
     if(exp==='LDC'&&esqs.includes('EPA')&&!esqs.includes('2BSvs'))esqs.push('2BSvs');
     if(esqs.length)selecciones.push({exportador:exp,esquemas:esqs});
   });
-  if(!selecciones.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un exportador con esquema.';return;}
+  const solicitaVisec=document.getElementById('sol-visec-cb')?.checked||false;
+  if(solicitaVisec)selecciones.push({exportador:'VISEC',esquemas:['VISEC']});
+  if(!selecciones.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un exportador con esquema, o marcá la habilitación VISEC.';return;}
   const btn=document.getElementById('btn-enviar-sol');
   btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
   const camp=findCampDefault(allG)||'25/26';
