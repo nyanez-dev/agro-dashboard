@@ -334,8 +334,8 @@ tr.clickable{cursor:pointer}
           <div class="exp-chips" id="chips-LDC" style="display:none">
             <label class="esq-chip"><input type="checkbox" value="EPA" onchange="checkSolHabWarning()"> EPA</label>
             <label class="esq-chip"><input type="checkbox" value="2BSvs" onchange="checkSolHabWarning()"> 2BSvs</label>
-            <label class="esq-chip"><input type="checkbox" value="EUDR" onchange="checkSolHabWarning()"> EUDR</label>
             <label class="esq-chip"><input type="checkbox" value="RTRS" onchange="checkSolHabWarning()"> RTRS</label>
+            <div style="font-size:11px;color:#0E7490;margin-top:4px;padding:3px 6px;background:#CFFAFE;border-radius:4px">EUDR → se gestiona vía VISEC (usar sección de abajo)</div>
           </div>
         </div>
         <div class="exp-row" id="exprow-MOA">
@@ -343,8 +343,8 @@ tr.clickable{cursor:pointer}
           <div class="exp-chips" id="chips-MOA" style="display:none">
             <label class="esq-chip"><input type="checkbox" value="EPA" onchange="checkSolHabWarning()"> EPA</label>
             <label class="esq-chip"><input type="checkbox" value="2BSvs" onchange="checkSolHabWarning()"> 2BSvs</label>
-            <label class="esq-chip"><input type="checkbox" value="EUDR" onchange="checkSolHabWarning()"> EUDR</label>
             <label class="esq-chip"><input type="checkbox" value="RTRS" onchange="checkSolHabWarning()"> RTRS</label>
+            <div style="font-size:11px;color:#0E7490;margin-top:4px;padding:3px 6px;background:#CFFAFE;border-radius:4px">EUDR → se gestiona vía VISEC (usar sección de abajo) · EPA también genera solicitud VISEC automáticamente</div>
           </div>
         </div>
         <div class="exp-row" id="exprow-COFCO">
@@ -361,8 +361,8 @@ tr.clickable{cursor:pointer}
           <div class="exp-chips" id="chips-Bunge" style="display:none">
             <label class="esq-chip"><input type="checkbox" value="EPA" onchange="checkSolHabWarning()"> EPA</label>
             <label class="esq-chip"><input type="checkbox" value="2BSvs" onchange="checkSolHabWarning()"> 2BSvs</label>
-            <label class="esq-chip"><input type="checkbox" value="EUDR" onchange="checkSolHabWarning()"> EUDR</label>
             <label class="esq-chip"><input type="checkbox" value="RTRS" onchange="checkSolHabWarning()"> RTRS</label>
+            <div style="font-size:11px;color:#0E7490;margin-top:4px;padding:3px 6px;background:#CFFAFE;border-radius:4px">EUDR → se gestiona vía VISEC (usar sección de abajo)</div>
           </div>
         </div>
       </div>
@@ -434,6 +434,7 @@ tr.clickable{cursor:pointer}
     <div class="filter-group"><label>Productor</label><input type="text" id="g-prod" placeholder="Filtrar por productor..." oninput="onFilterG()"></div>
     <div class="filter-group"><label>Buscar</label><input type="text" id="g-search" placeholder="Campo, estado, etc." oninput="onFilterG()"></div>
     <div class="filter-group"><label>Exportador</label><div class="multi-select-wrap" id="wrap-g-exp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-exp')"><span id="label-g-exp">Todos</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-exp"></div></div></div>
+    <div class="filter-group edit-only" style="display:none"><label>Prioridad</label><select id="g-prio-filter" onchange="onFilterG()" style="padding:5px 8px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;background:#fff;color:#374151;cursor:pointer"><option value="">Todas</option><option value="Alta">Alta</option><option value="Normal">Normal</option><option value="Baja">Baja</option></select></div>
     <button class="btn-clear" onclick="clearG()">Limpiar filtros</button>
     <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6B7280;cursor:pointer;margin-left:4px"><input type="checkbox" id="g-show-bajas" onchange="renderG()"> Mostrar bajas</label>
   </div>
@@ -726,8 +727,39 @@ function updateLabel(id){const s=sel[id];const lbl=document.getElementById('labe
 function cascadeG(){const q=document.getElementById('g-search').value.toLowerCase();const camps=sel['g-camp'];const matchQ=r=>!q||Object.values(r).some(v=>v.toLowerCase().includes(q));const baseExp=allG.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa'))));const expOpts=uniq(baseExp.map(r=>r['Exportador']));[...sel['g-exp']].forEach(v=>{if(!expOpts.includes(v))sel['g-exp'].delete(v);});const baseCamp=allG.filter(r=>matchQ(r)&&(!sel['g-exp'].size||sel['g-exp'].has(r['Exportador'])));const campOpts=uniq(baseCamp.map(r=>g(r,'Campa')));[...sel['g-camp']].forEach(v=>{if(!campOpts.includes(v))sel['g-camp'].delete(v);});buildDropdown('g-camp',campOpts,v=>fmtCamp(v));buildDropdown('g-exp',expOpts,e=>expBadge(e));}
 function cascadeE(){const q=document.getElementById('e-search').value.toLowerCase();const matchQ=r=>!q||Object.values(r).some(v=>v.toString().toLowerCase().includes(q));const camps=sel['e-camp'];const baseVend=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));const vendOpts=uniq(baseVend.map(r=>r['Vendedor']));[...sel['e-vend']].forEach(v=>{if(!vendOpts.includes(v))sel['e-vend'].delete(v);});const baseExp=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));const expOpts=uniq(baseExp.map(r=>r['Exportador']));[...sel['e-exp']].forEach(v=>{if(!expOpts.includes(v))sel['e-exp'].delete(v);});const baseTipo=allE.filter(r=>matchQ(r)&&(!camps.size||camps.has(g(r,'Campa')))&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador'])));const tipoOpts=uniq(baseTipo.map(r=>r['Tipo']));[...sel['e-tipo']].forEach(v=>{if(!tipoOpts.includes(v))sel['e-tipo'].delete(v);});const baseCamp=allE.filter(r=>matchQ(r)&&(!sel['e-vend'].size||sel['e-vend'].has(r['Vendedor']))&&(!sel['e-exp'].size||sel['e-exp'].has(r['Exportador']))&&(!sel['e-tipo'].size||sel['e-tipo'].has(r['Tipo'])));const campOpts=uniq(baseCamp.map(r=>g(r,'Campa')));[...sel['e-camp']].forEach(v=>{if(!campOpts.includes(v))sel['e-camp'].delete(v);});buildDropdown('e-camp',campOpts,v=>fmtCamp(v));buildDropdown('e-vend',vendOpts);buildDropdown('e-exp',expOpts,e=>expBadge(e));buildDropdown('e-tipo',tipoOpts,t=>tipoBadge(t));}
 
+// ── PRIORIDADES GESTIONES ──
+const PRIO_STYLES={
+  'Alta':{bg:'#FEE2E2',color:'#991B1B',border:'#FECACA'},
+  'Normal':{bg:'#F1F5F9',color:'#475569',border:'#E2E8F0'},
+  'Baja':{bg:'#F0FDF4',color:'#166534',border:'#BBF7D0'}
+};
+function getPrioridad(gid){return getNotaValor(gid,'__GESTION__','prioridad')||'Normal';}
+function prioBadge(prio){const s=PRIO_STYLES[prio]||PRIO_STYLES['Normal'];return`<span class="badge" style="background:${s.bg};color:${s.color};border:1px solid ${s.border};font-size:10px">${prio}</span>`;}
+async function guardarPrioridad(idx,valor){
+  const showBajas=document.getElementById('g-show-bajas')?.checked;
+  const f=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&(showBajas||!isGestionDadaDeBaja(gid,r));});
+  const r=f[idx];if(!r)return;
+  const gid=getGestionId(r);
+  const userName=document.getElementById('auth-user').textContent||'Compliance';
+  await saveNota(gid,'__GESTION__','prioridad',valor,userName);
+  renderG();
+}
+
 // ── GESTIONES ──
-function filterG(){const q=document.getElementById('g-search').value.toLowerCase();const qProd=(document.getElementById('g-prod')||{}).value?.toLowerCase()||'';const camps=sel['g-camp'];const exps=sel['g-exp'];return allG.filter(r=>(!q||Object.values(r).some(v=>v.toLowerCase().includes(q)))&&(!qProd||(r['Productor']||'').toLowerCase().includes(qProd))&&(!camps.size||camps.has(g(r,'Campa')))&&(!exps.size||exps.has(r['Exportador'])));}
+function filterG(){
+  const q=document.getElementById('g-search').value.toLowerCase();
+  const qProd=(document.getElementById('g-prod')||{}).value?.toLowerCase()||'';
+  const camps=sel['g-camp'];const exps=sel['g-exp'];
+  const prioFilt=document.getElementById('g-prio-filter')?.value||'';
+  return allG.filter(r=>{
+    const gid=getGestionId(r);
+    const estados=getGestionEstados(gid,r);
+    const estadoActual=estados.length?estados[estados.length-1].VALOR:(r['Estado']||'');
+    const matchQ=!q||[r['Productor']||'',r['Campo']||'',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||'',estadoActual].some(v=>v.toLowerCase().includes(q));
+    const matchPrio=!prioFilt||getPrioridad(gid)===prioFilt;
+    return matchQ&&matchPrio&&(!qProd||(r['Productor']||'').toLowerCase().includes(qProd))&&(!camps.size||camps.has(g(r,'Campa')))&&(!exps.size||exps.has(r['Exportador']));
+  });
+}
 function onFilterG(){cascadeG();renderG();}
 // ── GESTIONES CRM — helpers ──
 function getGestionId(r){return[r['Productor']||'',r['Campo']||'',r['Esquema']||'',r['Exportador']||'',g(r,'Campa')||''].join('||');}
@@ -791,6 +823,7 @@ function buildFichaG(r,idx,gid,estados){
     const inicial=estadoSheetVal?`<div class="comment-box"><div class="comment-meta"><span class="comment-author" style="color:#6B7280">Estado inicial (Sheet)</span><span class="comment-date"></span></div><div class="comment-text">${estadoSheetVal}</div></div>`:'';
     histHtml=inicial+estados.map(e=>`<div class="comment-box"><div class="comment-meta"><span class="comment-author">${e.AUTOR||'—'}</span><span class="comment-date">${fmtDate(e.FECHA)||e.FECHA||''}</span></div><div class="comment-text">${e.VALOR}</div></div>`).join('');
   }
+  const prioActual=getPrioridad(gid);
   return `<div class="ficha-grid">
     <div class="ficha-field"><label>Productor</label><div class="val bold">${r['Productor']||'—'}</div></div>
     <div class="ficha-field"><label>Campo</label><div class="val">${r['Campo']||'—'}</div></div>
@@ -798,6 +831,7 @@ function buildFichaG(r,idx,gid,estados){
     <div class="ficha-field"><label>Esquema</label><div class="val">${r['Esquema']||'—'}</div></div>
     <div class="ficha-field"><label>Via</label><div class="val">${viaBadge(g(r,'web o mail'))}</div></div>
     <div class="ficha-field"><label>Campaña</label><div class="val">${fmtCamp(g(r,'Campa'))}</div></div>
+    <div class="ficha-field edit-only" style="display:none"><label>Prioridad</label><div class="val"><select onchange="guardarPrioridad(${idx},this.value)" style="padding:3px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:Inter,sans-serif;cursor:pointer"><option ${prioActual==='Normal'?'selected':''}>Normal</option><option ${prioActual==='Alta'?'selected':''}>Alta</option><option ${prioActual==='Baja'?'selected':''}>Baja</option></select></div></div>
   </div>
   <div class="ficha-section"><h3>Historial de estados</h3>
     ${histHtml}
@@ -1036,7 +1070,11 @@ function renderG(){
   const exps=uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');
   if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}
-  const thead=`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Exportador</th><th>Campaña</th></tr></thead>`;
+  const isEdit=editMode;
+  const colspan=isEdit?8:7;
+  const thead=isEdit
+    ?`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Prioridad</th><th>Exportador</th><th>Campaña</th><th>Fecha solicitud</th></tr></thead>`
+    :`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Exportador</th><th>Campaña</th><th>Fecha solicitud</th></tr></thead>`;
   const rows=f.map((r,i)=>{
     const gid=getGestionId(r);
     const esBaja=isGestionDadaDeBaja(gid,r);
@@ -1044,16 +1082,19 @@ function renderG(){
     const estados=getGestionEstados(gid,r);
     const estadoSheet=r['Estado']||'';
     const ultimo=estados.length?estados[estados.length-1].VALOR:(estadoSheet||'—');
-    const rowStyle=esBaja?'opacity:0.5;background:#FEF2F2':'';
+    const prio=isEdit?getPrioridad(gid):null;
+    const fechaSol=estados.length?fmtDate(estados[0].FECHA):'';
+    const rowStyle=esBaja?'opacity:0.5;background:#FEF2F2':(isEdit&&prio==='Alta'?'background:#FFF5F5':'');
     const bajaBadge=esBaja?`<span class="badge badge-err" style="font-size:10px;margin-left:4px" title="${bajaInfo?bajaInfo.VALOR:''}">Baja</span>`:'';
-    return `<tr class="clickable" onclick="toggleFichaG(${i})" style="${rowStyle}"><td class="bold">${r['Productor']||'—'}${bajaBadge}</td><td>${r['Campo']||'<span style="color:#9CA3AF">Sin campo</span>'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${esBaja?`<em style="color:#DC2626">Baja: ${bajaInfo?bajaInfo.VALOR:'—'}</em>`:ultimo}</td><td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td></tr>
-    <tr><td colspan="6" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
+    const prioCell=isEdit?`<td>${prioBadge(prio)}</td>`:'';
+    return `<tr class="clickable" onclick="toggleFichaG(${i})" style="${rowStyle}"><td class="bold">${r['Productor']||'—'}${bajaBadge}</td><td>${r['Campo']||'<span style="color:#9CA3AF">Sin campo</span>'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${esBaja?`<em style="color:#DC2626">Baja: ${bajaInfo?bajaInfo.VALOR:'—'}</em>`:ultimo}</td>${prioCell}<td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="muted" style="font-size:12px">${fechaSol||'—'}</td></tr>
+    <tr><td colspan="${colspan}" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
   }).join('');
   const nBajas=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&isGestionDadaDeBaja(gid,r);}).length;
   document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} gestiones${showBajas&&nBajas?` (incluye ${nBajas} baja${nBajas>1?'s':''})`:''}</span>`;
 }
-function clearG(){document.getElementById('g-search').value='';const gProd=document.getElementById('g-prod');if(gProd)gProd.value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());const gDef=findCampDefault(allG);if(gDef)sel['g-camp'].add(gDef);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
+function clearG(){document.getElementById('g-search').value='';const gProd=document.getElementById('g-prod');if(gProd)gProd.value='';const pf=document.getElementById('g-prio-filter');if(pf)pf.value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());const gDef=findCampDefault(allG);if(gDef)sel['g-camp'].add(gDef);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
 
 // ── HABILITACIONES ──
 function habKey(r){return[r['CUIT'],r['Campo'],r['Exportador'],r['Tipo'],g(r,'Campa')].join('||');}
@@ -2018,8 +2059,13 @@ async function enviarSolicitud(){
     if(exp==='LDC'&&esqs.includes('EPA')&&!esqs.includes('2BSvs'))esqs.push('2BSvs');
     if(esqs.length)selecciones.push({exportador:exp,esquemas:esqs});
   });
+  // MOA + EPA → agrega VISEC automáticamente
+  const moaSel=selecciones.find(s=>s.exportador==='MOA');
+  let addVisecAuto=moaSel&&moaSel.esquemas.includes('EPA');
   const solicitaVisec=document.getElementById('sol-visec-cb')?.checked||false;
-  if(solicitaVisec)selecciones.push({exportador:'VISEC',esquemas:['VISEC']});
+  if(solicitaVisec||addVisecAuto){
+    if(!selecciones.some(s=>s.exportador==='VISEC'))selecciones.push({exportador:'VISEC',esquemas:['VISEC']});
+  }
   if(!selecciones.length){msg.className='modal-msg err';msg.textContent='Seleccioná al menos un exportador con esquema, o marcá la habilitación VISEC.';return;}
   const btn=document.getElementById('btn-enviar-sol');
   btn.disabled=true;btn.textContent='Enviando...';msg.className='modal-msg';msg.textContent='';
