@@ -44,6 +44,29 @@ body{font-family:'Inter',sans-serif;background:#F0F2F5;min-height:100vh}
 .btn-gold:hover{background:#B8985D}
 .btn-edit{border-color:#D1D5DB}
 .btn-edit.active{background:#DC2626;color:#fff;border-color:#DC2626}
+.btn-bulk{border-color:#6366F1;color:#4338CA}
+.btn-bulk.active{background:#4338CA;color:#fff;border-color:#4338CA}
+/* Bulk selection */
+.bulk-cb{width:16px;height:16px;cursor:pointer;accent-color:#4338CA;flex-shrink:0}
+#bulk-bar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;border-radius:12px;padding:12px 20px;display:none;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:200;white-space:nowrap;min-width:340px}
+#bulk-bar.show{display:flex}
+#bulk-bar .bulk-count{font-size:13px;font-weight:600;flex:1}
+#bulk-bar button{padding:7px 14px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.bulk-btn-estado{background:#3B82F6;color:#fff}
+.bulk-btn-prio{background:#F59E0B;color:#fff}
+.bulk-btn-baja{background:#EF4444;color:#fff}
+.bulk-btn-cancel{background:#475569;color:#fff}
+/* Bulk modal */
+#bulk-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;justify-content:center;align-items:center}
+#bulk-modal.show{display:flex}
+#bulk-modal .bm-box{background:#fff;border-radius:12px;padding:28px;max-width:420px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+#bulk-modal h3{font-size:15px;font-weight:700;color:#0a2240;margin-bottom:16px}
+#bulk-modal select,#bulk-modal input,#bulk-modal textarea{width:100%;padding:9px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;color:#1e293b;margin-bottom:12px}
+#bulk-modal .bm-progress{font-size:12px;color:#64748b;margin-bottom:8px}
+#bulk-modal .bm-actions{display:flex;gap:10px;justify-content:flex-end}
+#bulk-modal .bm-actions button{padding:9px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+#bm-confirm{background:#0a2240;color:#fff}
+#bm-cancel{background:#F1F5F9;color:#374151}
 
 /* Content */
 .content{max-width:1400px;margin:0 auto;padding:24px}
@@ -428,7 +451,7 @@ tr.clickable{cursor:pointer}
 <!-- GESTIONES -->
 <div id="panel-g" class="content">
   <div id="stats-g" style="display:none"></div>
-  <div class="section-bar navy"><span id="section-label-g">Gestiones</span><span class="count" id="section-count-g"></span></div>
+  <div class="section-bar navy"><span id="section-label-g">Gestiones</span><span class="count" id="section-count-g"></span><button class="btn btn-bulk edit-only" id="btn-bulk" onclick="toggleBulkMode()" style="display:none;margin-left:auto;font-size:12px;padding:5px 12px">☑ Selección múltiple</button></div>
   <div class="filters-wrap">
     <div class="filter-group"><label>Campaña</label><div class="multi-select-wrap" id="wrap-g-camp"><button type="button" class="multi-select-btn" onclick="toggleDropdown('g-camp')"><span id="label-g-camp">Todas</span><span class="arrow">&#9660;</span></button><div class="multi-select-dropdown" id="drop-g-camp"></div></div></div>
     <div class="filter-group"><label>Productor</label><input type="text" id="g-prod" placeholder="Filtrar por productor..." oninput="onFilterG()"></div>
@@ -553,7 +576,8 @@ const EDIT_EMAILS = new Set([
   'cacosta@allariaagro.com.ar',
   'vgreco@allariaagro.com.ar',
   'clezcano@allariaagro.com.ar',
-  'troquette@allariaagro.com.ar'
+  'troquette@allariaagro.com.ar',
+  'aferraroti@allariaagro.com.ar'
 ]);
 
 let allG=[], allE=[], allC=[], allNotas=[];
@@ -1069,12 +1093,18 @@ function renderG(){
   const web=f.filter(r=>(g(r,'web o mail')||'').toLowerCase()==='web').length;
   const exps=uniq(f.map(r=>r['Exportador'])).length;
   document.getElementById('stats-g').innerHTML=statCard(f.length,'Registros','#1a4a2e')+statCard(web,'Via web','#1a5a9a')+statCard(f.length-web,'Via mail','#92400e')+statCard(exps,'Exportadores','#64748b');
+  // Mostrar botón bulk solo en modo edición
+  const btnBulk=document.getElementById('btn-bulk');
+  if(btnBulk)btnBulk.style.display=editMode?'':'none';
   if(!f.length){document.getElementById('g-table').innerHTML='<div class="loading">Sin resultados para los filtros seleccionados.</div>';document.getElementById('g-footer').innerHTML='';return;}
   const isEdit=editMode;
-  const colspan=isEdit?8:7;
-  const thead=isEdit
-    ?`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Prioridad</th><th>Exportador</th><th>Campaña</th><th>Fecha solicitud</th></tr></thead>`
-    :`<thead><tr><th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th><th>Exportador</th><th>Campaña</th><th>Fecha solicitud</th></tr></thead>`;
+  const hasBulk=bulkMode&&isEdit;
+  const cbColspan=hasBulk?1:0;
+  const prioColspan=isEdit?1:0;
+  const colspan=7+prioColspan+cbColspan;
+  const cbTh=hasBulk?`<th style="width:32px"></th>`:'';
+  const prioTh=isEdit?`<th>Prioridad</th>`:'';
+  const thead=`<thead><tr>${cbTh}<th>Productor</th><th>Campo</th><th>Esquema</th><th>Estado actual</th>${prioTh}<th>Exportador</th><th>Campaña</th><th>Fecha solicitud</th></tr></thead>`;
   const rows=f.map((r,i)=>{
     const gid=getGestionId(r);
     const esBaja=isGestionDadaDeBaja(gid,r);
@@ -1087,12 +1117,15 @@ function renderG(){
     const rowStyle=esBaja?'opacity:0.5;background:#FEF2F2':(isEdit&&prio==='Alta'?'background:#FFF5F5':'');
     const bajaBadge=esBaja?`<span class="badge badge-err" style="font-size:10px;margin-left:4px" title="${bajaInfo?bajaInfo.VALOR:''}">Baja</span>`:'';
     const prioCell=isEdit?`<td>${prioBadge(prio)}</td>`:'';
-    return `<tr class="clickable" onclick="toggleFichaG(${i})" style="${rowStyle}"><td class="bold">${r['Productor']||'—'}${bajaBadge}</td><td>${r['Campo']||'<span style="color:#9CA3AF">Sin campo</span>'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${esBaja?`<em style="color:#DC2626">Baja: ${bajaInfo?bajaInfo.VALOR:'—'}</em>`:ultimo}</td>${prioCell}<td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="muted" style="font-size:12px">${fechaSol||'—'}</td></tr>
-    <tr><td colspan="${colspan}" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`;
+    const isChecked=selectedGids.has(gid);
+    const cbCell=hasBulk?`<td style="padding:6px 8px;text-align:center" onclick="event.stopPropagation()"><input type="checkbox" class="bulk-cb" ${isChecked?'checked':''} onchange="toggleBulkSelect('${gid.replace(/'/g,"\\'")}',this)"></td>`:'';
+    return `<tr class="clickable" onclick="${hasBulk?'':'toggleFichaG('+i+')'}" style="${rowStyle}${hasBulk?'cursor:default':''}">${cbCell}<td class="bold">${r['Productor']||'—'}${bajaBadge}</td><td>${r['Campo']||'<span style="color:#9CA3AF">Sin campo</span>'}</td><td class="muted">${r['Esquema']||'—'}</td><td class="muted" style="max-width:260px">${esBaja?`<em style="color:#DC2626">Baja: ${bajaInfo?bajaInfo.VALOR:'—'}</em>`:ultimo}</td>${prioCell}<td>${expBadge(r['Exportador'])}</td><td class="muted">${fmtCamp(g(r,'Campa'))}</td><td class="muted" style="font-size:12px">${fechaSol||'—'}</td></tr>
+    ${hasBulk?'':`<tr><td colspan="${colspan}" style="padding:0;border:none"><div class="ficha" id="ficha-g-${i}">${buildFichaG(r,i,gid,estados)}</div></td></tr>`}`;
   }).join('');
   const nBajas=filterG().filter(r=>{const gid=getGestionId(r);return!isGestionPasada(gid,r)&&isGestionDadaDeBaja(gid,r);}).length;
   document.getElementById('g-table').innerHTML=`<div class="table-wrap"><table>${thead}<tbody>${rows}</tbody></table></div>`;
   document.getElementById('g-footer').innerHTML=`<span>Mostrando ${f.length} gestiones${showBajas&&nBajas?` (incluye ${nBajas} baja${nBajas>1?'s':''})`:''}</span>`;
+  updateBulkBar();
 }
 function clearG(){document.getElementById('g-search').value='';const gProd=document.getElementById('g-prod');if(gProd)gProd.value='';const pf=document.getElementById('g-prio-filter');if(pf)pf.value='';Object.keys(sel).filter(k=>k.startsWith('g-')).forEach(k=>sel[k].clear());const gDef=findCampDefault(allG);if(gDef)sel['g-camp'].add(gDef);cascadeG();buildDropdown('g-camp',uniq(allG.map(r=>g(r,'Campa'))),v=>fmtCamp(v));updateLabel('g-camp');renderG();}
 
@@ -2133,6 +2166,131 @@ async function enviarSolicitud(){
 function showEsqSection(name,el){['esquemas','exportadores','regla'].forEach(s=>{const sec=document.getElementById('sec-'+s);if(sec)sec.style.display=s===name?'':'none';});document.querySelectorAll('#panel-s .nav-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');}
 function toggleCard(id){const card=document.getElementById('card-'+id);if(card)card.classList.toggle('open');}
 
+// ── BULK SELECTION ──
+let bulkMode = false;
+const selectedGids = new Set();
+
+function toggleBulkMode() {
+  bulkMode = !bulkMode;
+  const btn = document.getElementById('btn-bulk');
+  if (bulkMode) {
+    btn.classList.add('active');
+    btn.textContent = '✕ Cancelar selección';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '☑ Selección múltiple';
+    selectedGids.clear();
+    updateBulkBar();
+  }
+  renderG();
+}
+
+function toggleBulkSelect(gid, cb) {
+  if (cb.checked) selectedGids.add(gid);
+  else selectedGids.delete(gid);
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  const n = selectedGids.size;
+  if (n > 0 && bulkMode) {
+    bar.classList.add('show');
+    document.getElementById('bulk-count-label').textContent = n + ' seleccionada' + (n > 1 ? 's' : '');
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+function openBulkModal(tipo) {
+  if (!selectedGids.size) return;
+  const modal = document.getElementById('bulk-modal');
+  const title = document.getElementById('bm-title');
+  const body  = document.getElementById('bm-body');
+  document.getElementById('bm-progress').textContent = '';
+  document.getElementById('bm-confirm').disabled = false;
+  document.getElementById('bm-confirm').textContent = 'Confirmar';
+
+  if (tipo === 'estado') {
+    title.textContent = 'Cambiar estado — ' + selectedGids.size + ' gestión(es)';
+    body.innerHTML = `
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Nuevo estado</label>
+      <input type="text" id="bm-valor" placeholder="Ej: En revisión, Aprobado..." />
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Comentario (opcional)</label>
+      <textarea id="bm-comentario" rows="2" placeholder="Comentario interno..."></textarea>`;
+  } else if (tipo === 'prioridad') {
+    title.textContent = 'Cambiar prioridad — ' + selectedGids.size + ' gestión(es)';
+    body.innerHTML = `
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Prioridad</label>
+      <select id="bm-valor"><option value="Alta">Alta</option><option value="Normal" selected>Normal</option><option value="Baja">Baja</option></select>
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Comentario (opcional)</label>
+      <textarea id="bm-comentario" rows="2" placeholder="Comentario interno..."></textarea>`;
+  } else if (tipo === 'baja') {
+    title.textContent = 'Dar de baja — ' + selectedGids.size + ' gestión(es)';
+    body.innerHTML = `
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Motivo de baja</label>
+      <textarea id="bm-valor" rows="2" placeholder="Motivo..."></textarea>
+      <textarea id="bm-comentario" style="display:none"></textarea>`;
+  }
+
+  document.getElementById('bm-confirm').onclick = () => executeBulkAction(tipo);
+  modal.classList.add('show');
+}
+
+async function executeBulkAction(tipo) {
+  const valor = (document.getElementById('bm-valor')?.value || '').trim();
+  if (!valor) { alert('El campo es obligatorio.'); return; }
+
+  const userName = document.getElementById('auth-user').textContent || 'Compliance';
+  const gids = [...selectedGids];
+  const progress = document.getElementById('bm-progress');
+  const confirmBtn = document.getElementById('bm-confirm');
+  confirmBtn.disabled = true;
+
+  let notaTipo = tipo === 'prioridad' ? 'prioridad' : tipo === 'baja' ? 'baja' : 'estado';
+
+  for (let i = 0; i < gids.length; i++) {
+    progress.textContent = 'Guardando ' + (i + 1) + ' de ' + gids.length + '...';
+    await saveNota(gids[i], '__GESTION__', notaTipo, valor, userName);
+  }
+
+  progress.textContent = '✅ Listo — ' + gids.length + ' gestión(es) actualizadas.';
+  confirmBtn.textContent = 'Cerrar';
+  confirmBtn.disabled = false;
+  confirmBtn.onclick = () => {
+    document.getElementById('bulk-modal').classList.remove('show');
+    selectedGids.clear();
+    bulkMode = false;
+    const btn = document.getElementById('btn-bulk');
+    if (btn) { btn.classList.remove('active'); btn.textContent = '☑ Selección múltiple'; }
+    updateBulkBar();
+    renderG();
+  };
+}
+
 </script>
+
+<!-- Bulk action bar -->
+<div id="bulk-bar">
+  <span class="bulk-count" id="bulk-count-label">0 seleccionadas</span>
+  <button class="bulk-btn-estado" onclick="openBulkModal('estado')">Cambiar estado</button>
+  <button class="bulk-btn-prio" onclick="openBulkModal('prioridad')">Cambiar prioridad</button>
+  <button class="bulk-btn-baja" onclick="openBulkModal('baja')">Dar de baja</button>
+  <button class="bulk-btn-cancel" onclick="toggleBulkMode()">Cancelar</button>
+</div>
+
+<!-- Bulk action modal -->
+<div id="bulk-modal">
+  <div class="bm-box">
+    <h3 id="bm-title"></h3>
+    <div id="bm-body"></div>
+    <p class="bm-progress" id="bm-progress"></p>
+    <div class="bm-actions">
+      <button id="bm-cancel" onclick="document.getElementById('bulk-modal').classList.remove('show')">Cancelar</button>
+      <button id="bm-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
