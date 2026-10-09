@@ -577,7 +577,7 @@ const EDIT_EMAILS = new Set([
   'vgreco@allariaagro.com.ar',
   'clezcano@allariaagro.com.ar',
   'troquette@allariaagro.com.ar',
-  'aferraroti@allariaagro.com.ar'
+  'aferrarotti@allariaagro.com.ar'
 ]);
 
 let allG=[], allE=[], allC=[], allNotas=[];
@@ -1815,7 +1815,49 @@ function exportVISEC(){
   if(sinMatch>0)showToast('warn','Tipos de sociedad sin match',`${sinMatch} registro${sinMatch>1?'s':''} con tipo de sociedad no reconocido — columna O quedó vacía en esos casos. Revisalos manualmente.`);
 }
 
-function exportExcel(){let data,name;if(currentTab==='g'){data=filterG();name='Gestiones';}else if(currentTab==='e'){data=filterE();name='Habilitaciones';}else{data=filterC();name='Informacion_Campos';}if(!data.length){alert('No hay datos para exportar.');return;}const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,name);const date=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');XLSX.writeFile(wb,`${name}-${date}.xlsx`);}
+function exportExcel(){
+  const date=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');
+  const wb=XLSX.utils.book_new();
+  if(currentTab==='c'){
+    // Export dedicado para Información de Campos: has totales y sustentables como número
+    const f=filterC();
+    if(!f.length){alert('No hay datos para exportar.');return;}
+    const headers=['CUIT','Razón Social','Nombre del Campo','RENSPA','Provincia','Localidad','Has Totales','Has Sustentables (camp. vigente)','Estado'];
+    const rows=f.map(r=>{
+      const cuit=g(r,'CUIT')||'';
+      const campo=g(r,'NOMBRE DEL CAMPO')||'';
+      const hasTotRaw=getNotaValor(cuit,campo,'edit_TOTALES DEL CAMPO')||g(r,'TOTALES DEL CAMPO')||'';
+      const hasSustRaw=getHasActivaCamp(cuit,campo)||'';
+      const hasTot=parseFloat(String(hasTotRaw).replace(/,/g,'.'));
+      const hasSust=parseFloat(String(hasSustRaw).replace(/,/g,'.'));
+      return[
+        cuit,
+        getNotaValor(cuit,campo,'edit_RAZON SOCIAL')||g(r,'RAZON SOCIAL')||'',
+        campo,
+        getNotaValor(cuit,campo,'edit_RENSPA')||g(r,'RENSPA')||g(r,'CREDENCIAL RENSPA')||'',
+        getNotaValor(cuit,campo,'edit_PROVINCIA')||g(r,'PROVINCIA')||'',
+        getNotaValor(cuit,campo,'edit_LOCALIDAD ARCA')||g(r,'LOCALIDAD')||g(r,'LOCALIDAD ARCA')||'',
+        isNaN(hasTot)?hasTotRaw:hasTot,
+        isNaN(hasSust)?hasSustRaw:hasSust,
+        getFieldStatus(r)
+      ];
+    });
+    const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+    ws['!cols']=[{wch:14},{wch:30},{wch:28},{wch:20},{wch:16},{wch:22},{wch:14},{wch:24},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws,'Informacion_Campos');
+    XLSX.writeFile(wb,`Informacion_Campos-${date}.xlsx`);
+    return;
+  }
+  // Gestiones y Habilitaciones: export genérico
+  let data,name;
+  if(currentTab==='g'){data=filterG();name='Gestiones';}
+  else{data=filterE();name='Habilitaciones';}
+  if(!data.length){alert('No hay datos para exportar.');return;}
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wbStd=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wbStd,ws,name);
+  XLSX.writeFile(wbStd,`${name}-${date}.xlsx`);
+}
 
 // ── FETCH DATOS VIA APPS SCRIPT (sin API key expuesta) ──
 async function fetchAllData(){
